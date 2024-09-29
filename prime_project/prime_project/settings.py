@@ -34,9 +34,16 @@ INSTALLED_APPS = [
     
 ]
 
-EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
-DEFAULT_FROM_EMAIL = "will@learndjango.com"
-NOTIFY_EMAIL = "will@learndjango.com"
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'in-v3.mailjet.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_API = api
+EMAIL_HOST_SECRET_KEY = secret_key
+DEFAULT_FROM_EMAIL = email_address
+
+# DEFAULT_FROM_EMAIL = "will@learndjango.com"
+# NOTIFY_EMAIL = "will@learndjango.com"
 
 
 MIDDLEWARE = [
