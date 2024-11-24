@@ -12,13 +12,15 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 
 from pathlib import Path
 from prime_project.localsettings import *
-import psycopg2
+import os
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+
+
 
 # Application definition
 
@@ -31,9 +33,27 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'core.apps.CoreConfig',
     'contact.apps.ContactConfig',
+    'accounts.apps.AccountsConfig',
+    'tailwind',
+    'theme',
     
 ]
 
+
+
+#image static folders
+STATIC_URL = '/static/'
+
+
+INTERNAL_IPS = [
+    "127.0.0.1",
+]
+
+NPM_BIN_PATH = "C:/Program Files/nodejs/npm.cmd"
+
+TAILWIND_APP_NAME = 'theme'
+
+#mailjet system
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'in-v3.mailjet.com'
 EMAIL_PORT = 587
@@ -41,9 +61,6 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_API = api
 EMAIL_HOST_SECRET_KEY = secret_key
 DEFAULT_FROM_EMAIL = email_address
-
-# DEFAULT_FROM_EMAIL = "will@learndjango.com"
-# NOTIFY_EMAIL = "will@learndjango.com"
 
 
 MIDDLEWARE = [
@@ -61,7 +78,7 @@ ROOT_URLCONF = 'prime_project.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -132,3 +149,13 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+AUTH_USER_MODEL = 'accounts.CustomUser'
+
+
+AUTHENTICATION_BACKENDS = [
+    'accounts.authentication.EmailBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]
+
+

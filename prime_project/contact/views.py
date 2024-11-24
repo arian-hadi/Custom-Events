@@ -19,26 +19,6 @@ class ContactView(FormView):
     def get_success_url(self):
         return reverse("contact")
 
-    # def form_valid(self, form):
-    #     email = form.cleaned_data.get("email")
-    #     subject = form.cleaned_data.get("subject")
-    #     message = form.cleaned_data.get("message")
-
-    #     full_message = f"""
-    #         Received message below from {email}, {subject}
-    #         ________________________
-
-
-    #         {message}
-    #         """
-    #     send_mail(
-    #         subject="Received contact form submission",
-    #         message=full_message,
-    #         from_email=settings.DEFAULT_FROM_EMAIL,
-    #         recipient_list=[settings.DEFAULT_FROM_EMAIL],
-    #     )
-    #     return super(ContactView, self).form_valid(form)
-
     def form_valid(self, form):
         email = form.cleaned_data.get("email")
         subject = form.cleaned_data.get("subject")
