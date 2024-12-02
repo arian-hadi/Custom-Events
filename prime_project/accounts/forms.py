@@ -1,6 +1,11 @@
 from django import forms
 from .models import CustomUser
 from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth.forms import PasswordResetForm
+from django.contrib.auth import get_user_model
+import logging
+
+logger = logging.getLogger(__name__)
 
 class CustomUserCreationForm(forms.ModelForm):
     password1 = forms.CharField(label="Password", widget=forms.PasswordInput)
@@ -27,3 +32,16 @@ class CustomUserCreationForm(forms.ModelForm):
     
 class EmailAuthenticationForm(AuthenticationForm):
     username = forms.EmailField(label = "Email")
+
+
+User = get_user_model()
+
+class CustomPasswordResetForm(PasswordResetForm):
+    def save(self, *args, **kwargs):
+        user = self.get_users(self.cleaned_data["email"])
+        for u in user:
+            logger.info(f"User ID: {u.id}, Email: {u.email}")
+        super().save(*args, **kwargs)
+
+
+

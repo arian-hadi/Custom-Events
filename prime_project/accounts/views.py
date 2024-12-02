@@ -8,6 +8,8 @@ from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views import View
+from django.contrib.auth.views import PasswordResetView
+from django.contrib.auth import get_user_model
 
 class SignUpView(CreateView):
     form_class = CustomUserCreationForm
@@ -26,6 +28,14 @@ class EmailLoginView(LoginView):
 class checkSessionView(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
         return JsonResponse({"status" : "active"})
+    
+
+User = get_user_model()
+
+class CustomPasswordResetView(PasswordResetView):
+    email_template_name = 'registration/password_reset_email.html'
+    success_url = reverse_lazy('password_reset_done')
+    template_name = 'registration/password_reset_form.html'
 
 
 
