@@ -10,12 +10,10 @@ logger = logging.getLogger(__name__)
 class CustomUserCreationForm(forms.ModelForm):
     password1 = forms.CharField(label="Password", widget=forms.PasswordInput)
     password2 = forms.CharField(label="Confirm Password", widget=forms.PasswordInput)
-    username = forms.CharField(label = "username",required = True, help_text= "Enter a unique username")
 
     class Meta:
         model = CustomUser
-        fields = ['email', 'username']
-
+        fields = ['email', 'username'] 
     def clean_password2(self):
         password1 = self.cleaned_data.get("password1")
         password2 = self.cleaned_data.get("password2")
@@ -29,6 +27,7 @@ class CustomUserCreationForm(forms.ModelForm):
         if commit:
             user.save()
         return user
+
     
 class EmailAuthenticationForm(AuthenticationForm):
     username = forms.EmailField(label = "Email")
@@ -44,4 +43,10 @@ class CustomPasswordResetForm(PasswordResetForm):
         super().save(*args, **kwargs)
 
 
-
+class OTPVerificationForm(forms.Form):
+    otp_code = forms.CharField(
+        label = "Enter OTP",
+        max_length = 6,
+        min_length = 6,
+        widget=forms.TextInput(attrs={'placeholder': 'Enter 6-digit OTP'})
+    )

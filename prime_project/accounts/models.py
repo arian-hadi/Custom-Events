@@ -3,7 +3,8 @@ from django.contrib.auth.models import AbstractBaseUser,PermissionsMixin
 from django.utils.translation import gettext_lazy as _
 from django.utils.timezone import now
 from .manager import UserManager
-from rest_framework_simplejwt.tokens import RefreshToken
+from datetime import timedelta
+# from rest_framework_simplejwt.tokens import RefreshToken
     
 class CustomUser(AbstractBaseUser, PermissionsMixin):
 
@@ -24,21 +25,24 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     def __str__(self):
         return self.email
     
-    @property
     def get_username(self):
         return self.username
     
-    def tokens(self):
-        refresh  = RefreshToken.for_user(self)
-        return {
-            'refresh': str(refresh),
-            'access': str(refresh.access_token)
-        }
+    # def tokens(self):
+    #     refresh  = RefreshToken.for_user(self)
+    #     return {
+    #         'refresh': str(refresh),
+    #         'access': str(refresh.access_token)
+    #     }
 
 
 class OneTimePassword(models.Model):
-    user = models.OneToOneField(CustomUser,on_delete=models.CASCADE)
+    user = models.ForeignKey(CustomUser,on_delete=models.CASCADE)
     code = models.CharField(max_length=6, unique = True)
+    created_at = models.DateTimeField(default=now)
+
+    def is_expired(self):
+        return self.created_at < now() - timedelta(minutes=10)  
 
     def __str__(self):
         return f"{self.user.username} passcode"

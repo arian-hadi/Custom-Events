@@ -1,7 +1,6 @@
 from django.urls import path
-from .views import HomeView,HomeAPIView
+from .views import HomeView
 
 urlpatterns = [
     path("", HomeView.as_view(), name = 'home'),
-    path("api/", HomeAPIView.as_view(), name="home-api"),
 ]

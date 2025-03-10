@@ -1,13 +1,15 @@
 from pathlib import Path
-from prime_project.localsettings import *
+# from prime_project.localsettings import *
 from datetime import timedelta
+import environ
 
 import os
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+env = environ.Env()
+environ.Env.read_env(os.path.join(BASE_DIR, '.env')) 
 
-
-
+SECRET_KEY = env("SECRET_KEY")
+DEBUG = env.bool("DEBUG")  # Reads from .env, defaults to True if missing
 ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
 
@@ -26,10 +28,6 @@ INSTALLED_APPS = [
     'accounts.apps.AccountsConfig',
     'tailwind',
     'theme',
-    'rest_framework',
-    'api',
-    "corsheaders",
-    'rest_framework_simplejwt.token_blacklist',
 ]
 
 
@@ -54,14 +52,14 @@ NPM_BIN_PATH = "C:/Program Files/nodejs/npm.cmd"
 
 TAILWIND_APP_NAME = 'theme'
 
-#mailjet system
-#EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_MAILJET_HOST = 'in-v3.mailjet.com'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_API = api
-EMAIL_HOST_SECRET_KEY = secret_key
-DEFAULT_FROM_EMAIL = email_address
+# #mailjet system
+# #EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# EMAIL_MAILJET_HOST = 'in-v3.mailjet.com'
+# EMAIL_PORT = 587
+# EMAIL_USE_TLS = True
+# EMAIL_HOST_API = env('apo')
+# EMAIL_HOST_SECRET_KEY = env(secret_key)
+# DEFAULT_FROM_EMAIL = email_address
 
 
 MIDDLEWARE = [
@@ -104,11 +102,11 @@ WSGI_APPLICATION = 'prime_project.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': DB_NAME,
-        'USER': DB_USER,
-        'PASSWORD': DB_PASSWORD,
-        'HOST': DB_HOST,
-        'PORT': DB_PORT,
+        'NAME': env("DB_NAME"),
+        'USER': env("DB_USER"),
+        'PASSWORD': env("DB_PASSWORD"),
+        'HOST': env("DB_HOST"),
+        'PORT': env.int("DB_PORT"),
     }
 }
 
@@ -147,11 +145,13 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+STATICFILES_DIRS = [os.path.join(BASE_DIR, "theme", "static_src")]  # Tailwind static files
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")  # Where collectstatic will store files
+
 
 
 # Default primary key field type
-# https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
@@ -164,16 +164,16 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 
-SESSION_COOKIE_AGE = 10
-SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+# SESSION_COOKIE_AGE = 600
+# SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 
 #Email verification
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_HOST_USER = email  # Your Gmail address
-EMAIL_HOST_PASSWORD = password # Your Gmail app password
-DEFAULT_FROM_EMAIL = email 
+EMAIL_HOST_USER = env("EMAIL_HOST_USER")  # Your Gmail address
+EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD") # Your Gmail app password
+DEFAULT_FROM_EMAIL = env("EMAIL_HOST_USER")  # Your Gmail address
+EMAIL_USE_SSL = True
+EMAIL_PORT = 465
 
 
-
-PASSWORD_RESET_TIMEOUT = 60  # Time in seconds (3600 = 1 hour)

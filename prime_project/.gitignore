@@ -1,0 +1,125 @@
+# Environment variables
+.env
+*.env
+*.venv
+
+# Byte-compiled / cached files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Secret keys, credentials, API keys (if stored in JSON/YAML)
+*.pem
+*.key
+*.crt
+*.pfx
+*.p12
+*.der
+secrets.json
+config.json
+settings_local.py
+
+
+# Environment variables
+.env
+*.env
+*.venv
+
+# Byte-compiled / cached files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Secret keys, credentials, API keys (if stored in JSON/YAML)
+*.pem
+*.key
+*.crt
+*.pfx
+*.p12
+*.der
+secrets.json
+config.json
+settings_local.py
+
+# Virtualenv / Pipenv / Poetry
+venv/
+env/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+Pipfile
+Pipfile.lock
+poetry.lock
+
+
+# SQLite database
+db.sqlite3
+db.sqlite3-journal
+
+# PostgreSQL
+*.dump
+*.sql
+
+# Redis, Celery, Cache
+celerybeat-schedule
+*.cache
+
+
+# Static files
+/static/
+/staticfiles/
+
+# Media uploads
+/media/
+
+# Logs
+*.log
+logs/
+debug.log
+
+# Node modules
+node_modules/
+npm-debug.log*
+yarn-error.log
+yarn-debug.log
+package-lock.json
+
+# Docker files
+docker-compose.override.yml
+.dockerignore
+
+# Kubernetes files
+*.kubeconfig
+*.k8s.yaml
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# JetBrains / PyCharm
+.idea/
+*.iml
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Eclipse
+.project
+.classpath
+.settings/
+
+# Git merge conflicts
+*.orig
+
+# MacOS
+.DS_Store
+
+# Windows
+Thumbs.db
+Desktop.ini
+
+# Linux
+*~
