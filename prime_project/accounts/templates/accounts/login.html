@@ -1,17 +1,101 @@
 {% extends "base.html" %}
-{% block navbar %}
+{% block title %}Login{% endblock %}
+
 <!-- Empty block to remove the navbar -->
-{% endblock %}
 
 {% block content %}
-<h1>Login page</h1>
-<form method = "POST">
-    {% csrf_token %}
-    {{ form.as_p }}
-    
-    <button type = "submit">Login</button>
-    </form>
-    <p>Don't have an account? <a href = "{% url 'signup' %}">Sign up!</a></p>
-    <p>Forgot password? <a href = "{% url 'password_reset' %}">Click here</a></p>
+<div class="min-h-screen flex items-center justify-center bg-gray-50/50 p-4 sm:p-6 lg:p-8">
+    <div class="w-full max-w-md bg-white rounded-xl p-8 relative
+                before:absolute before:inset-0 before:-z-10 before:rounded-xl before:p-1
+                before:bg-gradient-to-r before:from-emerald-500 before:via-blue-500 before:to-purple-500
+                before:animate-border-glow
+                after:absolute after:inset-0 after:-z-10 after:rounded-xl after:bg-white">
+        
+        <div class="text-center mb-8">
+            <h2 class="text-3xl font-bold bg-gradient-to-r from-emerald-600 via-blue-600 to-purple-600 
+                       text-transparent bg-clip-text animate-gradient-x">
+                Welcome Back
+            </h2>
+        </div>
 
+        {% if messages %}
+            {% for message in messages %}
+                <div class="mb-4 p-4 rounded-lg {% if message.tags == 'error' %}bg-red-100 text-red-700{% else %}bg-green-100 text-green-700{% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <form method="POST" class="space-y-6">
+            {% csrf_token %}
+            
+            <!-- User Type Selection -->
+            <!-- <div class="flex justify-center space-x-6 mb-6">
+                <label class="inline-flex items-center">
+                    <input type="radio" name="user_type" value="job_seeker" 
+                           class="form-radio text-blue-600" checked>
+                    <span class="ml-2">Job Seeker</span>
+                </label>
+                <label class="inline-flex items-center">
+                    <input type="radio" name="user_type" value="employer" 
+                           class="form-radio text-blue-600">
+                    <span class="ml-2">Employer</span>
+                </label>
+            </div> -->
+
+            <!-- Username/Email Field -->
+            <div>
+                <label for="username_or_email" class="block text-sm font-medium text-gray-700">
+                    Email
+                </label>
+                <input type="text" id="username_or_email" name="username_or_email" required
+                       class="mt-1 block w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm
+                              focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all
+                              hover:border-blue-400">
+            </div>
+
+            <!-- Password Field -->
+            <div>
+                <label for="password" class="block text-sm font-medium text-gray-700">
+                    Password
+                </label>
+                <input type="password" id="password" name="password" required
+                       class="mt-1 block w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm
+                              focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all
+                              hover:border-blue-400">
+            </div>
+
+            <!-- Remember Me & Forgot Password -->
+            <div class="flex items-center justify-between">
+                <label class="inline-flex items-center">
+                    <input type="checkbox" name="remember" 
+                           class="form-checkbox text-blue-600">
+                    <span class="ml-2 text-sm text-gray-600">Remember me</span>
+                </label>
+                <a href = "{% url 'password_reset' %}" 
+                   class="text-sm text-blue-600 hover:text-blue-800">
+                    Forgot password?
+                </a>
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" 
+                    class="w-full py-3 px-4 rounded-lg text-white text-sm font-medium
+                           bg-gradient-to-r from-emerald-500 via-blue-500 to-purple-500
+                           hover:from-emerald-600 hover:via-blue-600 hover:to-purple-600
+                           transform hover:scale-[1.02] transition-all duration-200">
+                Sign In
+            </button>
+        </form>
+
+        <!-- Sign Up Link -->
+        <p class="mt-6 text-center text-sm text-gray-600">
+            Don't have an account? 
+            <a href = "{% url 'signup' %}" 
+               class="text-blue-600 hover:text-purple-600 transition-colors hover:underline">
+                Sign up
+            </a>
+        </p>
+    </div>
+</div>
 {% endblock %}
