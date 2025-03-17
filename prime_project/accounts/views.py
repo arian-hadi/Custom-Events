@@ -204,10 +204,22 @@ class VerifyUserEmail(View):
         return render(request, "accounts/verify_email.html", {"form": form})
 
 
-# ✅ Login View (Using Your `EmailAuthenticationForm`)
+
 class EmailLoginView(LoginView):
     authentication_form = EmailAuthenticationForm
     template_name = 'accounts/login.html'
+
+    def form_valid(self, form):
+        user = form.get_user()
+
+        if user.is_verified:
+            login(self.request, user)
+            if user.role == 'admin':
+                return redirect('admin_dashboard')  # Redirect to admin dashboard
+            return redirect('user_dashboard')  # Redirect to normal user page
+        else:
+            messages.error(self.request, "Please verify your email before logging in.")
+            return redirect('login')   
 
     def get_success_url(self):
         return reverse_lazy('home')  # Redirect to home page after login
