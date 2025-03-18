@@ -26,7 +26,7 @@
             {% endfor %}
         {% endif %}
 
-        <form method="POST" class="space-y-6">
+        <form method="POST" action="{% url 'login' %}" class="space-y-6">
             {% csrf_token %}
             
             <!-- User Type Selection -->
@@ -48,7 +48,7 @@
                 <label for="username_or_email" class="block text-sm font-medium text-gray-700">
                     Email
                 </label>
-                <input type="text" id="username_or_email" name="username_or_email" required
+                <input type="email" id="username" name="username" required
                        class="mt-1 block w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm
                               focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all
                               hover:border-blue-400">

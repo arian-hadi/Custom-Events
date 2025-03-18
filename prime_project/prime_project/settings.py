@@ -26,6 +26,8 @@ INSTALLED_APPS = [
     'core.apps.CoreConfig',
     'contact.apps.ContactConfig',
     'accounts.apps.AccountsConfig',
+    'dashboard',
+    'events',
     'tailwind',
     'theme',
 ]
@@ -177,3 +179,5 @@ EMAIL_USE_SSL = True
 EMAIL_PORT = 465
 
 
+LOGIN_REDIRECT_URL = 'dashboard:user_dashboard'  # Change if needed
+LOGIN_URL = 'login'

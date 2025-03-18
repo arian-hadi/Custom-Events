@@ -3,6 +3,7 @@ from .models import CustomUser
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.forms import PasswordResetForm
 from django.contrib.auth import get_user_model
+from django.contrib.auth import authenticate
 import logging
 
 logger = logging.getLogger(__name__)
@@ -30,7 +31,19 @@ class CustomUserCreationForm(forms.ModelForm):
 
     
 class EmailAuthenticationForm(AuthenticationForm):
-    username = forms.EmailField(label = "Email")
+    username = forms.EmailField(label="Email")  # Rename field but internally still 'username'
+
+    def clean(self):
+        """Override the clean method to properly authenticate using email."""
+        email = self.cleaned_data.get("username")  # 'username' refers to email
+        password = self.cleaned_data.get("password")
+
+        if email and password:
+            self.user_cache = authenticate(email=email, password=password)
+            if self.user_cache is None:
+                raise forms.ValidationError("Invalid email or password.")
+
+        return self.cleaned_data
 
 
 User = get_user_model()

@@ -215,14 +215,14 @@ class EmailLoginView(LoginView):
         if user.is_verified:
             login(self.request, user)
             if user.role == 'admin':
-                return redirect('admin_dashboard')  # Redirect to admin dashboard
-            return redirect('user_dashboard')  # Redirect to normal user page
+                return redirect('dashboard:admin_dashboard')  # Redirect to admin dashboard
+            return redirect('dashboard:user_dashboard')  # Redirect to normal user page
         else:
             messages.error(self.request, "Please verify your email before logging in.")
-            return redirect('login')   
+            return redirect('account: login')   
 
-    def get_success_url(self):
-        return reverse_lazy('home')  # Redirect to home page after login
+    # def get_success_url(self):
+    #     return reverse_lazy('home')  # Redirect to home page after login
 
 # ✅ Logout View
 class CustomLogoutView(LogoutView):
