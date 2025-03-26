@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+
+{% block title %}Find Events - EventPortal{% endblock %}
+
+{% block content %}
+<main class="pt-16">
+    <!-- Search Section with Dark Background -->
+    <section class="bg-gradient-to-b from-gray-900 to-gray-800 py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <!-- Search Form -->
+            <div class="max-w-5xl mx-auto bg-white/10 backdrop-blur-md rounded-lg shadow-lg p-3 border border-gray-700 relative group
+                        before:absolute before:w-full before:h-full before:inset-0 before:-z-10
+                        before:bg-gradient-to-r before:from-blue-500/20 before:via-purple-500/20 before:to-pink-500/20 before:rounded-lg
+                        before:opacity-0 hover:before:opacity-100 before:transition-opacity before:duration-500">
+                
+                <form method="GET" class="flex w-full items-center gap-3">
+                    <div class="flex-1 relative">
+                        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+                            <i class="fas fa-search"></i>
+                        </span>
+                        <input type="text" name="search" placeholder="Event title or keyword" 
+                               value="{{ request.GET.search }}"
+                               class="w-full pl-12 pr-4 py-3 bg-white/10 backdrop-blur rounded-md border border-gray-700 text-white
+                                      focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300
+                                      placeholder-gray-400 shadow-[0_0_15px_rgba(59,130,246,0.2)]">
+                    </div>
+                    
+                    <div class="flex-1 relative">
+                        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+                            <i class="fas fa-location-dot"></i>
+                        </span>
+                        <input type="text" name="location" placeholder="Location" 
+                               value="{{ request.GET.location }}"
+                               class="w-full pl-12 pr-4 py-3 bg-white/10 backdrop-blur rounded-md border border-gray-700 text-white
+                                      focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300
+                                      placeholder-gray-400 shadow-[0_0_15px_rgba(59,130,246,0.2)]">
+                    </div>
+
+                    <button type="submit" 
+                            class="px-8 py-3 bg-black text-white rounded-md border border-gray-700
+                                   hover:shadow-[0_0_20px_rgba(59,130,246,0.5)] hover:border-blue-500/50
+                                   transition-all duration-300 transform hover:-translate-y-0.5">
+                        Search
+                    </button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- Event Listings Section -->
+    <section class="bg-gray-50 py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <!-- Results Count -->
+            <div class="mb-6 flex justify-between items-center">
+                <h2 class="text-xl font-semibold text-gray-900">{{ events.count }} Events Found</h2>
+            </div>
+
+            <!-- Event Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {% for event in events %}
+                <div class="bg-white rounded-lg border border-gray-200 hover:border-blue-200 shadow-sm hover:shadow-md transform hover:-translate-y-1 transition-all duration-300 p-6 group cursor-pointer">
+                    <!-- Event Title and Organizer -->
+                    <div class="mb-4">
+                        <h3 class="text-lg font-semibold">
+                            <a href="{% url 'events:event_detail' event.id %}" class="text-gray-900 group-hover:text-blue-600 transition-colors">
+                                {{ event.title }}
+                            </a>
+                        </h3>
+                        <p class="text-gray-600 mt-1 group-hover:text-gray-800 transition-colors">{{ event.organizer.name }}</p>
+                    </div>
+
+                    <!-- Event Details with Icons -->
+                    <div class="grid grid-cols-2 gap-3 text-sm text-gray-600 mb-4">
+                        <!-- Location -->
+                        <div class="flex items-center group-hover:text-gray-800">
+                            <i class="fas fa-map-marker-alt w-5 text-gray-400 group-hover:text-blue-500 transition-colors"></i>
+                            {{ event.location }}
+                        </div>
+
+                        <!-- Date & Time -->
+                        <div class="flex items-center group-hover:text-gray-800">
+                            <i class="fas fa-calendar-alt w-5 text-gray-400 group-hover:text-blue-500 transition-colors"></i>
+                            {{ event.date|date:"F j, Y" }} at {{ event.time|time:"g:i A" }}
+                        </div>
+                    </div>
+
+                    <!-- Event Description -->
+                    <p class="text-gray-600 text-sm mb-4 group-hover:text-gray-800 transition-colors">
+                        {{ event.description|truncatewords:20 }}
+                    </p>
+
+                    <!-- View Details Button -->
+                    <div class="flex justify-end">
+                        <a href="{% url 'events:event_detail' event.id %}" 
+                           class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transform hover:scale-105 transition-all duration-300">
+                            View Details
+                            <i class="fas fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
+                        </a>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="col-span-full text-center py-12">
+                    <div class="text-gray-500">No events found matching your criteria.</div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+</main>
+{% endblock %}

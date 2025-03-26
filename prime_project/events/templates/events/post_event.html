@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="min-h-screen flex items-center justify-center bg-gray-50/50 p-4 sm:p-6 lg:p-8">
+    <div class="w-full max-w-xl bg-white rounded-xl p-8 relative
+                before:absolute before:inset-0 before:-z-10 before:rounded-xl before:p-1
+                before:bg-gradient-to-r before:from-emerald-500 before:via-blue-500 before:to-purple-500
+                before:animate-border-glow
+                after:absolute after:inset-0 after:-z-10 after:rounded-xl after:bg-white">
+        
+        <h2 class="text-3xl font-bold mb-8 text-center
+                   bg-gradient-to-r from-emerald-600 via-blue-600 to-purple-600 
+                   text-transparent bg-clip-text animate-gradient-x">
+            Post a New Event
+        </h2>
+        
+        <form method="POST" class="space-y-6">
+            {% csrf_token %}
+            
+            {% for field in form %}
+            <div class="space-y-1">
+                <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                    {{ field.label }}
+                </label>
+                <input type="{{ field.field.widget.input_type }}" 
+                       name="{{ field.name }}"
+                       id="{{ field.id_for_label }}"
+                       {% if field.field.required %}required{% endif %}
+                       class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm
+                              focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all
+                              hover:border-blue-400">
+            </div>
+            {% endfor %}
+
+            <button type="submit" 
+                    class="w-full py-3 px-4 rounded-lg text-white text-sm font-medium
+                           bg-gradient-to-r from-emerald-500 via-blue-500 to-purple-500
+                           hover:from-emerald-600 hover:via-blue-600 hover:to-purple-600
+                           transform hover:scale-[1.02] transition-all duration-200">
+                Post Event
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}

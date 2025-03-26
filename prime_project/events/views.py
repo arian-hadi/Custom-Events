@@ -46,7 +46,7 @@ def event_detail(request, event_id):
 
     if request.user.is_authenticated:
         has_applied = EventApplication.objects.filter(
-            event=event, user=request.user
+            event=event, applicant=request.user  # Fixed `applicant` instead of `user`
         ).exists()
 
     context = {
@@ -59,14 +59,16 @@ def event_detail(request, event_id):
 @login_required
 def post_event(request):
     """Admins can create new events."""
-    if not request.user.is_staff:  # Use Django's built-in is_staff
+    if request.user.role != "admin":  # Fixed admin check
         messages.error(request, "Only admins can create events.")
         return redirect('home')
 
     if request.method == 'POST':
         form = EventForm(request.POST)
         if form.is_valid():
-            event = form.save()
+            event = form.save(commit=False)
+            event.created_by = request.user  # Ensure the event creator is stored
+            event.save()
             messages.success(request, "Event posted successfully!")
             return redirect('events:event_detail', event_id=event.id)
     else:
@@ -74,23 +76,27 @@ def post_event(request):
 
     return render(request, 'events/post_event.html', {'form': form})
 
-
 @login_required
 def apply_event(request, event_id):
     """Members can apply to an event."""
-    if not request.user.groups.filter(name='Members').exists():  # Check if user is in 'Members' group
+    if request.user.role != "user":  # Fixed user role check
         messages.error(request, "Only members can apply for events.")
         return redirect('events:event_detail', event_id=event_id)
 
     event = get_object_or_404(Event, id=event_id, is_active=True)
     
-    if EventApplication.objects.filter(event=event, user=request.user).exists():
+    if EventApplication.objects.filter(event=event, applicant=request.user).exists():
         messages.info(request, "You have already applied for this event.")
         return redirect('events:event_detail', event_id=event_id)
 
     if request.method == 'POST':
-        EventApplication.objects.create(event=event, user=request.user)
-        messages.success(request, "Application submitted successfully!")
-        return redirect('dashboard:member_dashboard')
+        form = EventApplicationForm(request.POST)
+        if form.is_valid():
+            application = form.save(commit=False)
+            application.event = event
+            application.applicant = request.user
+            application.save()
+            messages.success(request, "Application submitted successfully!")
+            return redirect('dashboard:member_dashboard')
 
     return redirect('events:event_detail', event_id=event_id)

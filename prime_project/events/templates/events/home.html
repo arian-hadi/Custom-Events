@@ -1,0 +1,186 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Welcome to EventHub{% endblock %}
+
+{% block content %}
+<main>
+    <style>
+        /* Hero Section Styling */
+        .hero-section {
+            background: linear-gradient(120deg, #4f46e5, #9333ea);
+            color: white;
+            padding: 4rem 1rem 6rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-section .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 10;
+        }
+
+        .hero-section h1 {
+            font-size: 3rem;
+            font-weight: bold;
+            line-height: 2;
+            margin-bottom: 1.5rem;
+        }
+
+        .hero-section h1 span {
+            background: linear-gradient(90deg, #ff6b6b, #fbc531);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero-section p {
+            font-size: 1rem;
+            color: white;
+            margin-bottom: 2rem;
+        }
+
+        /* Compact Search Bar */
+        .search-bar {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 30px;
+            padding: 0.5rem 1rem;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            align-items: left;
+            width: 60%;
+            margin-left: 20%;
+        }
+
+        .search-bar input {
+            flex: 1;
+            padding: 0.6rem 1rem;
+            border-radius: 20px;
+            border: none;
+            outline: none;
+            font-size: 0.9rem;
+            color: #111827;
+        }
+
+        .search-bar input::placeholder {
+            color: #6b7280;
+            font-weight: 400;
+            font-family: 'Inter', sans-serif;
+            text-align: center;
+        }
+
+        .search-bar button {
+            padding: 0.6rem 1.5rem;
+            background-color: #2563eb;
+            color: white;
+            font-size: 0.9rem;
+            font-weight: bold;
+            border-radius: 20px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .search-bar button:hover {
+            background-color: #1e40af;
+            transform: scale(1.05);
+        }
+
+        /* Image Animations */
+        .image-row {
+            margin-top: 3rem;
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+        }
+
+        .image-row img {
+            width: 8rem;
+            height: 8rem;
+            border-radius: 0.75rem;
+            object-fit: cover;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .image-row img:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Decorative Background */
+        .circle-bg {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 40rem;
+            height: 40rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 0;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .search-bar {
+                flex-direction: column;
+                width: 90%;
+                margin-left: 5%;
+                padding: 1rem;
+            }
+
+            .search-bar input {
+                width: 100%;
+                margin-bottom: 0.5rem;
+            }
+
+            .image-row {
+                flex-wrap: wrap;
+            }
+
+            .image-row img {
+                width: 6rem;
+                height: 6rem;
+            }
+        }
+    </style>
+
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="circle-bg"></div>
+        <div class="container">
+            <!-- Main Heading -->
+            <h1>
+                Find <span>Exciting Events</span> Near You
+            </h1>
+            <p>
+                Search for upcoming events, workshops, and networking opportunities happening in your city.
+            </p>
+
+            <!-- Search Bar -->
+            <form method="GET" action="{% url 'events:event_list' %}" class="search-bar">
+                <input type="text" name="search" placeholder="Event name or keyword" required>
+                <input type="text" name="location" placeholder="Location" required>
+                <button type="submit">Search</button>
+            </form>
+
+            <!-- Images with Hover Animation -->
+            <div class="image-row">
+                <img src="{% static 'images/event1.jpg' %}" alt="Event Image">
+                <img src="{% static 'images/event2.jpg' %}" alt="Event Image">
+                <img src="{% static 'images/event3.jpg' %}" alt="Event Image">
+            </div>
+        </div>
+    </section>
+
+    <!-- Additional Sections -->
+    <!-- {% include 'events/sections/featured_events.html' %}
+    {% include 'events/sections/categories.html' %}
+    {% include 'events/sections/how_it_works.html' %} -->
+</main>
+{% endblock %}

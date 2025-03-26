@@ -8,7 +8,7 @@ urlpatterns = [
     path('contact/', include('contact.urls')),
     path('',include('core.urls')),
     path('events/', include('events.urls')),
-    path('dashboard/', include('dashboard.urls')),
+    path('dashboard/', include('dashboard.urls', namespace='dashboard')),
     path('accounts/', include('accounts.urls')),
   
 ]

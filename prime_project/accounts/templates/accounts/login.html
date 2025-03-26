@@ -28,58 +28,36 @@
 
         <form method="POST" action="{% url 'login' %}" class="space-y-6">
             {% csrf_token %}
-            
-            <!-- User Type Selection -->
-            <div class="flex justify-center space-x-6 mb-6">
-                <label class="inline-flex items-center">
-                    <input type="radio" name="user_type" value="member" 
-                           class="form-radio text-blue-600" checked>
-                    <span class="ml-2">Normal member</span>
-                </label>
-                <label class="inline-flex items-center">
-                    <input type="radio" name="user_type" value="admin" 
-                           class="form-radio text-blue-600">
-                    <span class="ml-2">Admin</span>
-                </label>
-            </div>
-
-            <!-- Username/Email Field -->
+        
+            <!-- Email Input -->
             <div>
-                <label for="username_or_email" class="block text-sm font-medium text-gray-700">
-                    Email
-                </label>
-                <input type="email" id="username" name="username" required
+                <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
+                <input type="email" id="email" name="username" required
                        class="mt-1 block w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm
                               focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all
                               hover:border-blue-400">
             </div>
-
-            <!-- Password Field -->
+        
+            <!-- Password Input -->
             <div>
-                <label for="password" class="block text-sm font-medium text-gray-700">
-                    Password
-                </label>
+                <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
                 <input type="password" id="password" name="password" required
                        class="mt-1 block w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm
                               focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all
                               hover:border-blue-400">
             </div>
-
-            <!-- Remember Me & Forgot Password -->
+        
             <div class="flex items-center justify-between">
                 <label class="inline-flex items-center">
-                    <input type="checkbox" name="remember" 
-                           class="form-checkbox text-blue-600">
+                    <input type="checkbox" name="remember" class="form-checkbox text-blue-600">
                     <span class="ml-2 text-sm text-gray-600">Remember me</span>
                 </label>
-                <a href = "{% url 'password_reset' %}" 
-                   class="text-sm text-blue-600 hover:text-blue-800">
+                <a href="{% url 'password_reset' %}" class="text-sm text-blue-600 hover:text-blue-800">
                     Forgot password?
                 </a>
             </div>
-
-            <!-- Submit Button -->
-            <button type="submit" 
+        
+            <button type="submit"
                     class="w-full py-3 px-4 rounded-lg text-white text-sm font-medium
                            bg-gradient-to-r from-emerald-500 via-blue-500 to-purple-500
                            hover:from-emerald-600 hover:via-blue-600 hover:to-purple-600
@@ -87,6 +65,8 @@
                 Sign In
             </button>
         </form>
+        
+        
 
         <!-- Sign Up Link -->
         <p class="mt-6 text-center text-sm text-gray-600">

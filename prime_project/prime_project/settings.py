@@ -178,6 +178,3 @@ DEFAULT_FROM_EMAIL = env("EMAIL_HOST_USER")  # Your Gmail address
 EMAIL_USE_SSL = True
 EMAIL_PORT = 465
 
-
-LOGIN_REDIRECT_URL = 'dashboard:user_dashboard'  # Change if needed
-LOGIN_URL = 'login'

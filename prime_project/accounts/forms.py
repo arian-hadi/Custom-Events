@@ -2,19 +2,22 @@ from django import forms
 from .models import CustomUser
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.forms import PasswordResetForm
+from django.contrib.auth.forms import UserChangeForm, UserCreationForm
 from django.contrib.auth import get_user_model
 from django.contrib.auth import authenticate
 import logging
 
 logger = logging.getLogger(__name__)
+User = get_user_model()
 
-class CustomUserCreationForm(forms.ModelForm):
+class CustomUserCreationForm(UserCreationForm):
     password1 = forms.CharField(label="Password", widget=forms.PasswordInput)
     password2 = forms.CharField(label="Confirm Password", widget=forms.PasswordInput)
 
     class Meta:
-        model = CustomUser
-        fields = ['email', 'username'] 
+        model = User
+        fields = ['email', 'username']  # Since 'email' is your login field
+
     def clean_password2(self):
         password1 = self.cleaned_data.get("password1")
         password2 = self.cleaned_data.get("password2")
@@ -24,29 +27,25 @@ class CustomUserCreationForm(forms.ModelForm):
 
     def save(self, commit=True):
         user = super().save(commit=False)
-        user.set_password(self.cleaned_data["password1"])
+        user.set_password(self.cleaned_data["password1"])  # Hash the password
         if commit:
             user.save()
         return user
-
     
 class EmailAuthenticationForm(AuthenticationForm):
-    username = forms.EmailField(label="Email")  # Rename field but internally still 'username'
+    username = forms.EmailField(label="Email")  # Override the default username field with email
 
     def clean(self):
-        """Override the clean method to properly authenticate using email."""
-        email = self.cleaned_data.get("username")  # 'username' refers to email
+        """Override clean to authenticate using email."""
+        email = self.cleaned_data.get("username")  # Here 'username' stores email due to form field label
         password = self.cleaned_data.get("password")
 
         if email and password:
-            self.user_cache = authenticate(email=email, password=password)
+            self.user_cache = authenticate(username=email, password=password)  # Use 'email' explicitly
             if self.user_cache is None:
                 raise forms.ValidationError("Invalid email or password.")
-
         return self.cleaned_data
 
-
-User = get_user_model()
 
 class CustomPasswordResetForm(PasswordResetForm):
     def save(self, *args, **kwargs):
