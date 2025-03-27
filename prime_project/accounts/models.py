@@ -69,6 +69,15 @@ class CustomUser(AbstractUser):
 
     def __str__(self):
         return self.email
+    
+    def get_username(self):
+        return self.username
+    
+    def is_member(self):
+        return self.role == 'member'
+    
+    def is_admin(self):
+        return self.role == 'admin'
 
 class OneTimePassword(models.Model):
     user = models.ForeignKey(CustomUser,on_delete=models.CASCADE)

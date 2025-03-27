@@ -92,17 +92,28 @@ class EmailLoginView(LoginView):
         user = form.get_user()
         logger.info(f"Attempting login for user: {user.email}")
 
-        if user.is_authenticated and user.is_verified:  # Ensure the user is authenticated
-            login(self.request, user)
-            logger.info(f"User {user.email} logged in successfully.")
-
-            if user.is_admin():
-                return redirect('dashboard:admin_dashboard')
-            return redirect('dashboard:user_dashboard')
-        else:
-            logger.warning(f"User {user.email} is not verified or not authenticated.")
+        if not user.is_verified:
+            logger.warning(f"User {user.email} is not verified")
             messages.error(self.request, "Please verify your email before logging in.")
-            return redirect('login')
+            return self.form_invalid(form)
+
+        if not user.is_active:
+            logger.warning(f"User {user.email} is not active")
+            messages.error(self.request, "Your account is not active.")
+            return self.form_invalid(form)
+
+        login(self.request, user)
+        logger.info(f"User {user.email} logged in successfully.")
+
+        if user.is_admin():
+            return redirect('dashboard:admin_dashboard')
+        return redirect('dashboard:user_dashboard')
+
+    def form_invalid(self, form):
+        logger.warning(f"Login failed. Form data: {self.request.POST}")
+        logger.warning(f"Form errors: {form.errors}")
+        messages.error(self.request, "Invalid email or password.")
+        return super().form_invalid(form)
 
 
 
