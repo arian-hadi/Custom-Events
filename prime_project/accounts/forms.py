@@ -17,7 +17,7 @@ class CustomUserCreationForm(UserCreationForm):
 
     class Meta:
         model = User
-        fields = ['email', 'username']  # Since 'email' is your login field
+        fields = ['email', 'username']  # Updated to only include email and username (since 'display_username' was removed)
 
     def clean_password2(self):
         password1 = self.cleaned_data.get("password1")
@@ -28,7 +28,7 @@ class CustomUserCreationForm(UserCreationForm):
 
     def save(self, commit=True):
         user = super().save(commit=False)
-        user.set_password(self.cleaned_data["password1"])  # Hash the password
+        user.set_password(self.cleaned_data["password1"])
         if commit:
             user.save()
         return user

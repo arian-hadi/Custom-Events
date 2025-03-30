@@ -178,20 +178,3 @@ DEFAULT_FROM_EMAIL = env("EMAIL_HOST_USER")  # Your Gmail address
 EMAIL_USE_SSL = True
 EMAIL_PORT = 465
 
-if DEBUG:
-    LOGGING = {
-        'version': 1,
-        'disable_existing_loggers': False,
-        'handlers': {
-            'console': {
-                'class': 'logging.StreamHandler',
-            },
-        },
-        'loggers': {
-            'accounts': {
-                'handlers': ['console'],
-                'level': 'DEBUG',
-            },
-        },
-    }
-

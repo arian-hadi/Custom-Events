@@ -7,25 +7,34 @@ User = get_user_model()
 logger = logging.getLogger(__name__)
 
 class EmailBackend(BaseBackend):
-    def authenticate(self, request, username=None, password=None, **kwargs):
+    """
+    Custom authentication backend that allows users to log in using their email.
+    """
+
+    def authenticate(self, request, email=None, password=None, **kwargs):
+        """
+        Authenticate a user by their email and password.
+        """
         try:
-            user = User.objects.get(email=username)
-            logger.info(f"Found user with email: {username}")
-            
+            user = User.objects.get(email=email)
+            logger.info(f"User found: {email}")
+
             if user.check_password(password):
-                logger.info(f"Password check successful for user: {username}")
+                logger.info(f"Password correct for user: {email}")
                 return user
             else:
-                logger.warning(f"Password check failed for user: {username}")
+                logger.warning(f"Invalid password for user: {email}")
                 return None
-                
+
         except User.DoesNotExist:
-            logger.warning(f"No user found with email: {username}")
+            logger.warning(f"User with email {email} does not exist")
             return None
 
     def get_user(self, user_id):
+        """
+        Retrieve a user by their ID.
+        """
         try:
             return User.objects.get(pk=user_id)
         except User.DoesNotExist:
             return None
-
