@@ -46,39 +46,44 @@
                 </a>
 
                 {% if user.is_authenticated %}
-                    {% if user.is_employer %}
-                        <a href="#" 
-                           class="relative flex items-center text-gray-600 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-colors duration-300 group">
-                            <!-- Add job icon -->
-                            <svg class="w-5 h-5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                                      d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                            </svg>
-                            Post a Job
-                            <span class="absolute bottom-0 left-0 w-full h-0.5 bg-blue-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></span>
-                        </a>
-                        <a href="#" 
-                           class="relative flex items-center text-gray-600 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-colors duration-300 group">
-                            <!-- Dashboard icon -->
-                            <svg class="w-5 h-5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                                      d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
-                            </svg>
-                            Dashboard
-                            <span class="absolute bottom-0 left-0 w-full h-0.5 bg-blue-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></span>
-                        </a>
-                    {% elif user.is_job_seeker %}
-                        <a href="#" 
-                           class="relative flex items-center text-gray-600 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-colors duration-300 group">
-                            <!-- User dashboard icon -->
-                            <svg class="w-5 h-5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                            </svg>
-                            Dashboard
-                            <span class="absolute bottom-0 left-0 w-full h-0.5 bg-blue-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></span>
-                        </a>
-                    {% endif %}
+                {% if user.role == 'admin' %}
+                    <!-- Create Event (Admin Only) -->
+                    <a href="{% url 'events:event_list' %}" 
+                       class="relative flex items-center text-gray-600 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-colors duration-300 group">
+                        <!-- Create Event Icon -->
+                        <svg class="w-5 h-5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                  d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        Create Event
+                        <span class="absolute bottom-0 left-0 w-full h-0.5 bg-blue-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></span>
+                    </a>
+            
+                    <!-- Admin Dashboard -->
+                    <a href="{% url 'dashboard:admin_dashboard' %}" 
+                       class="relative flex items-center text-gray-600 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-colors duration-300 group">
+                        <!-- Dashboard Icon -->
+                        <svg class="w-5 h-5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                  d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
+                        </svg>
+                        Dashboard
+                        <span class="absolute bottom-0 left-0 w-full h-0.5 bg-blue-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></span>
+                    </a>
+            
+                {% elif user.role == 'user' %}
+                    <!-- User Dashboard -->
+                    <a href="{% url 'dashboard:user_dashboard' %}" 
+                       class="relative flex items-center text-gray-600 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-colors duration-300 group">
+                        <!-- User Icon -->
+                        <svg class="w-5 h-5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                        </svg>
+                        Dashboard
+                        <span class="absolute bottom-0 left-0 w-full h-0.5 bg-blue-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></span>
+                    </a>
+                {% endif %}
                     <a href="{% url 'logout' %}" 
                        class="relative flex items-center text-gray-600 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-colors duration-300 group">
                         <!-- Logout icon -->
