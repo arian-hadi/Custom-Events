@@ -15,14 +15,14 @@ def admin_dashboard(request):
         messages.error(request, "Access denied. Admin account required.")
         return redirect('home')
 
-    hosted_events = Event.objects.filter(host=request.user)
-    recent_applications = EventApplication.objects.filter(event__host=request.user).order_by('-applied_date')[:5]
+    hosted_events = Event.objects.filter(created_by=request.user)
+    recent_applications = EventApplication.objects.filter(event__created_by=request.user)
 
     context = {
         'hosted_events': hosted_events,
         'recent_applications': recent_applications,
         'total_events': hosted_events.count(),
-        'total_applications': EventApplication.objects.filter(event__host=request.user).count(),
+        'total_applications': EventApplication.objects.filter(event__created_by=request.user).count(),
     }
     return render(request, 'dashboard/admin_dashboard.html', context)
 
@@ -48,7 +48,7 @@ def manage_application(request, application_id):
         messages.error(request, "Access denied.")
         return redirect('home')
 
-    application = get_object_or_404(EventApplication, id=application_id, event__host=request.user)
+    application = get_object_or_404(EventApplication, id=application_id, event__created_by=request.user)
 
     if request.method == 'POST':
         new_status = request.POST.get('status')
