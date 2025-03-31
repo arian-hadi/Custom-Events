@@ -67,7 +67,7 @@
                                     <p class="text-gray-600">You have already registered for this event</p>
                                 </div>
                             {% else %}
-                                <form method="POST" action="{% url 'events:register_event' event.id %}">
+                                <form method="POST" action="{% url 'events:apply_event' event.id %}">
                                     {% csrf_token %}
                                     {{ registration_form.as_p }}
                                     <button type="submit" class="w-full bg-custom text-white rounded-md py-2 px-4 hover:bg-custom-dark transition-colors">

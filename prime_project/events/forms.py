@@ -2,15 +2,14 @@ from django import forms
 from .models import Event, EventApplication
 
 class EventForm(forms.ModelForm):
-    """Form for admins to create an event."""
     class Meta:
         model = Event
-        fields = ['title', 'description', 'deadline']
+        fields = ['title', 'description', 'deadline', 'date']  # <-- Add 'date'
         widgets = {
             'deadline': forms.DateInput(attrs={'type': 'date'}),
+            'date': forms.DateInput(attrs={'type': 'date'}),  # <-- Add this line too
             'description': forms.Textarea(attrs={'rows': 4}),
         }
-
 class EventApplicationForm(forms.ModelForm):
     """Form for members to apply for an event dynamically."""
     def __init__(self, *args, **kwargs):
