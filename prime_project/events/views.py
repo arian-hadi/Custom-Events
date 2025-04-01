@@ -60,7 +60,8 @@ def add_event_fields(request):
                     description=event_data['description'],
                     deadline=datetime.fromisoformat(event_data['deadline']),
                     date=datetime.fromisoformat(event_data['date']),
-                    created_by=request.user
+                    created_by=request.user,
+                    is_active=False
                 )
                 request.session['created_event_id'] = event.id
             else:
@@ -91,8 +92,17 @@ def add_event_fields(request):
 
 @login_required
 def finish_event_creation(request):
+    event_id = request.session.get('created_event_id')
+
+    if event_id:
+        event = get_object_or_404(Event, id=event_id, created_by=request.user)
+        event.is_active = True  # ✅ Make event public now
+        event.save()
+
+    # Clear session data
     request.session.pop('event_data', None)
     request.session.pop('created_event_id', None)
+
     messages.success(request, "Event created and published successfully!")
     return redirect('dashboard:admin_dashboard')
 
