@@ -14,7 +14,7 @@
             Post a New Event
         </h2>
         
-        <form method="POST" class="space-y-6">
+        <form method="POST" action="{% url 'events:event_info_step' %}" class="space-y-6">
             {% csrf_token %}
             
             {% for field in form %}
@@ -37,7 +37,7 @@
                            bg-gradient-to-r from-emerald-500 via-blue-500 to-purple-500
                            hover:from-emerald-600 hover:via-blue-600 hover:to-purple-600
                            transform hover:scale-[1.02] transition-all duration-200">
-                Post Event
+                Continue to Add Fields
             </button>
         </form>
     </div>

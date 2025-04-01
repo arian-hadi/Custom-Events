@@ -15,9 +15,9 @@
         </h2>
         <p class="text-center text-sm text-gray-500 mb-6">Event: <strong>{{ event.title }}</strong></p>
 
-        <form method="POST" class="space-y-6">
+        <form method="POST" action="" class="space-y-6">
             {% csrf_token %}
-            
+        
             {% for field in form %}
             <div class="space-y-1">
                 <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700">
@@ -29,13 +29,25 @@
                 {% endif %}
             </div>
             {% endfor %}
-
+        
             <button type="submit" 
                     class="w-full py-3 px-4 rounded-lg text-white text-sm font-medium
                            bg-gradient-to-r from-emerald-500 via-blue-500 to-purple-500
                            hover:from-emerald-600 hover:via-blue-600 hover:to-purple-600
                            transform hover:scale-[1.02] transition-all duration-200">
                 Add Field
+            </button>
+        </form>
+        
+        <!-- Separate form to finish the event -->
+        <form method="POST" action="{% url 'events:finish_event_creation' %}">
+            {% csrf_token %}
+            <button type="submit" 
+                    class="mt-4 w-full py-3 px-4 rounded-lg text-white text-sm font-medium
+                           bg-gradient-to-r from-emerald-500 via-blue-500 to-purple-500
+                           hover:from-emerald-600 hover:via-blue-600 hover:to-purple-600
+                           transform hover:scale-[1.02] transition-all duration-200">
+                Post Event
             </button>
         </form>
         

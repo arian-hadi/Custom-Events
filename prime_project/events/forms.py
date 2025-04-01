@@ -2,6 +2,7 @@ from django import forms
 from .models import Event, EventApplication, EventField
 
 
+
 class EventFieldForm(forms.ModelForm):
     class Meta:
         model = EventField
@@ -20,6 +21,11 @@ class EventForm(forms.ModelForm):
             'date': forms.DateInput(attrs={'type': 'date'}),  # <-- Add this line too
             'description': forms.Textarea(attrs={'rows': 4}),
         }
+
+
+
+
+
 class EventApplicationForm(forms.ModelForm):
     """Form for members to apply for an event dynamically."""
     def __init__(self, *args, **kwargs):
@@ -49,3 +55,6 @@ class EventSearchForm(forms.Form):
     search = forms.CharField(required=False, widget=forms.TextInput(
         attrs={'placeholder': 'Event title or keyword'}
     ))
+
+
+
