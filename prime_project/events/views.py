@@ -69,7 +69,7 @@ def event_list(request):
 def event_detail(request, event_id):
     """Show event details and allow members to apply."""
     event = get_object_or_404(Event, id=event_id, is_active=True)
-    application_form = EventApplicationForm() if request.user.is_authenticated else None
+    application_form = EventApplicationForm(event = event) if request.user.is_authenticated else None
     has_applied = False
 
     if request.user.is_authenticated:
