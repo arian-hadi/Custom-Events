@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="min-h-screen flex items-center justify-center bg-gray-50/50 p-4 sm:p-6 lg:p-8">
+    <div class="w-full max-w-xl bg-white rounded-xl p-8 relative
+                before:absolute before:inset-0 before:-z-10 before:rounded-xl before:p-1
+                before:bg-gradient-to-r before:from-emerald-500 before:via-blue-500 before:to-purple-500
+                before:animate-border-glow
+                after:absolute after:inset-0 after:-z-10 after:rounded-xl after:bg-white">
+        
+        <h2 class="text-3xl font-bold mb-2 text-center
+                   bg-gradient-to-r from-emerald-600 via-blue-600 to-purple-600 
+                   text-transparent bg-clip-text animate-gradient-x">
+            Add Custom Fields
+        </h2>
+        <p class="text-center text-sm text-gray-500 mb-6">Event: <strong>{{ event.title }}</strong></p>
+
+        <form method="POST" class="space-y-6">
+            {% csrf_token %}
+            
+            {% for field in form %}
+            <div class="space-y-1">
+                <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                    {{ field.label }}
+                </label>
+                {{ field }}
+                {% if field.errors %}
+                <p class="text-sm text-red-500">{{ field.errors.0 }}</p>
+                {% endif %}
+            </div>
+            {% endfor %}
+
+            <button type="submit" 
+                    class="w-full py-3 px-4 rounded-lg text-white text-sm font-medium
+                           bg-gradient-to-r from-emerald-500 via-blue-500 to-purple-500
+                           hover:from-emerald-600 hover:via-blue-600 hover:to-purple-600
+                           transform hover:scale-[1.02] transition-all duration-200">
+                Add Field
+            </button>
+        </form>
+
+        {% if fields %}
+        <div class="mt-10">
+            <h3 class="text-lg font-semibold text-gray-800 mb-2">Existing Fields</h3>
+            <ul class="list-disc pl-5 text-sm text-gray-700 space-y-1">
+                {% for field in fields %}
+                    <li>{{ field.name }} ({{ field.get_field_type_display }})</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

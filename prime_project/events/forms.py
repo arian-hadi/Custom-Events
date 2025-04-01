@@ -1,5 +1,15 @@
 from django import forms
-from .models import Event, EventApplication
+from .models import Event, EventApplication, EventField
+
+
+class EventFieldForm(forms.ModelForm):
+    class Meta:
+        model = EventField
+        fields = ['name', 'field_type']
+        widgets = {
+            'field_type': forms.Select(choices=EventField.FIELD_TYPES)
+        }
+
 
 class EventForm(forms.ModelForm):
     class Meta:
