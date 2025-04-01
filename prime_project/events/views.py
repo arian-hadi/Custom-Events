@@ -97,6 +97,6 @@ def apply_event(request, event_id):
             application.applicant = request.user
             application.save()
             messages.success(request, "Application submitted successfully!")
-            return redirect('dashboard:member_dashboard')
+            return redirect('dashboard:user_dashboard')
 
     return redirect('events:event_detail', event_id=event_id)
