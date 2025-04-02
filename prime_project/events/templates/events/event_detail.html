@@ -68,7 +68,7 @@
                                     <p class="text-white font-medium">You have already applied for this event.</p>
                                 </div>
                             {% else %}
-                                <form method="POST" action="{% url 'events:apply_event' event.id %}">
+                                <!-- <form method="POST" action="{% url 'events:apply_event' event.id %}">
                                     {% csrf_token %}
                                     <div class="space-y-4 text-white">
                                         {{ application_form.as_p }}
@@ -76,7 +76,11 @@
                                     <button type="submit" class="mt-4 w-full bg-white text-blue-700 rounded-md py-2 px-4 font-semibold hover:bg-gray-100 transition-colors">
                                         Apply Now
                                     </button>
-                                </form>
+                                </form> -->
+                                <a href="{% url 'events:apply_event' event.id %}"
+                                class="block w-full bg-custom text-white rounded-md py-2 px-4 hover:bg-custom-dark transition-colors text-center">
+                                    Apply Now
+                                </a>
                             {% endif %}
                         {% else %}
                             <div class="text-center">

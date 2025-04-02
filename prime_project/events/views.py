@@ -204,5 +204,10 @@ def apply_event(request, event_id):
             application.save()
             messages.success(request, "Application submitted successfully!")
             return redirect('dashboard:user_dashboard')
+    else:
+        form = EventApplicationForm(event=event)
 
-    return redirect('events:event_detail', event_id=event_id)
+    return render(request, 'events/apply_event.html', {
+        'form': form,
+        'event': event,
+    })
