@@ -202,10 +202,29 @@ def apply_event(request, event_id):
             application.event = event
             application.applicant = request.user
             application.save()
+            for field in event.custom_fields.all():
+                field_name = f'field_{field.id}'
+                if field_name in form.cleaned_data:
+                    value = form.cleaned_data[field_name]
+
+                    # Update the field value on the EventField object
+                    if field.field_type == 'text':
+                        field.value_text = value
+                    elif field.field_type == 'number':
+                        field.value_number = value
+                    elif field.field_type == 'date':
+                        field.value_date = value
+                    elif field.field_type == 'boolean':
+                        field.value_boolean = value if value is True else False
+
+                    field.save()
             messages.success(request, "Application submitted successfully!")
             return redirect('dashboard:user_dashboard')
+        
     else:
         form = EventApplicationForm(event=event)
+    
+    
 
     return render(request, 'events/apply_event.html', {
         'form': form,
