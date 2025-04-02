@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<section class="bg-gray-50 py-16">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Application Header -->
+        <div class="bg-white rounded-xl shadow-lg p-8 mb-8">
+            <h1 class="text-3xl font-bold text-gray-900 mb-2">
+                Application for: {{ event.title }}
+            </h1>
+            <p class="text-gray-600">Submitted by <strong>{{ applicant.username }}</strong> on {{ application.applied_date|date:"M d, Y H:i" }}</p>
+        </div>
+
+        <!-- Applicant Info -->
+        <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+            <h2 class="text-xl font-bold text-gray-900 mb-4">Applicant Info</h2>
+            <div class="space-y-2 text-gray-700">
+                <p><strong>Username:</strong> {{ applicant.username }}</p>
+                <p><strong>Email:</strong> {{ applicant.email }}</p>
+            </div>
+        </div>
+
+        <!-- Custom Field Answers -->
+        <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+            <h2 class="text-xl font-bold text-gray-900 mb-4">Submitted Answers</h2>
+            {% if custom_fields %}
+                <ul class="list-disc pl-5 space-y-2 text-gray-700">
+                    {% for field in custom_fields %}
+                        <li>
+                            <strong>{{ field.name }}:</strong>
+                            {% if field.field_type == 'text' %}{{ field.value_text }}
+                            {% elif field.field_type == 'number' %}{{ field.value_number }}
+                            {% elif field.field_type == 'date' %}{{ field.value_date }}
+                            {% elif field.field_type == 'boolean' %}{{ field.value_boolean|yesno:"Yes,No" }}
+                            {% endif %}
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p class="text-gray-500">No field data submitted.</p>
+            {% endif %}
+        </div>
+
+        <!-- Status Form -->
+        <div class="bg-white rounded-xl shadow-lg p-6">
+            <h2 class="text-xl font-bold text-gray-900 mb-4">Update Application Status</h2>
+            <form method="POST">
+                {% csrf_token %}
+                <div class="mb-4">
+                    <label for="status" class="block mb-2 text-sm font-medium text-gray-700">Status</label>
+                    <select name="status" id="status" class="w-full border-gray-300 rounded-md shadow-sm">
+                        {% for key, label in application.STATUS_CHOICES %}
+                            <option value="{{ key }}" {% if application.status == key %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                    Save Status
+                </button>
+            </form>
+        </div>
+    </div>
+</section>
+{% endblock %}

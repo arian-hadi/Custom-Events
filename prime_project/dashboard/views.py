@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from events.models import Event, EventApplication  # Use the correct models
+from events.models import Event, EventApplication # Use the correct models
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
@@ -17,12 +17,14 @@ def admin_dashboard(request):
 
     hosted_events = Event.objects.filter(created_by=request.user)
     recent_applications = EventApplication.objects.filter(event__created_by=request.user)
-
+    pending_applications = recent_applications.filter(status='pending')
+    
     context = {
         'hosted_events': hosted_events,
         'recent_applications': recent_applications,
         'total_events': hosted_events.count(),
         'total_applications': EventApplication.objects.filter(event__created_by=request.user).count(),
+        'pending_applications': pending_applications.count()
     }
     return render(request, 'dashboard/admin_dashboard.html', context)
 
@@ -86,3 +88,34 @@ def withdraw_application(request, application_id):
     messages.success(request, "Application withdrawn successfully!")
 
     return redirect('dashboard:user_dashboard')
+
+
+
+@login_required
+def application_detail(request, application_id):
+    if request.user.role != 'admin':
+        messages.error(request, "Access denied.")
+        return redirect('home')
+
+    application = get_object_or_404(EventApplication, id=application_id, event__created_by=request.user)
+    event = application.event
+    applicant = application.applicant
+    custom_fields = event.custom_fields.all()
+
+    # Collect user responses if applicable
+    # (we'll keep this flexible depending on your dynamic form system)
+
+    if request.method == 'POST':
+        new_status = request.POST.get('status')
+        if new_status in dict(EventApplication.STATUS_CHOICES):
+            application.status = new_status
+            application.save()
+            messages.success(request, "Application status updated.")
+            return redirect('dashboard:admin_dashboard')
+
+    return render(request, 'dashboard/application_detail.html', {
+        'application': application,
+        'event': event,
+        'applicant': applicant,
+        'custom_fields': custom_fields,
+    })
