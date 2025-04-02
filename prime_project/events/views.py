@@ -3,7 +3,7 @@ from django.contrib import messages
 from django.core.paginator import Paginator
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
-from .models import Event, EventApplication,EventField
+from .models import Event, EventApplication, EventField, EventFieldResponse
 from .forms import EventForm, EventApplicationForm, EventSearchForm,EventFieldForm
 from datetime import datetime
 
@@ -207,17 +207,18 @@ def apply_event(request, event_id):
                 if field_name in form.cleaned_data:
                     value = form.cleaned_data[field_name]
 
-                    # Update the field value on the EventField object
-                    if field.field_type == 'text':
-                        field.value_text = value
-                    elif field.field_type == 'number':
-                        field.value_number = value
-                    elif field.field_type == 'date':
-                        field.value_date = value
-                    elif field.field_type == 'boolean':
-                        field.value_boolean = value if value is True else False
+                    response = EventFieldResponse(application=application, field=field)
 
-                    field.save()
+                    if field.field_type == 'text':
+                        response.value_text = value
+                    elif field.field_type == 'number':
+                        response.value_number = value
+                    elif field.field_type == 'date':
+                        response.value_date = value
+                    elif field.field_type == 'boolean':
+                        response.value_boolean = value if value else False
+
+                    response.save()
             messages.success(request, "Application submitted successfully!")
             return redirect('dashboard:user_dashboard')
         

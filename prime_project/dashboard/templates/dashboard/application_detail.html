@@ -25,21 +25,24 @@
             <h2 class="text-xl font-bold text-gray-900 mb-4">Submitted Answers</h2>
             {% if custom_fields %}
                 <ul class="list-disc pl-5 space-y-2 text-gray-700">
-                    {% for field in custom_fields %}
+                    {% for response in application.field_responses.all %}
                         <li>
-                            <strong>{{ field.name }}:</strong>
-                            {% if field.field_type == 'text' %}{{ field.value_text }}
-                            {% elif field.field_type == 'number' %}{{ field.value_number }}
-                            {% elif field.field_type == 'date' %}{{ field.value_date }}
-                            {% elif field.field_type == 'boolean' %}{{ field.value_boolean|yesno:"Yes,No" }}
+                            <strong>{{ response.field.name }}:</strong>
+                            {% if response.field.field_type == 'text' %}{{ response.value_text }}
+                            {% elif response.field.field_type == 'number' %}{{ response.value_number }}
+                            {% elif response.field.field_type == 'date' %}{{ response.value_date }}
+                            {% elif response.field.field_type == 'boolean' %}{{ response.value_boolean|yesno:"Yes,No" }}
                             {% endif %}
                         </li>
+                    {% empty %}
+                        <li class="text-gray-500">No responses submitted.</li>
                     {% endfor %}
-                </ul>
+                </ul> <!-- ✅ Close the <ul> here -->
             {% else %}
-                <p class="text-gray-500">No field data submitted.</p>
+                <p class="text-gray-500">No custom fields available for this event.</p>
             {% endif %}
         </div>
+        
 
         <!-- Status Form -->
         <div class="bg-white rounded-xl shadow-lg p-6">

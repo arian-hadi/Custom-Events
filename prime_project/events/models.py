@@ -65,3 +65,16 @@ class EventApplication(models.Model):
 
     def __str__(self):
         return f"{self.applicant.username} - {self.event.title}"
+
+
+class EventFieldResponse(models.Model):
+    application = models.ForeignKey('EventApplication', on_delete=models.CASCADE, related_name='field_responses')
+    field = models.ForeignKey('EventField', on_delete=models.CASCADE)
+    
+    value_text = models.TextField(blank=True, null=True)
+    value_number = models.FloatField(blank=True, null=True)
+    value_date = models.DateField(blank=True, null=True)
+    value_boolean = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"{self.application.applicant.username} - {self.field.name}"
