@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit Application - {{ event.title }}{% endblock %}
+
+{% block content %}
+<section class="pt-16">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div class="bg-white shadow rounded-lg p-8">
+            <h1 class="text-3xl font-bold text-gray-900 mb-6">Edit Your Application</h1>
+            <p class="text-gray-600 mb-4">You're editing your application for <strong>{{ event.title }}</strong>.</p>
+
+            <form method="POST">
+                {% csrf_token %}
+                {% for field in form %}
+                    <div class="mb-5">
+                        <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                            {{ field.label }}{% if field.field.required %}<span class="text-red-500">*</span>{% endif %}
+                        </label>
+                        {{ field }}
+                        {% if field.errors %}
+                            <p class="text-sm text-red-500 mt-1">{{ field.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+
+                <button type="submit"
+                        class="w-full py-3 px-4 rounded-lg text-white text-sm font-medium
+                               bg-gradient-to-r from-yellow-500 via-orange-500 to-pink-500
+                               hover:from-yellow-600 hover:via-orange-600 hover:to-pink-600
+                               transform hover:scale-[1.02] transition-all duration-200">
+                    Save Changes
+                </button>
+            </form>
+
+            <div class="mt-6 text-center">
+                <a href="{% url 'dashboard:user_dashboard' %}" class="text-sm text-blue-600 hover:underline">
+                    ← Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

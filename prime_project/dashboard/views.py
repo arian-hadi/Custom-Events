@@ -1,8 +1,9 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from events.models import Event, EventApplication # Use the correct models
+from events.models import Event, EventApplication,EventFieldResponse
 from django.contrib.auth import get_user_model
+from events.forms import EventApplicationForm
 
 User = get_user_model()
 
@@ -67,14 +68,50 @@ def edit_application(request, application_id):
 
     if application.status != 'pending':
         messages.error(request, "You can only edit pending applications.")
-        return redirect('dashboard/user_dashboard')
-
-    if request.method == 'POST':
-        application.save()
-        messages.success(request, "Application updated successfully!")
         return redirect('dashboard:user_dashboard')
 
-    return redirect('dashboard:user_dashboard')
+    event = application.event
+
+    if request.method == 'POST':
+        form = EventApplicationForm(request.POST, event=event)
+        if form.is_valid():
+            # Save or update dynamic field responses
+            for field in event.custom_fields.all():
+                field_name = f'field_{field.id}'
+                value = form.cleaned_data.get(field_name)
+
+                response, _ = EventFieldResponse.objects.get_or_create(
+                    application=application,
+                    field=field
+                )
+
+                if field.field_type == 'text':
+                    response.value_text = value
+                elif field.field_type == 'number':
+                    response.value_number = value
+                elif field.field_type == 'date':
+                    response.value_date = value
+                elif field.field_type == 'boolean':
+                    response.value_boolean = value if value else False
+
+                response.save()
+
+            messages.success(request, "Application updated successfully!")
+            return redirect('dashboard:user_dashboard')
+    else:
+        # Pre-fill the form with previous answers
+        initial = {}
+        for response in application.field_responses.all():
+            initial[f'field_{response.field.id}'] = (
+                response.value_text or response.value_number or response.value_date or response.value_boolean
+            )
+
+        form = EventApplicationForm(initial=initial, event=event)
+
+    return render(request, 'dashboard/edit_application.html', {
+        'form': form,
+        'event': event,
+    })
 
 @login_required
 def withdraw_application(request, application_id):
