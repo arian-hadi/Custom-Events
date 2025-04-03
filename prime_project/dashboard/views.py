@@ -16,37 +16,32 @@ def home(request):
 @login_required
 def admin_dashboard(request):
     if request.user.role != 'admin':
-        messages.error(request, "Access denied.")
+        messages.error(request, "Access denied. Admin account required.")
         return redirect('home')
 
-    hosted_events = Event.objects.filter(created_by=request.user).order_by('-posted_date')
+    hosted_events = Event.objects.filter(created_by=request.user)
+    recent_applications = EventApplication.objects.filter(event__created_by=request.user)
 
-    status_ordering = Case(
-        When(status='accepted', then=Value(0)),
-        When(status='pending', then=Value(1)),
-        When(status='rejected', then=Value(2)),
-        default=Value(3),
-        output_field=IntegerField(),
-    )
+    # Filter by status
+    status_filter = request.GET.get('status')
+    if status_filter in ['pending', 'accepted', 'rejected']:
+        recent_applications = recent_applications.filter(status=status_filter)
 
-    # Apply filter from dropdown
-    selected_status = request.GET.get('status')
-    application_qs = EventApplication.objects.filter(event__created_by=request.user)
-
-    if selected_status:
-        application_qs = application_qs.filter(status=selected_status)
-
-    recent_applications = application_qs.annotate(
-        status_order=status_ordering
-    ).order_by('status_order', '-applied_date')
+    # Order by date
+    date_order = request.GET.get('date_order')
+    if date_order == 'oldest':
+        recent_applications = recent_applications.order_by('applied_date')
+    else:
+        recent_applications = recent_applications.order_by('-applied_date')  # Default to newest
 
     context = {
         'hosted_events': hosted_events,
         'recent_applications': recent_applications,
         'total_events': hosted_events.count(),
-        'total_applications': application_qs.count(),
+        'total_applications': EventApplication.objects.filter(event__created_by=request.user).count(),
     }
     return render(request, 'dashboard/admin_dashboard.html', context)
+
 
 @login_required
 def user_dashboard(request):
