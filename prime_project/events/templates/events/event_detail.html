@@ -28,7 +28,19 @@
                             </span>
                         </div>
                     </div>
-                    <div class="text-right">
+                    <div class="text-right flex flex-col items-end space-y-2">
+                        <!-- Delete Button (if user is creator) -->
+                        {% if user.is_authenticated and user == event.created_by and user.role == "admin" %}
+                        <form method="POST" action="{% url 'events:delete_event' event.id %}" onsubmit="return confirm('Are you sure you want to delete this event?');">
+                            {% csrf_token %}
+                            <button type="submit" title="Delete Event"
+                                    class="w-8 h-8 flex items-center justify-center rounded-full bg-red-500 hover:bg-red-600 transition-colors text-white">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </form>
+                        {% endif %}
+                        
+                    
                         <div class="text-sm text-gray-500">Posted {{ event.posted_date|timesince }} ago</div>
                     </div>
                 </div>

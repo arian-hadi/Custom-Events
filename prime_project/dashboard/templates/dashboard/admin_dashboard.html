@@ -73,6 +73,9 @@
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Action
                             </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Delete event
+                            </th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
@@ -115,6 +118,22 @@
                                     </select>
                                 </form>
                             </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-gray-900 flex items-center space-x-2">
+                                    <!-- <span>{{ application.event.title }}</span> -->
+                            
+                                    {% if request.user == application.event.created_by %}
+                                    <form method="POST" action="{% url 'events:delete_event' application.event.id %}"
+                                          onsubmit="return confirm('Are you sure you want to delete this event?');">
+                                        {% csrf_token %}
+                                        <button type="submit" title="Delete Event">
+                                            <i class="fas fa-trash-alt text-red-500 hover:text-red-700"></i>
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            
                         </tr>
                         {% empty %}
                         <tr>

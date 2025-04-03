@@ -6,6 +6,7 @@ from django.db.models import Q
 from .models import Event, EventApplication, EventField, EventFieldResponse
 from .forms import EventForm, EventApplicationForm, EventSearchForm,EventFieldForm
 from datetime import datetime
+from django.views.decorators.http import require_POST
 
 
 # def home(request):
@@ -231,3 +232,17 @@ def apply_event(request, event_id):
         'form': form,
         'event': event,
     })
+
+
+@login_required
+@require_POST
+def delete_event(request, event_id):
+    event = get_object_or_404(Event, id=event_id)
+
+    if event.created_by != request.user:
+        messages.error(request, "You are not allowed to delete this event.")
+        return redirect('events:event_detail', event_id=event_id)
+
+    event.delete()
+    messages.success(request, "Event deleted successfully.")
+    return redirect('dashboard:admin_dashboard')
