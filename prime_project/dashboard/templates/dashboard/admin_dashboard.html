@@ -52,7 +52,23 @@
         <!-- Recent Applications -->
         <div class="bg-white rounded-lg shadow">
             <div class="p-6 border-b border-gray-200">
-                <h2 class="text-xl font-semibold">Recent Event Applications</h2>
+                <div>
+                    <h2 class="text-xl font-semibold">Recent Event Applications</h2>
+                </div>
+            
+                <div>
+                    <form method="GET" class="flex items-center space-x-2">
+                        <label for="status" class="text-sm font-medium text-gray-700">Filter:</label>
+                        <select name="status" id="status"
+                                onchange="this.form.submit()"
+                                class="border border-gray-300 text-sm rounded-md px-3 py-2 shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">All</option>
+                            <option value="accepted" {% if request.GET.status == 'accepted' %}selected{% endif %}>Accepted</option>
+                            <option value="pending" {% if request.GET.status == 'pending' %}selected{% endif %}>Pending</option>
+                            <option value="rejected" {% if request.GET.status == 'rejected' %}selected{% endif %}>Rejected</option>
+                        </select>
+                    </form>   
+                </div>
             </div>
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200">
