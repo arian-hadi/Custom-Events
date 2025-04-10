@@ -7,6 +7,7 @@ from .models import Event, EventApplication, EventField, EventFieldResponse
 from .forms import EventForm, EventApplicationForm, EventSearchForm,EventFieldForm
 from datetime import datetime
 from django.views.decorators.http import require_POST
+from django.utils import timezone
 
 
 # def home(request):
@@ -152,6 +153,7 @@ def event_detail(request, event_id):
     event = get_object_or_404(Event, id=event_id, is_active=True)
     application_form = EventApplicationForm(event=event) if request.user.is_authenticated else None
     has_applied = False
+    deadline_passed = timezone.now() > event.deadline
 
     if request.user.is_authenticated:
         has_applied = EventApplication.objects.filter(event=event, applicant=request.user).exists()
@@ -160,6 +162,7 @@ def event_detail(request, event_id):
         'event': event,
         'application_form': application_form,
         'has_applied': has_applied,
+        'deadline_passed': deadline_passed,
     })
 
 # @login_required
@@ -191,6 +194,12 @@ def apply_event(request, event_id):
         return redirect('events:event_detail', event_id=event_id)
 
     event = get_object_or_404(Event, id=event_id, is_active=True)
+
+    if timezone.now() > event.deadline:
+        messages.error(request, "The deadline for this event has passed. You can no longer apply.")
+        return redirect('events:event_detail', event_id=event_id)
+
+
 
     if EventApplication.objects.filter(event=event, applicant=request.user).exists():
         messages.info(request, "You have already applied for this event.")
