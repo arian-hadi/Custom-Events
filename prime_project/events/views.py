@@ -23,6 +23,7 @@ def event_info_step(request):
             event = Event.objects.create(
                 title=data['title'],
                 description=data['description'],
+                details=data['details'],
                 deadline=data['deadline'],
                 date=data['date'],
                 created_by=request.user,
