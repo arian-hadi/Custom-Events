@@ -114,20 +114,34 @@ def finish_event_creation(request):
 #     return render(request, 'events/add_event_field.html', context)
 
 
+from django.db.models import Q
+
 def event_list(request):
     form = EventSearchForm(request.GET)
     events = Event.objects.filter(is_active=True)
 
     if form.is_valid():
         search = form.cleaned_data.get('search')
+        admin_username = request.GET.get('location')  # Using 'location' field for admin filter
+
         if search:
-            events = events.filter(Q(title__icontains=search) | Q(description__icontains=search))
+            events = events.filter(
+                Q(title__icontains=search) |
+                Q(description__icontains=search)
+            )
+
+        if admin_username:
+            events = events.filter(created_by__username__icontains=admin_username)
 
     paginator = Paginator(events, 9)
     page = request.GET.get('page')
     events = paginator.get_page(page)
 
-    return render(request, 'events/event_list.html', {'events': events, 'form': form})
+    return render(request, 'events/event_list.html', {
+        'events': events,
+        'form': form
+    })
+
 
 def event_detail(request, event_id):
     event = get_object_or_404(Event, id=event_id, is_active=True)
