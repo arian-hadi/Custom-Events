@@ -10,15 +10,6 @@ from django.views.decorators.http import require_POST
 from django.utils import timezone
 
 
-# def home(request):
-#     """Homepage showing featured events."""
-#     featured_events = Event.objects.filter(is_active=True)[:6]
-#     context = {
-#         'featured_events': featured_events,
-#     }
-#     return render(request, 'events/home.html', context)
-
-
 @login_required
 def event_info_step(request):
     if request.user.role != "admin":
@@ -29,17 +20,21 @@ def event_info_step(request):
         form = EventForm(request.POST)
         if form.is_valid():
             data = form.cleaned_data
-            request.session['event_data'] = {
-                'title': data['title'],
-                'description': data['description'],
-                'deadline': data['deadline'].isoformat(),  # convert to string
-                'date': data['date'].isoformat()           # convert to string
-}
+            event = Event.objects.create(
+                title=data['title'],
+                description=data['description'],
+                deadline=data['deadline'],
+                date=data['date'],
+                created_by=request.user,
+                is_active=False  # Make it public only after finishing
+            )
+            request.session['created_event_id'] = event.id
             return redirect('events:add_event_fields')
     else:
         form = EventForm()
 
     return render(request, 'events/post_event.html', {'form': form})
+
 
 
 @login_required
@@ -48,48 +43,32 @@ def add_event_fields(request):
         messages.error(request, "Access denied.")
         return redirect('home')
 
-    event_data = request.session.get('event_data')
-    if not event_data:
+    event_id = request.session.get('created_event_id')
+    if not event_id:
         messages.error(request, "Please fill out event details first.")
         return redirect('events:event_info_step')
+
+    event = get_object_or_404(Event, id=event_id, created_by=request.user)
 
     if request.method == 'POST':
         form = EventFieldForm(request.POST)
         if form.is_valid():
-            if 'created_event_id' not in request.session:
-                event = Event.objects.create(
-                    title=event_data['title'],
-                    description=event_data['description'],
-                    deadline=datetime.fromisoformat(event_data['deadline']),
-                    date=datetime.fromisoformat(event_data['date']),
-                    created_by=request.user,
-                    is_active=False
-                )
-                request.session['created_event_id'] = event.id
-            else:
-                event = Event.objects.get(id=request.session['created_event_id'])
-
             field = form.save(commit=False)
             field.event = event
             field.save()
-
             messages.success(request, "Field added successfully!")
             return redirect('events:add_event_fields')
     else:
         form = EventFieldForm()
 
-    created_event = None
-    if 'created_event_id' in request.session:
-        created_event = get_object_or_404(Event, id=request.session['created_event_id'])
-        fields = created_event.custom_fields.all()
-    else:
-        fields = []
+    fields = event.custom_fields.all()
 
     return render(request, 'events/add_event_field.html', {
         'form': form,
-        'event': created_event,
+        'event': event,
         'fields': fields
     })
+
 
 
 @login_required

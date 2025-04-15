@@ -14,6 +14,7 @@ class Event(models.Model):
     date = models.DateTimeField()
     is_active = models.BooleanField(default=True)
     posted_date = models.DateTimeField(auto_now_add=True)
+    details = models.TextField(blank=True, null=True)  # Additional details for the event
 
     class Meta:
         ordering = ['-posted_date']

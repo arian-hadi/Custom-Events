@@ -15,11 +15,12 @@ class EventFieldForm(forms.ModelForm):
 class EventForm(forms.ModelForm):
     class Meta:
         model = Event
-        fields = ['title', 'description', 'deadline', 'date']  # <-- Add 'date'
+        fields = ['title', 'description', 'deadline', 'date','details']  # <-- Add 'date'
         widgets = {
             'deadline': forms.DateInput(attrs={'type': 'date'}),
-            'date': forms.DateInput(attrs={'type': 'date'}),  # <-- Add this line too
+            'date': forms.DateInput(attrs={'type': 'date'}),  
             'description': forms.Textarea(attrs={'rows': 4}),
+            'details': forms.Textarea(attrs={'rows': 10}),  
         }
 
 
