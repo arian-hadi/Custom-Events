@@ -12,12 +12,16 @@ def generateOtp():
 def send_code_to_user(email):
     subject = "One-Time Passcode for Email Verification"
     otp_code = generateOtp()
-    print(otp_code)  # For testing, log the OTP to console
 
     try:
         user = CustomUser.objects.get(email=email)
     except CustomUser.DoesNotExist:
         raise ValueError("User with this email does not exist")
+
+    # Delete any old OTPs before creating a new one
+    OneTimePassword.objects.filter(user=user).delete()
+
+    OneTimePassword.objects.create(user=user, code=otp_code)
 
     current_site = "20TF.com"
     email_body = (
@@ -28,17 +32,14 @@ def send_code_to_user(email):
     )
     from_email = settings.DEFAULT_FROM_EMAIL
 
-    # Save OTP to the database
-    OneTimePassword.objects.create(user=user, code=otp_code)
-
-    # Send the email
     email_message = EmailMessage(
         subject=subject,
         body=email_body,
         from_email=from_email,
         to=[email]
     )
-    email_message.send(fail_silently=False)  
+    email_message.send(fail_silently=False)
+
 
 
 def send_normal_email(data):

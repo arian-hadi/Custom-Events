@@ -22,6 +22,8 @@ urlpatterns = [
     path('verify-email/', VerifyUserEmail.as_view(), name='verify_email'),
     path('login/', EmailLoginView.as_view(), name='login'),
     path('logout/', CustomLogoutView.as_view(), name='logout'),
+    path('resend-otp/', ResendOTPView.as_view(), name='resend_otp'),
+
 
     # Password Reset URLs
     path('password-reset/', CustomPasswordResetView.as_view(), name='password_reset'),

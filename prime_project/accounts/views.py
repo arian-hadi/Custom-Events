@@ -83,6 +83,22 @@ class VerifyUserEmail(View):
         return render(request, "accounts/verify_email.html", {"form": form})
 
 
+class ResendOTPView(View):
+    def get(self, request):
+        email = request.session.get("user_email")
+        if not email:
+            messages.error(request, "Session expired. Please sign up again.")
+            return redirect("signup")
+
+        try:
+            user = CustomUser.objects.get(email=email)
+            send_code_to_user(user.email)
+            messages.success(request, "A new OTP has been sent to your email.")
+        except CustomUser.DoesNotExist:
+            messages.error(request, "User not found.")
+
+        return redirect("verify_email")
+
 
 class EmailLoginView(LoginView):
     authentication_form = EmailAuthenticationForm
