@@ -7,29 +7,46 @@ const footer_input = document.querySelector(".footer-input");
 const hamburger_menu = document.querySelector(".hamburger-menu");
 const navbar = document.querySelector("header nav");
 const links = document.querySelectorAll(".links a");
+let nums = document.querySelectorAll(".numy");
 
-footer_input.addEventListener("focus", () => {
-  footer_input.classList.add("focus");
-});
 
-footer_input.addEventListener("blur", () => {
-  if (footer_input.value != "") return;
-  footer_input.classList.remove("focus");
-});
+console.log(records_wrap);
+console.log(records_numbers);
+
+
+// if (footer_input) {
+//   footer_input.addEventListener("focus", () => {
+//     footer_input.classList.add("focus");
+//   });
+
+//   footer_input.addEventListener("blur", () => {
+//     if (footer_input.value != "") return;
+//     footer_input.classList.remove("focus");
+//   });
+// }
+
+
+// footer_input.addEventListener("blur", () => {
+//   if (footer_input.value != "") return;
+//   footer_input.classList.remove("focus");
+// });
 
 function closeMenu() {
   navbar.classList.remove("open");
   document.body.classList.remove("stop-scrolling");
 }
 
-hamburger_menu.addEventListener("click", () => {
-  if (!navbar.classList.contains("open")) {
-    navbar.classList.add("open");
-    document.body.classList.add("stop-scrolling");
-  } else {
-    closeMenu();
-  }
-});
+if (hamburger_menu) {
+  hamburger_menu.addEventListener("click", () => {
+    if (!navbar.classList.contains("open")) {
+      navbar.classList.add("open");
+      document.body.classList.add("stop-scrolling");
+    } else {
+      closeMenu();
+    }
+  });
+}
+
 
 links.forEach((link) => link.addEventListener("click", () => closeMenu()));
 
@@ -56,18 +73,24 @@ window.addEventListener("scroll", () => {
 });
 
 function checkScroll(el) {
-  let rect = el.getBoundingClientRect();
-  if (window.innerHeight >= rect.top + el.offsetHeight) return true;
-  return false;
+  if (!el) return false;
+  const rect = el.getBoundingClientRect();
+  return rect.top <= window.innerHeight && rect.bottom >= 0;
 }
+
+
 
 function skillsEffect() {
   if (!checkScroll(skills_wrap)) return;
   skills_bars.forEach((skill) => (skill.style.width = skill.dataset.progress));
 }
 
+let hasCounted = false;
+
 function countUp() {
-  if (!checkScroll(records_wrap)) return;
+  if (!checkScroll(records_wrap) || hasCounted) return;
+  hasCounted = true;
+
   records_numbers.forEach((numb) => {
     const updateCount = () => {
       let currentNum = +numb.innerText;
@@ -99,3 +122,5 @@ var mySwiper = new Swiper(".swiper-container", {
     nextEl: ".swiper-button-next",
   },
 });
+
+countUp();
