@@ -511,8 +511,7 @@ header .circle {
 
 .portfolio {
   position: relative;
-  width: 100%;
-  background-color: var(--light-two);
+  width: 100%;  
 }
 
 .background-bg {

@@ -1,0 +1,38 @@
+version: '3.9'
+
+services:
+  db:
+    image: postgres:15
+    container_name: twotransformers_db
+    restart: always
+    environment:
+      POSTGRES_DB: twotransformers_db
+      POSTGRES_USER: twotransformers_user
+      POSTGRES_PASSWORD: strongpassword
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - twonet
+
+  web:
+    build: .
+    container_name: twotransformers_web
+    restart: always
+    command: bash -c "python manage.py migrate && python manage.py collectstatic --noinput && gunicorn core.wsgi:application --bind 0.0.0.0:8000"
+    volumes:
+      - .:/code
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    env_file:
+      - .env
+    networks:
+      - twonet
+
+volumes:
+  postgres_data:
+
+networks:
+  twonet:
+    driver: bridge
