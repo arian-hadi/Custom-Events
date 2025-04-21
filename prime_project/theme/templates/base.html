@@ -10,6 +10,39 @@
     <style>
         body { font-family: 'Poppins', sans-serif; }
     </style>
+
+    <script>
+        // Time until warning popup (e.g., 12 minutes if session expires in 15)
+        const warningTime = 12 * 60 * 1000; // 12 minutes in milliseconds
+        const logoutTime = 15 * 60 * 1000;  // 15 minutes
+
+        let warningTimer, logoutTimer;
+
+        function startTimers() {
+            warningTimer = setTimeout(showWarning, warningTime);
+            logoutTimer = setTimeout(forceLogout, logoutTime);
+        }
+
+        function resetTimers() {
+            clearTimeout(warningTimer);
+            clearTimeout(logoutTimer);
+            startTimers();
+        }
+
+        function showWarning() {
+            alert("⚡ You will be logged out soon due to inactivity!\nPlease move your mouse or click to stay logged in.");
+        }
+
+        function forceLogout() {
+            window.location.href = "{% url 'logout' %}";
+        }
+
+        // Reset timers when user interacts
+        window.onload = startTimers;
+        document.onmousemove = resetTimers;
+        document.onkeypress = resetTimers;
+    </script>
+
     {% block extra_css %}{% endblock %}
 </head>
 <body class="bg-gray-50">
@@ -32,3 +65,5 @@
     {% block extra_js %}{% endblock %}
 </body>
 </html> 
+
+

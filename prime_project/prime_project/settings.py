@@ -172,8 +172,7 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 
-# SESSION_COOKIE_AGE = 600
-# SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+
 
 #Email verification
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
@@ -184,3 +183,8 @@ DEFAULT_FROM_EMAIL = env("EMAIL_HOST_USER")  # Your Gmail address
 EMAIL_USE_SSL = True
 EMAIL_PORT = 465
 
+
+
+SESSION_COOKIE_AGE = 60  # 900 seconds = 15 minutes
+SESSION_SAVE_EVERY_REQUEST = True
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
