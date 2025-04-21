@@ -71,35 +71,36 @@
                 <!-- Registration Sidebar -->
                 <div class="lg:col-span-1">
                     <div class="bg-blue-700 rounded-lg p-6">
-                        {% if user.is_authenticated and user.role == 'user' %}
-                            {% if has_applied %}
-                                <div class="text-center">
-                                    <div class="text-green-400 mb-2">
-                                        <i class="fas fa-check-circle text-3xl"></i>
+                        
+                        {% if user.is_authenticated %}
+                            {% if user.role == 'user' %}
+                                {% if has_applied %}
+                                    <div class="text-center">
+                                        <div class="text-green-400 mb-2">
+                                            <i class="fas fa-check-circle text-3xl"></i>
+                                        </div>
+                                        <p class="text-white font-medium">You have already applied for this event.</p>
                                     </div>
-                                    <p class="text-white font-medium">You have already applied for this event.</p>
-                                </div>
-                            
-                            {% elif deadline_passed %}
-                                <div class="block w-full bg-gray-400 text-white rounded-md py-2 px-4 text-center cursor-not-allowed opacity-70">
-                                    Deadline Passed
-                                </div>                                                        
-                     
-                            {% else %}
-                                <!-- <form method="POST" action="{% url 'events:apply_event' event.id %}">
-                                    {% csrf_token %}
-                                    <div class="space-y-4 text-white">
-                                        {{ application_form.as_p }}
-                                    </div>
-                                    <button type="submit" class="mt-4 w-full bg-white text-blue-700 rounded-md py-2 px-4 font-semibold hover:bg-gray-100 transition-colors">
+                                {% elif deadline_passed %}
+                                    <div class="block w-full bg-gray-400 text-white rounded-md py-2 px-4 text-center cursor-not-allowed opacity-70">
+                                        Deadline Passed
+                                    </div>                                                        
+                                {% else %}
+                                    <a href="{% url 'events:apply_event' event.id %}"
+                                       class="block w-full bg-custom text-white rounded-md py-2 px-4 hover:bg-custom-dark transition-colors text-center">
                                         Apply Now
-                                    </button>
-                                </form> -->
-                                <a href="{% url 'events:apply_event' event.id %}"
-                                class="block w-full bg-custom text-white rounded-md py-2 px-4 hover:bg-custom-dark transition-colors text-center">
-                                    Apply Now
-                                </a>
+                                    </a>
+                                {% endif %}
+                            
+                            {% elif user.role == 'admin' %}
+                                <div class="text-center">
+                                    <div class="text-yellow-400 mb-2">
+                                        <i class="fas fa-exclamation-circle text-3xl"></i>
+                                    </div>
+                                    <p class="text-white font-medium">You are an admin. You cannot apply for events.</p>
+                                </div>
                             {% endif %}
+                        
                         {% else %}
                             <div class="text-center">
                                 <p class="mb-4 text-white">Please sign in to apply for this event.</p>
@@ -108,8 +109,10 @@
                                 </a>
                             </div>
                         {% endif %}
+                        
                     </div>
                 </div>
+                
             </div>
         </div>
     </div>
