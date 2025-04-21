@@ -38,13 +38,10 @@
                         <div class="ml-4">
                             <p class="text-sm text-gray-500">Pending Applications</p>
                             <p class="text-2xl font-semibold">
-                                {{ pending_applications.count }}
+                                {{ pending_applications|length }}
                             </p>
                         </div>
                     </div>
-                    <a href="{% url 'events:event_info_step' %}" class="bg-custom text-white px-4 py-2 rounded-md hover:bg-custom-dark">
-                        Post New Event
-                    </a>
                 </div>
             </div>
         </div>
@@ -127,9 +124,9 @@
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
                                     {% if application.status == 'pending' %}bg-yellow-100 text-yellow-800
-                                    {% elif application.status == 'approved' %}bg-green-100 text-green-800
+                                    {% elif application.status == 'accepted' %}bg-green-100 text-green-800
                                     {% elif application.status == 'rejected' %}bg-red-100 text-red-800
-                                    {% endif %} ">
+                                    {% endif %}">
                                     {{ application.status|title }}
                                 </span>
                             </td>

@@ -39,6 +39,7 @@ def admin_dashboard(request):
         'recent_applications': recent_applications,
         'total_events': hosted_events.count(),
         'total_applications': EventApplication.objects.filter(event__created_by=request.user).count(),
+        'pending_applications': EventApplication.objects.filter(event__created_by=request.user, status='pending'),  # ✅ Added this
     }
     return render(request, 'dashboard/admin_dashboard.html', context)
 
