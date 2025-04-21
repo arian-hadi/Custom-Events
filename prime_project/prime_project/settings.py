@@ -149,8 +149,13 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
 STATIC_URL = '/static/'
-STATICFILES_DIRS = [os.path.join(BASE_DIR, "theme", "static_src")]  # Tailwind static files
-STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")  # Where collectstatic will store files
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, "theme", "static_src"),  # Your Tailwind output
+]
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")  # collectstatic destination
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'mediafiles')
 
 
 
