@@ -110,16 +110,17 @@ function countUp() {
   });
 }
 
-var mySwiper = new Swiper(".swiper-container", {
-  speed: 1100,
+var mySwiper = new Swiper(".testimonial-swiper", {
+  speed: 800,
   slidesPerView: 1,
   loop: true,
   autoplay: {
     delay: 5000,
+    disableOnInteraction: false,
   },
   navigation: {
-    prevEl: ".swiper-button-prev",
-    nextEl: ".swiper-button-next",
+    nextEl: ".testimonial-button-next",
+    prevEl: ".testimonial-button-prev",
   },
 });
 

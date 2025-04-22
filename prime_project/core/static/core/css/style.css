@@ -3,7 +3,7 @@
 :root {
   --dark-one: #333;
   --dark-two: #7a7a7a;
-  --main-color: #784cfb;
+  --main-color: #64afff;
   --light-one: #fff;
   --light-two: #f9fafb;
   --light-three: #f6f7fb;
@@ -196,7 +196,7 @@ img {
 .btn {
   display: inline-block;
   padding: 0.85rem 2rem;
-  background-color: var(--main-color);
+  background-color: rgb(52, 52, 255);
   color: var(--light-one);
   border-radius: 2rem;
   font-size: 1.05rem;
@@ -774,7 +774,7 @@ header .circle {
 
 .records {
   position: relative;
-  background-color: var(--main-color);
+  background-color:rgb(42, 99, 231);
   padding: 5.2rem 0;
 }
 
