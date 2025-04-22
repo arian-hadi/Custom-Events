@@ -119,9 +119,12 @@ var mySwiper = new Swiper(".testimonial-swiper", {
     disableOnInteraction: false,
   },
   navigation: {
-    nextEl: ".testimonial-button-next",
-    prevEl: ".testimonial-button-prev",
+    nextEl: ".swiper-button-next",
+    prevEl: ".swiper-button-prev",
   },
 });
+
+
+
 
 countUp();
