@@ -101,15 +101,25 @@ WSGI_APPLICATION = 'prime_project.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': env("DB_NAME"),
+#         'USER': env("DB_USER"),
+#         'PASSWORD': env("DB_PASSWORD"),
+#         'HOST': env("DB_HOST"),
+#         'PORT': env.int("DB_PORT"),
+#     }
+# }
+
+import dj_database_url
+import os
+
+# Default database setup
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': env("DB_NAME"),
-        'USER': env("DB_USER"),
-        'PASSWORD': env("DB_PASSWORD"),
-        'HOST': env("DB_HOST"),
-        'PORT': env.int("DB_PORT"),
-    }
+    'default': dj_database_url.config(
+        default=os.getenv("DATABASE_URL", os.getenv("DATABASE_PUBLIC_URL"))
+    )
 }
 
 
