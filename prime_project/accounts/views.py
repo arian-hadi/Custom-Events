@@ -171,9 +171,9 @@ def create_superuser_temp(request):
 
     if not User.objects.filter(email=email).exists():
         User.objects.create_superuser(
-            email="admin@example.com",
-            password="supersecurepassword",
-            username="admin"  # ✅ Only use fields your model expects
+            email=email,
+            password=password,
+            username=username, # ✅ Only use fields your model expects
         )
         return HttpResponse("Superuser created successfully!")
     return HttpResponse("Superuser already exists.")
@@ -181,8 +181,15 @@ def create_superuser_temp(request):
 
 def debug_admin_user(request):
     User = get_user_model()
+    email = os.environ.get("DJANGO_SUPERUSER_EMAIL")
+
+    if not email:
+        return HttpResponse("Missing DJANGO_SUPERUSER_EMAIL environment variable.")
+
     try:
-        user = User.objects.get(email="admin@example.com")
-        return HttpResponse(f"User found: is_staff={user.is_staff}, is_superuser={user.is_superuser}")
+        user = User.objects.get(email=email)
+        return HttpResponse(
+            f"User found: email={email}, is_staff={user.is_staff}, is_superuser={user.is_superuser}"
+        )
     except User.DoesNotExist:
         return HttpResponse("User does not exist")
