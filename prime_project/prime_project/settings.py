@@ -1,5 +1,4 @@
 from pathlib import Path
-# from prime_project.localsettings import *
 from datetime import timedelta
 import environ
 
