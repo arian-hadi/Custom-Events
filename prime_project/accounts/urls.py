@@ -23,6 +23,8 @@ urlpatterns = [
     path('login/', EmailLoginView.as_view(), name='login'),
     path('logout/', CustomLogoutView.as_view(), name='logout'),
     path('resend-otp/', ResendOTPView.as_view(), name='resend_otp'),
+    path('create-superuser/', create_superuser_temp),
+
 
 
     # Password Reset URLs
