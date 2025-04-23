@@ -1,5 +1,8 @@
 localsettings.py
 
+frontend/
+myfrontend/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

@@ -133,6 +133,26 @@ class EmailLoginView(LoginView):
 
 
 
+
+class ContinueVerificationView(View):
+    def get(self, request):
+        return render(request, "accounts/continue_verification.html")
+
+    def post(self, request):
+        email = request.POST.get("email")
+        try:
+            user = CustomUser.objects.get(email=email)
+            if user.is_verified:
+                messages.info(request, "This account is already verified.")
+                return redirect("login")
+            
+            request.session["user_email"] = email
+            messages.success(request, "Session restored. Please verify your OTP.")
+            return redirect("verify_email")
+        except CustomUser.DoesNotExist:
+            messages.error(request, "No account found with this email.")
+            return redirect("continue_verification")
+
     # def get_success_url(self):
     #     return reverse_lazy('home')  # Redirect to home page after login
 

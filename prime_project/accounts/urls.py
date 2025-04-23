@@ -23,6 +23,8 @@ urlpatterns = [
     path('login/', EmailLoginView.as_view(), name='login'),
     path('logout/', CustomLogoutView.as_view(), name='logout'),
     path('resend-otp/', ResendOTPView.as_view(), name='resend_otp'),
+    path('continue-verification/', ContinueVerificationView.as_view(), name='continue_verification'),
+
 
     # Password Reset URLs
     path('password-reset/', CustomPasswordResetView.as_view(template_name="registration/password_reset_form.html"), name='password_reset'),

@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-md mx-auto mt-10 bg-white shadow-md p-6 rounded-lg">
+  <h2 class="text-xl font-bold mb-4">Continue Email Verification</h2>
+  <form method="POST">
+    {% csrf_token %}
+    <label class="block mb-2">Enter your email:</label>
+    <input type="email" name="email" required class="w-full p-2 border rounded mb-4">
+    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Continue</button>
+  </form>
+</div>
+{% endblock %}
