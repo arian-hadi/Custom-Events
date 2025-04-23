@@ -9,7 +9,12 @@ environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
 SECRET_KEY = env("SECRET_KEY")
 DEBUG = env.bool("DEBUG")  # Reads from .env, defaults to True if missing
-ALLOWED_HOSTS = ['localhost', '127.0.0.1','personal-website-production-fc26.up.railway.app','20transformers.com']
+ALLOWED_HOSTS = [
+    'localhost',
+    '127.0.0.1',
+    '20transformers.com',
+    'www.20transformers.com'
+]
 
 
 
@@ -180,7 +185,8 @@ AUTHENTICATION_BACKENDS = [
 
 
 CSRF_TRUSTED_ORIGINS = [
-    "https://personal-website-production-fc26.up.railway.app"
+    "https://personal-website-production-fc26.up.railway.app",
+    "https://20transformers.com",
 ]
 
 
