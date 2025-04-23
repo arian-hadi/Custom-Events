@@ -123,3 +123,8 @@ Desktop.ini
 
 # Linux
 *~
+
+# Docker-related files to ignore
+Dockerfile
+docker-compose.yml
+.dockerignore
