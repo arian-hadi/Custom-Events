@@ -150,3 +150,31 @@ class CustomPasswordResetView(PasswordResetView):
 class CustomPasswordResetConfirmView(PasswordResetConfirmView):
     success_url = reverse_lazy('password_reset_complete')
     template_name = 'registration/password_reset_confirm.html'
+
+
+# Don't forget to remove this after you're done!
+from django.http import HttpResponse
+from django.contrib.auth import get_user_model
+
+import os
+from django.http import HttpResponse
+from django.contrib.auth import get_user_model
+
+def create_superuser_temp(request):
+    User = get_user_model()
+    email = os.environ.get("DJANGO_SUPERUSER_EMAIL")
+    password = os.environ.get("DJANGO_SUPERUSER_PASSWORD")
+    username = os.environ.get("DJANGO_SUPERUSER_USERNAME", "admin")
+
+    if not all([email, password]):
+        return HttpResponse("Missing superuser environment variables.")
+
+    if not User.objects.filter(email=email).exists():
+        User.objects.create_superuser(
+            email=email,
+            display_username=username,
+            password=password
+        )
+        return HttpResponse("Superuser created successfully!")
+    return HttpResponse("Superuser already exists.")
+
