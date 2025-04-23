@@ -69,7 +69,7 @@ celerybeat-schedule
 
 # Static files
 /static/
-/staticfiles/
+# /staticfiles/
 
 # Media uploads
 /media/
