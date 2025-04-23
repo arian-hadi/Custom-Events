@@ -24,7 +24,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'core.apps.CoreConfig',
-    'contact.apps.ContactConfig',
+    'contact',
     'dashboard',
     'events',
     'tailwind',

@@ -3,10 +3,12 @@
 # from django.conf import settings
 # from django.core.mail import send_mail
 # from django.shortcuts import reverse
-# from django.views.generic import TemplateView, FormView
+from django.views.generic import TemplateView, FormView
 # from .forms import ContactForm
 # from prime_project.localsettings import email_address
 
+class ContactView(TemplateView):
+    template_name = "contact/contact.html"
 
 # class SuccessView(TemplateView):
 #     template_name = "success.html"
