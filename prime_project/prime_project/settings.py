@@ -113,13 +113,9 @@ WSGI_APPLICATION = 'prime_project.wsgi.application'
 # }
 
 import dj_database_url
-import os
-
 # Default database setup
 DATABASES = {
-    'default': dj_database_url.config(
-        default=os.getenv("DATABASE_URL", os.getenv("DATABASE_PUBLIC_URL"))
-    )
+    'default': dj_database_url.config(default=os.getenv("DATABASE_URL"))
 }
 
 
