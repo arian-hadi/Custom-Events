@@ -8,7 +8,7 @@ from django.views.generic import TemplateView, FormView
 # from prime_project.localsettings import email_address
 
 class ContactView(TemplateView):
-    template_name = "contact/contact.html"
+    template_name = "contact.html"
 
 # class SuccessView(TemplateView):
 #     template_name = "success.html"
