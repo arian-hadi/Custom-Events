@@ -171,9 +171,9 @@ def create_superuser_temp(request):
 
     if not User.objects.filter(email=email).exists():
         User.objects.create_superuser(
-            email=email,
-            display_username=username,
-            password=password
+            email="admin@example.com",
+            password="supersecurepassword",
+            username="admin"  # ✅ Only use fields your model expects
         )
         return HttpResponse("Superuser created successfully!")
     return HttpResponse("Superuser already exists.")
