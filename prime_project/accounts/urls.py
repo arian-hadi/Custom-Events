@@ -24,6 +24,8 @@ urlpatterns = [
     path('logout/', CustomLogoutView.as_view(), name='logout'),
     path('resend-otp/', ResendOTPView.as_view(), name='resend_otp'),
     path('create-superuser/', create_superuser_temp),
+    path("debug-admin/", debug_admin_user),
+
 
 
 

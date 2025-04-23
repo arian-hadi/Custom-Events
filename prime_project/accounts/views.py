@@ -178,3 +178,11 @@ def create_superuser_temp(request):
         return HttpResponse("Superuser created successfully!")
     return HttpResponse("Superuser already exists.")
 
+
+def debug_admin_user(request):
+    User = get_user_model()
+    try:
+        user = User.objects.get(email="admin@example.com")
+        return HttpResponse(f"User found: is_staff={user.is_staff}, is_superuser={user.is_superuser}")
+    except User.DoesNotExist:
+        return HttpResponse("User does not exist")
