@@ -173,6 +173,9 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 
+CSRF_TRUSTED_ORIGINS = [
+    "https://personal-website-production-fc26.up.railway.app"
+]
 
 
 #Email verification
