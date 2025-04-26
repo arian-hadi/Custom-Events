@@ -126,8 +126,7 @@ class EmailLoginView(LoginView):
         return redirect('dashboard:user_dashboard')
 
     def form_invalid(self, form):
-        logger.warning(f"Login failed. Form data: {self.request.POST}")
-        logger.warning(f"Form errors: {form.errors}")
+        logger.warning(f"Login failed.")
         messages.error(self.request, "Invalid email or password.")
         return super().form_invalid(form)
 
