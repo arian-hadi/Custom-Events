@@ -1,9 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
+{% load static %}
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Job Board Platform{% endblock %}</title>
+    <meta name="description" content="Official website of 2.0Transformers. Join us for next-gen editing experiences, tools, and creative events.">
+    <meta name="keywords" content="2.0Transformers, Transformers Editors, Creative Editing, Event Hosting, 2.0 Editors, 20transformers.com">
+    <meta name="author" content="2.0Transformers">
+    <meta property="og:title" content="2.0Transformers - Website">
+    <meta property="og:description" content="Official platform of 2.0Transformers. Explore events, editing, and more!">
+    <meta property="og:url" content="https://20transformers.com">
+    <meta property="og:type" content="website">
+
+    <title>{% block title %}2.0Transformers{% endblock %}</title>
+    <link rel="shortcut icon" href="{% static 'images/favicon.ico' %}" type="image/x-icon">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/swiper/swiper-bundle.min.css" />
