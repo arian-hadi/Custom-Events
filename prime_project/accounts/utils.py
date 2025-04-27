@@ -2,6 +2,9 @@ import random
 from django.core.mail import EmailMessage
 from .models import CustomUser,OneTimePassword
 from django.conf import settings
+from django.template.loader import render_to_string
+from django.core.mail import EmailMultiAlternatives
+
 
 def generateOtp():
     otp = ""
@@ -49,4 +52,16 @@ def send_normal_email(data):
         from_email=settings.EMAIL_HOST_USER,
         to=[data['to_email']]
     )
+    email.send()
+
+
+def send_password_reset_email(user_email, context_data):
+    subject = 'Password Reset Request'
+    from_email = settings.DEFAULT_FROM_EMAIL
+    to = [user_email]
+
+    html_content = render_to_string('registration/accounts/password_reset_email.html', context_data)
+
+    email = EmailMultiAlternatives(subject, html_content, from_email, to)
+    email.content_subtype = 'html'  # Important
     email.send()

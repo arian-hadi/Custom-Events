@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Official website of 2.0Transformers. Join us for next-gen editing experiences, tools, and creative events.">
-    <meta name="keywords" content="2.0Transformers, Transformers Editors, Creative Editing, Event Hosting, 2.0 Editors, 20transformers.com">
+    <meta name="keywords" content=",2.0Transformers, 2.0 Transformers, Editing platform, Transformers Editor, Creative Editing, Event Hosting, 2.0TF, 20transformers.com">
     <meta name="author" content="2.0Transformers">
     <meta property="og:title" content="2.0Transformers - Website">
     <meta property="og:description" content="Official platform of 2.0Transformers. Explore events, editing, and more!">
@@ -22,12 +22,14 @@
         body { font-family: 'Poppins', sans-serif; }
     </style>
 
+    {% if user.is_authenticated %}
     <script>
-        // Time until warning popup (e.g., 12 minutes if session expires in 15)
-        const warningTime = 12 * 60 * 1000; // 12 minutes in milliseconds
-        const logoutTime = 15 * 60 * 1000;  // 15 minutes
+        const warningTime = 12 * 60 * 1000; // 12 minutes
+        const logoutTime = 15 * 60 * 1000;   // 15 minutes
 
         let warningTimer, logoutTimer;
+        const modal = document.getElementById('idleModal');
+        const stayLoggedInBtn = document.getElementById('stayLoggedIn');
 
         function startTimers() {
             warningTimer = setTimeout(showWarning, warningTime);
@@ -37,22 +39,34 @@
         function resetTimers() {
             clearTimeout(warningTimer);
             clearTimeout(logoutTimer);
+            hideModal();
             startTimers();
         }
 
         function showWarning() {
-            alert("⚡ You will be logged out soon due to inactivity!\nPlease move your mouse or click to stay logged in.");
+            modal.classList.remove('hidden');
+        }
+
+        function hideModal() {
+            modal.classList.add('hidden');
         }
 
         function forceLogout() {
             window.location.href = "{% url 'logout' %}";
         }
 
-        // Reset timers when user interacts
+        // Button click = reset timers
+        stayLoggedInBtn.addEventListener('click', () => {
+            hideModal();
+            resetTimers();
+        });
+
         window.onload = startTimers;
         document.onmousemove = resetTimers;
         document.onkeypress = resetTimers;
     </script>
+    {% endif %}
+
     <script src="https://unpkg.com/swiper/swiper-bundle.min.js"></script>
 
     {% block extra_css %}{% endblock %}
@@ -69,6 +83,17 @@
         {% endfor %}
     </div>
     {% endif %}
+    <!-- Idle Warning Modal -->
+    <div id="idleModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden z-50">
+        <div class="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full text-center">
+        <h2 class="text-lg font-semibold mb-2">Are you still there?</h2>
+        <p class="text-sm text-gray-600 mb-4">You will be logged out soon due to inactivity.</p>
+        <button id="stayLoggedIn" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded">
+            Stay Logged In
+        </button>
+        </div>
+    </div>
+  
 
     {% block content %}{% endblock %}
     
