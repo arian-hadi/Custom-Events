@@ -161,10 +161,12 @@ class CustomLogoutView(LogoutView):
 
 # ✅ Password Reset View (Using Your `CustomPasswordResetForm`)
 class CustomPasswordResetView(PasswordResetView):
-    form_class = CustomPasswordResetForm  # Use your custom form
-    email_template_name = 'registration/password_reset_email.html'
+    form_class = CustomPasswordResetForm
+    email_template_name = 'registration/password_reset_email.txt'  # <-- plain text version
+    html_email_template_name = 'registration/password_reset_email.html'  # <-- HTML version
     success_url = reverse_lazy('password_reset_done')
     template_name = 'registration/password_reset_form.html'
+
 
 class CustomPasswordResetConfirmView(PasswordResetConfirmView):
     success_url = reverse_lazy('password_reset_complete')

@@ -2,6 +2,7 @@
 
 {% block content %}
 <div class="min-h-screen flex items-center justify-center bg-gray-50/50 p-4 sm:p-6 lg:p-8">
+    
     <div class="w-full max-w-xl bg-white rounded-xl p-8 relative
                 before:absolute before:inset-0 before:-z-10 before:rounded-xl before:p-1
                 before:bg-gradient-to-r before:from-emerald-500 before:via-blue-500 before:to-purple-500
@@ -14,10 +15,15 @@
             Verify Your Email
         </h2>
 
+
         <p class="text-center text-sm text-gray-500 mb-6">
             We've sent a verification code to your email. Please enter the code below to activate your account.
         </p>
 
+        <div class="mb-6 p-4 bg-yellow-50 rounded-lg text-sm text-yellow-700">
+            <h3 class="font-medium mb-2">If you can't find the email, please check your spam or junk folder.</h3>
+        </div>
+        
         <form method="POST" class="space-y-6">
             {% csrf_token %}
             
