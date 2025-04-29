@@ -9,6 +9,8 @@ environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
 SECRET_KEY = env("SECRET_KEY")
 DEBUG = env.bool("DEBUG")  # Reads from .env, defaults to True if missing
+
+
 ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
@@ -72,13 +74,13 @@ TAILWIND_APP_NAME = 'theme'
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',
     
 ]
 
@@ -172,26 +174,31 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'mediafiles')
 
 
 
-LOG_FILE = os.path.join(BASE_DIR, "server.log")
+
+import sys
 
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
     "handlers": {
-        "file": {
-            "level": "DEBUG",
-            "class": "logging.FileHandler",
-            "filename": LOG_FILE,
+        "console": {
+            "class": "logging.StreamHandler",
+            "stream": sys.stdout,
         },
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": "DEBUG" if DEBUG else "INFO",
     },
     "loggers": {
         "django": {
-            "handlers": ["file"],
-            "level": "DEBUG",
+            "handlers": ["console"],
+            "level": "DEBUG" if DEBUG else "INFO",
             "propagate": True,
         },
     },
 }
+
 
 # Default primary key field type
 

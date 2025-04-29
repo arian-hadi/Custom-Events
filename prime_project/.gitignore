@@ -128,3 +128,7 @@ Desktop.ini
 Dockerfile
 docker-compose.yml
 .dockerignore
+
+
+# Ignore log files
+*.log
