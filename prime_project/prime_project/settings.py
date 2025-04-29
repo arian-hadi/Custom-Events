@@ -18,7 +18,7 @@ ALLOWED_HOSTS = [
     'www.20transformers.com'
 ]
 
-
+ 
 
 # Application definition
 
