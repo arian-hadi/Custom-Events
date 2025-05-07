@@ -78,7 +78,7 @@ Steps:
   * `SECRET_KEY`
   * `DEBUG=False`
   * `DATABASE_URL` (Railway auto-generates this for Postgres)
-* Set your custom domain (`20transformers.com`) in Railway settings
+* Set your custom domain (`yourdomain.com`) in Railway settings
 * Add the domain to your `ALLOWED_HOSTS` in `settings.py` (you’ve already done this ✅)
 
 ---
@@ -102,8 +102,6 @@ Steps:
 
   * localhost
   * 127.0.0.1
-  * 20transformers.com
-  * [www.20transformers.com](http://www.20transformers.com)
 
 ---
 
@@ -127,16 +125,8 @@ Please follow Django best practices and PEP8 🐍
 
 ---
 
-📄 **License:**
-MIT License. See `LICENSE` file for details.
-
----
-
 📬 **Contact:**
 Created and maintained by **arian-hadi**
 GitHub: [https://github.com/arian-hadi](https://github.com/arian-hadi)
 For suggestions or issues, open a GitHub issue!
 
----
-
-Would you like this saved as a downloadable `.txt` or `.md` file now?
