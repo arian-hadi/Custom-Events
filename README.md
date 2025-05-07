@@ -39,7 +39,7 @@ Custom-Events is a community-driven event management web application built with 
 2. Create and activate a virtual environment
    `python3 -m venv .venv`
    `source .venv/bin/activate`
-
+   
 3. Install dependencies
    `pip install -r requirements.txt`
 
@@ -129,4 +129,25 @@ Please follow Django best practices and PEP8 🐍
 Created and maintained by **arian-hadi**
 GitHub: [https://github.com/arian-hadi](https://github.com/arian-hadi)
 For suggestions or issues, open a GitHub issue!
+
+**Screenshots:**
+* About page
+  ![Screenshot 2025-05-06 153213](https://github.com/user-attachments/assets/ede40440-7c3e-4497-80e8-507941a836e5)
+![Screenshot 2025-05-06 153237](https://github.com/user-attachments/assets/ec7fb4dd-4ee7-41ef-883a-0ca168529151)
+
+* Event Page
+  ![Screenshot 2025-05-06 153300](https://github.com/user-attachments/assets/c399e898-1a02-4ff9-af24-a8fb526ad757)
+![Screenshot 2025-05-07 222229](https://github.com/user-attachments/assets/77c5ca23-4491-4975-b289-dd9b693175ea)
+
+* User & Admin Dashboard
+![Screenshot 2025-05-06 153327](https://github.com/user-attachments/assets/51a1d27b-88ed-4e10-b9aa-5849305cdfec)
+![Screenshot 2025-05-06 153845](https://github.com/user-attachments/assets/29a47e3a-4f2f-4fdb-b858-a0ff154ad6a5)
+
+* Custom Fields For Events Creation
+![Screenshot 2025-05-06 153412](https://github.com/user-attachments/assets/41b0ff10-16e8-4ee2-95f8-410c3e1fa04a)
+![Screenshot 2025-05-06 153445](https://github.com/user-attachments/assets/74d0cbee-af68-45c4-9f0d-b3b0c331e381)
+
+* Event forms fields for Users
+
+  ![Screenshot 2025-05-06 153814](https://github.com/user-attachments/assets/e321b218-1000-446b-a830-5d5e03865336)
 
