@@ -17,9 +17,20 @@ class RegisterUserView(CreateView):
     success_url = reverse_lazy('login')  
 
     def form_valid(self, form):
+        email = form.cleaned_data["email"].lower()
+        
+        blocked_tlds = ('.ru', '.xyz', '.top', '.su')
+        # ❌ Block spam email domains
+        if email.endswith(blocked_tlds):
+            form.add_error("email", "Sorry, the used email domain is not allowed.")
+            return self.form_invalid(form)
+
+        if not email or "@" not in email:
+            form.add_error("email", "Invalid email address.")
+            return self.form_invalid(form)
+
         user = form.save(commit=False)
         user.username = form.cleaned_data["username"]  
-        user.email = form.cleaned_data["email"] 
         user.is_active = False  
         user.save()
 

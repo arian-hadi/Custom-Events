@@ -42,10 +42,17 @@
             <div class="space-y-1">
                 <label for="id_email" class="block text-sm font-medium text-gray-700">Email address</label>
                 <input type="email" name="email" id="id_email" required
-                       placeholder="name@example.com"
-                       class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm
-                              focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all
-                              hover:border-blue-400">
+                    placeholder="name@example.com"
+                    value="{{ form.email.value|default_if_none:'' }}"
+                    class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm
+                            focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all
+                            hover:border-blue-400 {% if form.email.errors %}border-red-500{% endif %}">
+
+                {% if form.email.errors %}
+                    <p class="text-sm text-red-600 mt-1">
+                        {{ form.email.errors.0 }}
+                    </p>
+                {% endif %}
             </div>
 
             <!-- Password -->
