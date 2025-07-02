@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     'contact',
     'dashboard',
     'events',
+    'announcements',
     'tailwind',
     'theme',
 ]

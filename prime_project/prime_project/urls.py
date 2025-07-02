@@ -12,7 +12,7 @@ urlpatterns = [
     path('events/', include('events.urls')),
     path('dashboard/', include('dashboard.urls', namespace='dashboard')),
     path('accounts/', include('accounts.urls')),
-    
+    path('announcements/', include('announcements.urls')),
   
 ]
 
