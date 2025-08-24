@@ -17,7 +17,7 @@ class CustomUser(AbstractUser):
     )
 
     email = models.EmailField(unique=True)
-    username = models.CharField(max_length=150, unique=True)  # You can customize this further if needed
+    username = models.CharField(max_length=150, unique=True)  
     role = models.CharField(choices=ROLE_CHOICES, default='user', max_length=10)
     is_verified = models.BooleanField(default=False)
 
