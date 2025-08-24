@@ -1,58 +1,52 @@
-# from mailjet_rest import Client
-# import os
-# from django.conf import settings
-# from django.core.mail import send_mail
-# from django.shortcuts import reverse
-from django.views.generic import TemplateView, FormView
-# from .forms import ContactForm
-# from prime_project.localsettings import email_address
+from django.conf import settings
+from django.contrib import messages
+from django.contrib.messages.views import SuccessMessageMixin
+from django.core.mail import EmailMessage, BadHeaderError
+from django.urls import reverse_lazy
+from django.views.generic.edit import FormView
+import logging
 
-class ContactView(TemplateView):
+from .forms import ContactForm
+
+logger = logging.getLogger(__name__)
+
+class ContactView(SuccessMessageMixin, FormView):
     template_name = "contact.html"
+    form_class = ContactForm
+    success_url = reverse_lazy("contact")  # make sure this matches your URL name
+    success_message = "Your message has been sent successfully!"
 
-# class SuccessView(TemplateView):
-#     template_name = "success.html"
+    def form_valid(self, form):
+        subject = form.cleaned_data["subject"]
+        email = form.cleaned_data["email"]
+        message = form.cleaned_data["message"]
 
+        full_message = (
+            "NEW EMAIL FROM 2.0TRANSFORMERS SUPPORT\n\n"
+            f"Subject: {subject}\n"
+            f"Email: {email}\n\n"
+            f"Message:\n{message}\n"
+        )
 
-# class ContactView(FormView):
-#     form_class = ContactForm
-#     template_name = "contact.html"
+        # Prefer a dedicated support inbox; fall back to DEFAULT_FROM_EMAIL
+        to_address = getattr(settings, "SUPPORT_INBOX", getattr(settings, "DEFAULT_FROM_EMAIL", None))
 
-#     def get_success_url(self):
-#         return reverse("contact")
+        email_message = EmailMessage(
+            subject=f"Contact Form: {subject}",
+            body=full_message,
+            from_email=getattr(settings, "DEFAULT_FROM_EMAIL", None),
+            to=[to_address] if to_address else None,
+            reply_to=[email],  # note: reply_to (not replay_to)
+        )
 
-#     def form_valid(self, form):
-#         email = form.cleaned_data.get("email")
-#         subject = form.cleaned_data.get("subject")
-#         message = form.cleaned_data.get("message")
+        try:
+            email_message.send(fail_silently=False)
+        except BadHeaderError:
+            form.add_error(None, "Invalid header found.")
+            return self.form_invalid(form)
+        except Exception:
+            logger.exception("Contact form send failed")
+            messages.error(self.request, "There was an error sending your message. Please try again later.")
+            return self.form_invalid(form)
 
-#         # Mailjet API configuration
-#         mailjet = Client(auth=(settings.EMAIL_HOST_API, settings.EMAIL_HOST_SECRET_KEY), version='v3.1')
-#         data = {
-#             'Messages': [
-#                 {
-#                     "From": {
-#                         "Email": email_address
-                        
-#                     },
-#                     "To": [
-#                         {
-#                             "Email": email_address                         
-#                         }
-#                     ],
-#                     "Subject": subject,
-#                     "TextPart": message,
-#                     "HTMLPart": f"<h3>{message}</h3>",
-#                 }
-#             ]
-#         }
-
-#         # Send email
-#         result = mailjet.send.create(data=data)
-#         print(result.status_code)  # Check the HTTP response code
-#         print(result.json())  # Inspect the full response
-
-#         if result.status_code == 200:
-#             return super(ContactView, self).form_valid(form)
-#         else:
-#             return self.form_invalid(form)
+        return super().form_valid(form)
