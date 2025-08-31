@@ -1,81 +1,109 @@
 {% extends "base.html" %}
 {% block title %}Login{% endblock %}
 
-<!-- Empty block to remove the navbar -->
-
 {% block content %}
 <div class="min-h-screen flex items-center justify-center bg-gray-50/50 p-4 sm:p-6 lg:p-8">
-    <div class="w-full max-w-md bg-white rounded-xl p-8 relative
-                before:absolute before:inset-0 before:-z-10 before:rounded-xl before:p-1
-                before:bg-gradient-to-r before:from-emerald-500 before:via-blue-500 before:to-purple-500
-                before:animate-border-glow
-                after:absolute after:inset-0 after:-z-10 after:rounded-xl after:bg-white">
-        
-        <div class="text-center mb-8">
-            <h2 class="text-3xl font-bold bg-gradient-to-r from-emerald-600 via-blue-600 to-purple-600 
-                       text-transparent bg-clip-text animate-gradient-x">
-                Welcome Back
-            </h2>
-        </div>
+  <div class="w-full max-w-md bg-white rounded-xl p-8 relative
+              before:absolute before:inset-0 before:-z-10 before:rounded-xl before:p-1
+              before:bg-gradient-to-r before:from-emerald-500 before:via-blue-500 before:to-purple-500
+              before:animate-border-glow
+              after:absolute after:inset-0 after:-z-10 after:rounded-xl after:bg-white">
 
-        {% if messages %}
-            {% for message in messages %}
-                <div class="mb-4 p-4 rounded-lg {% if message.tags == 'error' %}bg-red-100 text-red-700{% else %}bg-green-100 text-green-700{% endif %}">
-                    {{ message }}
-                </div>
-            {% endfor %}
-        {% endif %}
-
-        <form method="POST" action="{% url 'login' %}" class="space-y-6">
-            {% csrf_token %}
-        
-            <!-- Email Input -->
-            <div>
-                <label for="id_username" class="block text-sm font-medium text-gray-700">Email</label>
-                <input type="email" id="id_username" name="username" required
-                       class="mt-1 block w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm
-                              focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all
-                              hover:border-blue-400">
-            </div>
-        
-            <!-- Password Input -->
-            <div>
-                <label for="id_password" class="block text-sm font-medium text-gray-700">Password</label>
-                <input type="password" id="id_password" name="password" required
-                       class="mt-1 block w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm
-                              focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all
-                              hover:border-blue-400">
-            </div>
-        
-            <div class="flex items-center justify-between">
-                <label class="inline-flex items-center">
-                    <input type="checkbox" name="remember" class="form-checkbox text-blue-600">
-                    <span class="ml-2 text-sm text-gray-600">Remember me</span>
-                </label>
-                <a href="{% url 'password_reset' %}" class="text-sm text-blue-600 hover:text-blue-800">
-                    Forgot password?
-                </a>
-            </div>
-        
-            <button type="submit"
-                    class="w-full py-3 px-4 rounded-lg text-white text-sm font-medium
-                           bg-gradient-to-r from-emerald-500 via-blue-500 to-purple-500
-                           hover:from-emerald-600 hover:via-blue-600 hover:to-purple-600
-                           transform hover:scale-[1.02] transition-all duration-200">
-                Sign In
-            </button>
-        </form>
-        
-        
-
-        <!-- Sign Up Link -->
-        <p class="mt-6 text-center text-sm text-gray-600">
-            Don't have an account? 
-            <a href = "{% url 'signup' %}" 
-               class="text-blue-600 hover:text-purple-600 transition-colors hover:underline">
-                Sign up
-            </a>
-        </p>
+    <div class="text-center mb-8">
+      <h2 class="text-3xl font-bold bg-gradient-to-r from-emerald-600 via-blue-600 to-purple-600 
+                 text-transparent bg-clip-text animate-gradient-x">
+        Welcome Back
+      </h2>
     </div>
+
+    {% if messages %}
+      {% for message in messages %}
+        <div class="mb-4 p-4 rounded-lg {% if message.tags == 'error' %}bg-red-100 text-red-700{% else %}bg-green-100 text-green-700{% endif %}">
+          {{ message }}
+        </div>
+      {% endfor %}
+    {% endif %}
+
+    <form method="POST" action="{% url 'login' %}" class="space-y-6" id="login-form">
+      {% csrf_token %}
+
+      <!-- Email -->
+      <div>
+        <label for="id_username" class="block text-sm font-medium text-gray-700">Email</label>
+        <input type="email" id="id_username" name="username" required
+               class="mt-1 block w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm
+                      focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all
+                      hover:border-blue-400">
+      </div>
+
+      <!-- Password -->
+      <div>
+        <label for="id_password" class="block text-sm font-medium text-gray-700">Password</label>
+        <input type="password" id="id_password" name="password" required
+               class="mt-1 block w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm
+                      focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all
+                      hover:border-blue-400">
+      </div>
+
+      <div class="flex items-center justify-between">
+        <label class="inline-flex items-center">
+          <input type="checkbox" name="remember" class="form-checkbox text-blue-600">
+          <span class="ml-2 text-sm text-gray-600">Remember me</span>
+        </label>
+        <a href="{% url 'password_reset' %}" class="text-sm text-blue-600 hover:text-blue-800">
+          Forgot password?
+        </a>
+      </div>
+
+      <!-- Loading button identical to signup -->
+      <button type="submit" id="submit-btn"
+              class="w-full py-3 px-4 rounded-lg text-white text-sm font-medium
+                     bg-gradient-to-r from-emerald-500 via-blue-500 to-purple-500
+                     hover:from-emerald-600 hover:via-blue-600 hover:to-purple-600
+                     transform hover:scale-[1.02] transition-all duration-200
+                     disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none">
+        <span id="submit-text">Sign In</span>
+        <span id="submit-loading" class="hidden">
+          <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          Signing In...
+        </span>
+      </button>
+    </form>
+
+    <p class="mt-6 text-center text-sm text-gray-600">
+      Don't have an account?
+      <a href="{% url 'signup' %}" class="text-blue-600 hover:text-purple-600 transition-colors hover:underline">
+        Sign up
+      </a>
+    </p>
+  </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const form = document.getElementById('login-form');
+  const submitBtn = document.getElementById('submit-btn');
+  const submitText = document.getElementById('submit-text');
+  const submitLoading = document.getElementById('submit-loading');
+
+  form.addEventListener('submit', function () {
+    // only show loading if the form is actually valid
+    if (form.checkValidity()) {
+      submitBtn.disabled = true;
+      submitText.classList.add('hidden');
+      submitLoading.classList.remove('hidden');
+
+      // safety re-enable in case of server-side error rendering this page again
+      setTimeout(function () {
+        submitBtn.disabled = false;
+        submitText.classList.remove('hidden');
+        submitLoading.classList.add('hidden');
+      }, 5000);
+    }
+  });
+});
+</script>
 {% endblock %}
