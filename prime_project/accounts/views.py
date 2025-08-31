@@ -254,8 +254,11 @@ class EmailLoginView(LoginView):
             })
         return super().dispatch(request, *args, **kwargs)
 
+
+
     def form_valid(self, form):
         user = form.get_user()
+        client_ip = get_client_ip(self.request)
         cache.delete(f"ratelimit:{client_ip}:login_post")
         logger.info(f"Attempting login for user: {user.email}")
 
@@ -272,8 +275,6 @@ class EmailLoginView(LoginView):
         login(self.request, user)
         logger.info(f"User {user.email} logged in successfully.")
 
-        # Clear any failed login attempts for this user
-        client_ip = get_client_ip(self.request)
         cache.delete(f"login_failed:{client_ip}")
 
         if user.is_admin():
