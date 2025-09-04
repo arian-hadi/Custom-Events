@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'announcements',
     'tailwind',
     'theme',
+    'ratelimit'
 ]
 
 
@@ -187,19 +188,26 @@ LOGGING = {
             "stream": sys.stdout,
         },
     },
+    # Send everything to console at INFO+ by default
     "root": {
         "handlers": ["console"],
-        "level": "DEBUG" if DEBUG else "INFO",
+        "level": "INFO",
     },
     "loggers": {
+        # Django framework logs at INFO+ and do NOT propagate to root (avoids duplicates)
         "django": {
             "handlers": ["console"],
-            "level": "DEBUG" if DEBUG else "INFO",
-            "propagate": True,
+            "level": "INFO",      # use "WARNING" for even less noise
+            "propagate": False,
+        },
+        # Silence the autoreloader’s DEBUG spam specifically
+        "django.utils.autoreload": {
+            "handlers": ["console"],
+            "level": "WARNING",   # or "ERROR" to hide almost all of it
+            "propagate": False,
         },
     },
 }
-
 
 # Default primary key field type
 
