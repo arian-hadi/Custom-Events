@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load widget_tweaks %}
 {% block title %}Support{% endblock %}
 {% block content %}
 
@@ -25,6 +26,12 @@
       {{ form.non_field_errors }}
 
       <div>
+        <label class="block text-sm font-medium text-gray-700">Name</label>
+        {{ form.name|add_class:"mt-1 block w-full rounded-md border-gray-300 shadow-sm" }}
+        {{ form.name.errors }}
+      </div>
+
+      <div>
         <label class="block text-sm font-medium text-gray-700">Email</label>
         {{ form.email|add_class:"mt-1 block w-full rounded-md border-gray-300 shadow-sm" }}
         {{ form.email.errors }}
@@ -42,6 +49,11 @@
         {{ form.message.errors }}
       </div>
 
+      {# Honeypot field (hidden from humans) #}
+      <div style="display:none;">
+        {{ form.website }}
+      </div>
+
       <button type="submit"
               class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded">
         Send
@@ -50,7 +62,9 @@
 
     <div class="border-t mt-8 pt-6 text-sm text-gray-600">
       <p class="font-semibold mb-2">Other ways to reach us</p>
-      <p class="mb-2"><i class="fa-solid fa-envelope"></i> Email: <span class="text-blue-600 break-words">2.0transformerz@gmail.com</span></p>
+      <p class="mb-2"><i class="fa-solid fa-envelope"></i> Email: 
+        <span class="text-blue-600 break-words">2.0transformerz@gmail.com</span>
+      </p>
       <p class="mb-3"><i class="fa-brands fa-discord text-blue-600"></i> Discord: 
         <a class="text-blue-600 underline" href="https://discord.gg/mPyyKZefRz" target="_blank">Join our server</a>
       </p>

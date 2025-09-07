@@ -17,30 +17,39 @@ class ContactView(SuccessMessageMixin, FormView):
     success_message = "Your message has been sent successfully!"
 
     def form_valid(self, form):
+        name = form.cleaned_data["name"]
         subject = form.cleaned_data["subject"]
         email = form.cleaned_data["email"]
         message = form.cleaned_data["message"]
 
         full_message = (
             "NEW EMAIL FROM 2.0TRANSFORMERS SUPPORT\n\n"
-            f"Subject: {subject}\n"
+            f"From : {name}\n"
             f"Email: {email}\n\n"
+            f"Subject: {subject}\n\n"
             f"Message:\n{message}\n"
         )
 
-        # Prefer a dedicated support inbox; fall back to DEFAULT_FROM_EMAIL
-        to_address = getattr(settings, "SUPPORT_INBOX", getattr(settings, "DEFAULT_FROM_EMAIL", None))
+        to_address = getattr(settings, "SUPPORT_INBOX", getattr(settings, "DEFAULT_FROM_EMAIL"))
+
+        if not to_address:
+            form.add_error(None, "No support inbox is configured.")
+            return self.form_invalid(form)
 
         email_message = EmailMessage(
             subject=f"Contact Form: {subject}",
             body=full_message,
-            from_email=getattr(settings, "DEFAULT_FROM_EMAIL", None),
-            to=[to_address] if to_address else None,
-            reply_to=[email],  # note: reply_to (not replay_to)
+            from_email=getattr(settings, "DEFAULT_FROM_EMAIL"),
+            to=[to_address],
+            reply_to=[email],
         )
 
         try:
-            email_message.send(fail_silently=False)
+            sent_count = email_message.send(fail_silently=False)
+            logger.info("Contact email queued result count=%s to=%s", sent_count, email_message.to)
+            if sent_count == 0:
+                messages.error(self.request, "The mail server did not accept the message.")
+                return self.form_invalid(form)
         except BadHeaderError:
             form.add_error(None, "Invalid header found.")
             return self.form_invalid(form)
@@ -49,4 +58,5 @@ class ContactView(SuccessMessageMixin, FormView):
             messages.error(self.request, "There was an error sending your message. Please try again later.")
             return self.form_invalid(form)
 
+        # <-- IMPORTANT: on success, return a real response
         return super().form_valid(form)
