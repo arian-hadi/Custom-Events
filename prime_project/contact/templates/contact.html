@@ -3,12 +3,12 @@
 {% block content %}
 
 <!-- HERO -->
-<section class="relative bg-gradient-to-b from-gray-900 to-gray-800 py-12 text-white">
+<section class="relative bg-gradient-to-b from-gray-900 to-gray-800 py-8 text-white">
   <div class="mx-auto max-w-5xl px-6 pt-28 pb-28 text-center">
     <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight">CONTACT US</h1>
     <p class="mt-4 text-sm sm:text-base text-slate-300">
-      The assurance of a prompt response, and we will get back to you as soon as possible,
-      underscores attentiveness and commitment to addressing inquiries.
+      Questions about edits, downloadable assets, or your account? Send a message here and We'll get back to you.
+      2.0Transformers is the home for all type of editor's communit and a place to share my editing tools with the community.
     </p>
   </div>
 </section>
@@ -94,6 +94,24 @@
           </span>
         </button>
       </form>
+      <!-- Alternative: Discord -->
+      <div class="mt-8 border-t pt-6">
+        <p class="text-sm text-gray-600 mb-3">
+          Prefer real-time chat? Join the community on Discord and reach me there:
+        </p>
+
+        <a href="https://discord.gg/Sf3Ya4kskG" target="_blank"
+          class="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-white text-sm font-medium
+                  bg-gradient-to-r from-indigo-900 via-purple-800 to-blue-700
+                  hover:from-indigo-800 hover:via-purple-700 hover:to-blue-600
+                  transition-all">
+          <!-- simple Discord glyph -->
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 127.14 96.36" class="h-5 w-5" fill="currentColor" aria-hidden="true">
+            <path d="M107.7,8.07A105.15,105.15,0,0,0,81.5,0a72.06,72.06,0,0,0-3.38,6.94A97.68,97.68,0,0,0,48.92,6.9,72.37,72.37,0,0,0,45.54,0,105.89,105.89,0,0,0,19.32,8.09C2.79,33.5-1.71,58.36.54,83a106.59,106.59,0,0,0,31.72,12.83A77.7,77.7,0,0,0,39,83.16a68.67,68.67,0,0,1-10.79-5.23q1.35-1,2.63-2.06A75.36,75.36,0,0,0,63.57,82.6a75.27,75.27,0,0,0,32.73-6.73q1.29,1.08,2.63,2.06A68.6,68.6,0,0,1,88.14,83.2a77.35,77.35,0,0,0,6.76,12.65A106.74,106.74,0,0,0,126.62,83C129,57.25,122.62,32.47,107.7,8.07ZM42.43,65.69c-6.38,0-11.58-5.88-11.58-13.12S36,39.45,42.43,39.45,54,45.33,54,52.57,48.79,65.69,42.43,65.69Zm42.28,0c-6.38,0-11.58-5.88-11.58-13.12s5.2-13.12,11.58-13.12S96.29,45.33,96.29,52.57,91.09,65.69,84.71,65.69Z"/>
+          </svg>
+          Join our Discord
+        </a>
+      </div>
     </div>
 
     <div class="h-16 sm:h-24"></div>
@@ -113,7 +131,7 @@ document.addEventListener('DOMContentLoaded', function () {
       submitText.classList.add('hidden');
       submitLoading.classList.remove('hidden');
 
-      // Safety reset in case of server-side validation error and the page re-renders here
+      // safety re-enable in case of server-side re-render with errors
       setTimeout(function () {
         submitBtn.disabled = false;
         submitText.classList.remove('hidden');
@@ -123,5 +141,6 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 });
 </script>
+
 
 {% endblock %}
