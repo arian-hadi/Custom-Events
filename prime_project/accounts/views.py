@@ -1,5 +1,5 @@
 from django.contrib.auth.views import LoginView, LogoutView, PasswordResetView, PasswordResetConfirmView
-from django.urls import reverse_lazy
+from django.urls import reverse_lazy,reverse, NoReverseMatch
 from django.shortcuts import render, redirect
 from django.views.generic import CreateView, View
 from django.contrib import messages
@@ -278,8 +278,17 @@ class EmailLoginView(LoginView):
         cache.delete(f"login_failed:{client_ip}")
 
         if user.is_admin():
-            return redirect('dashboard:admin_dashboard')
-        return redirect('dashboard:user_dashboard')
+            next_name = 'dashboard:admin_dashboard'
+        else:
+            next_name = 'dashboard:user_dashboard'
+
+        try:
+            reverse(next_name)  # explode early if missing in prod
+            return redirect(next_name)
+        except NoReverseMatch:
+            logger.exception("Missing URL name for post-login redirect: %s", next_name)
+            messages.error(self.request, "Dashboard is temporarily unavailable.")
+            return redirect('login')
 
     def form_invalid(self, form):
         client_ip = get_client_ip(self.request)
