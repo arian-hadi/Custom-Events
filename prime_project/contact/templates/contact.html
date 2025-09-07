@@ -1,75 +1,127 @@
 {% extends "base.html" %}
-{% load widget_tweaks %}
-{% block title %}Support{% endblock %}
+{% block title %}Contact Us{% endblock %}
 {% block content %}
 
-<div class="min-h-screen flex items-center justify-center bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
-  <div class="max-w-md w-full bg-white p-8 rounded-lg shadow-md">
-    <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">Contact Us</h2>
-
-    {# show success/error messages #}
-    {% if messages %}
-      <ul class="mb-4 space-y-2">
-        {% for message in messages %}
-          <li class="text-sm p-2 rounded
-                     {% if message.tags == 'success' %}bg-green-100 text-green-700
-                     {% elif message.tags == 'error' %}bg-red-100 text-red-700
-                     {% else %}bg-gray-100 text-gray-700{% endif %}">
-            {{ message }}
-          </li>
-        {% endfor %}
-      </ul>
-    {% endif %}
-
-    <form method="post" class="space-y-4">
-      {% csrf_token %}
-      {{ form.non_field_errors }}
-
-      <div>
-        <label class="block text-sm font-medium text-gray-700">Name</label>
-        {{ form.name|add_class:"mt-1 block w-full rounded-md border-gray-300 shadow-sm" }}
-        {{ form.name.errors }}
-      </div>
-
-      <div>
-        <label class="block text-sm font-medium text-gray-700">Email</label>
-        {{ form.email|add_class:"mt-1 block w-full rounded-md border-gray-300 shadow-sm" }}
-        {{ form.email.errors }}
-      </div>
-
-      <div>
-        <label class="block text-sm font-medium text-gray-700">Subject</label>
-        {{ form.subject|add_class:"mt-1 block w-full rounded-md border-gray-300 shadow-sm" }}
-        {{ form.subject.errors }}
-      </div>
-
-      <div>
-        <label class="block text-sm font-medium text-gray-700">Message</label>
-        {{ form.message|add_class:"mt-1 block w-full rounded-md border-gray-300 shadow-sm h-32" }}
-        {{ form.message.errors }}
-      </div>
-
-      {# Honeypot field (hidden from humans) #}
-      <div style="display:none;">
-        {{ form.website }}
-      </div>
-
-      <button type="submit"
-              class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded">
-        Send
-      </button>
-    </form>
-
-    <div class="border-t mt-8 pt-6 text-sm text-gray-600">
-      <p class="font-semibold mb-2">Other ways to reach us</p>
-      <p class="mb-2"><i class="fa-solid fa-envelope"></i> Email: 
-        <span class="text-blue-600 break-words">2.0transformerz@gmail.com</span>
-      </p>
-      <p class="mb-3"><i class="fa-brands fa-discord text-blue-600"></i> Discord: 
-        <a class="text-blue-600 underline" href="https://discord.gg/mPyyKZefRz" target="_blank">Join our server</a>
-      </p>
-    </div>
+<!-- HERO -->
+<section class="relative bg-gradient-to-b from-gray-900 to-gray-800 py-12 text-white">
+  <div class="mx-auto max-w-5xl px-6 pt-28 pb-28 text-center">
+    <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight">CONTACT US</h1>
+    <p class="mt-4 text-sm sm:text-base text-slate-300">
+      The assurance of a prompt response, and we will get back to you as soon as possible,
+      underscores attentiveness and commitment to addressing inquiries.
+    </p>
   </div>
-</div>
+</section>
+
+<!-- OVERLAPPING CARD -->
+<section class="bg-gray-100">
+  <div class="mx-auto max-w-4xl px-6">
+    <div class="relative -mt-24 z-10 bg-white rounded-3xl shadow-xl ring-1 ring-black/5 p-8 sm:p-10">
+      <h2 class="text-center text-2xl font-semibold text-gray-800">Send Us Message</h2>
+
+      {% if messages %}
+        <ul class="mt-6 mb-2 space-y-2">
+          {% for message in messages %}
+            <li class="text-sm p-2 rounded
+                       {% if message.tags == 'success' %}bg-green-100 text-green-700
+                       {% elif message.tags == 'error' %}bg-red-100 text-red-700
+                       {% else %}bg-gray-100 text-gray-700{% endif %}">
+              {{ message }}
+            </li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+
+      <form method="post" class="mt-6" id="contact-form">
+        {% csrf_token %}
+        {{ form.non_field_errors }}
+
+        <!-- 2-col row -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <div>
+            <label class="block text-sm font-medium text-gray-700">
+              Name / Username <span class="text-red-500">*</span>
+            </label>
+            {{ form.name }}
+            {{ form.name.errors }}
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700">
+              Email <span class="text-red-500">*</span>
+            </label>
+            {{ form.email }}
+            {{ form.email.errors }}
+          </div>
+        </div>
+
+        <!-- Subject -->
+        <div class="mt-5">
+          <label class="block text-sm font-medium text-gray-700">
+            Subject <span class="text-red-500">*</span>
+          </label>
+          {{ form.subject }}
+          {{ form.subject.errors }}
+        </div>
+
+        <!-- Message -->
+        <div class="mt-5">
+          <label class="block text-sm font-medium text-gray-700">
+            Description <span class="text-red-500">*</span>
+          </label>
+          {{ form.message }}
+          {{ form.message.errors }}
+        </div>
+
+        <!-- Honeypot -->
+        <div style="display:none;">
+          {{ form.website }}
+        </div>
+
+        <!-- Button: “close but different” theme vs login -->
+        <button type="submit" id="contact-submit-btn"
+                class="mt-8 w-full py-3 px-4 rounded-lg text-white text-sm font-medium
+                       bg-gradient-to-r from-indigo-500 via-blue-600 to-cyan-500
+                       hover:from-indigo-600 hover:via-blue-700 hover:to-cyan-600
+                       transform hover:scale-[1.02] transition-all duration-200
+                       disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none">
+          <span id="contact-submit-text">Send Message</span>
+          <span id="contact-submit-loading" class="hidden">
+            <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Sending…
+          </span>
+        </button>
+      </form>
+    </div>
+
+    <div class="h-16 sm:h-24"></div>
+  </div>
+</section>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const form = document.getElementById('contact-form');
+  const submitBtn = document.getElementById('contact-submit-btn');
+  const submitText = document.getElementById('contact-submit-text');
+  const submitLoading = document.getElementById('contact-submit-loading');
+
+  form.addEventListener('submit', function () {
+    if (form.checkValidity()) {
+      submitBtn.disabled = true;
+      submitText.classList.add('hidden');
+      submitLoading.classList.remove('hidden');
+
+      // Safety reset in case of server-side validation error and the page re-renders here
+      setTimeout(function () {
+        submitBtn.disabled = false;
+        submitText.classList.remove('hidden');
+        submitLoading.classList.add('hidden');
+      }, 5000);
+    }
+  });
+});
+</script>
 
 {% endblock %}
