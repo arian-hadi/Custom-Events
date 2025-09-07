@@ -1,41 +1,146 @@
 {% extends "base.html" %}
-{% block title %}Support{% endblock %}
+{% block title %}Contact Us{% endblock %}
 {% block content %}
-<h1>Contact Us</h1>
-<!-- <form method="post">
-  {% csrf_token %}
-  {{ form }}
-  <div class="form-actions">
-    <button type="submit">Send</button>
-  </div>
-</form> -->
 
-<div class="min-h-screen flex items-center justify-center bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
-  <div class="max-w-md w-full bg-white p-8 rounded-lg shadow-md text-center">
-    <h2 class="text-2xl font-bold text-gray-800 mb-4">Need Help?</h2>
-    <p class="text-gray-600 mb-6">
-      We're here to help!  
-      If you encounter any issues, you can contact us through:
-    </p>
-
-    <div class="text-left mb-6">
-      <p class="text-gray-700 font-semibold"><i class="fa-solid fa-envelope"></i>Email:</p>
-      <p class="text-blue-600 break-words">2.0transformerz@gmail.com</p>
-    </div>
-
-    <div class="text-left mb-6">
-      <p class="text-gray-700 font-semibold"><i class="fa-brands fa-discord text-blue-600"></i>Discord:</p>
-      <p class="text-gray-600 mb-4">Join our Discord server to get fast support and updates.</p>
-      <a href="https://discord.gg/mPyyKZefRz" target="_blank" 
-         class="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg transition">
-        Join Our Discord
-      </a>
-    </div>
-
-    <p class="text-gray-400 text-xs mt-6">
-      Thank you for being part of the 2.0Transformers community!
+<!-- HERO -->
+<section class="relative bg-gradient-to-b from-gray-900 to-gray-800 py-8 text-white">
+  <div class="mx-auto max-w-5xl px-6 pt-28 pb-28 text-center">
+    <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight">CONTACT US</h1>
+    <p class="mt-4 text-sm sm:text-base text-slate-300">
+      Questions about edits, downloadable assets, or your account? Send a message here and We'll get back to you.
+      2.0Transformers is the home for all type of editor's communit and a place to share my editing tools with the community.
     </p>
   </div>
-</div>
+</section>
+
+<!-- OVERLAPPING CARD -->
+<section class="bg-gray-100">
+  <div class="mx-auto max-w-4xl px-6">
+    <div class="relative -mt-24 z-10 bg-white rounded-3xl shadow-xl ring-1 ring-black/5 p-8 sm:p-10">
+      <h2 class="text-center text-2xl font-semibold text-gray-800">Send Us Message</h2>
+
+      {% if messages %}
+        <ul class="mt-6 mb-2 space-y-2">
+          {% for message in messages %}
+            <li class="text-sm p-2 rounded
+                       {% if message.tags == 'success' %}bg-green-100 text-green-700
+                       {% elif message.tags == 'error' %}bg-red-100 text-red-700
+                       {% else %}bg-gray-100 text-gray-700{% endif %}">
+              {{ message }}
+            </li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+
+      <form method="post" class="mt-6" id="contact-form">
+        {% csrf_token %}
+        {{ form.non_field_errors }}
+
+        <!-- 2-col row -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <div>
+            <label class="block text-sm font-medium text-gray-700">
+              Name / Username <span class="text-red-500">*</span>
+            </label>
+            {{ form.name }}
+            {{ form.name.errors }}
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700">
+              Email <span class="text-red-500">*</span>
+            </label>
+            {{ form.email }}
+            {{ form.email.errors }}
+          </div>
+        </div>
+
+        <!-- Subject -->
+        <div class="mt-5">
+          <label class="block text-sm font-medium text-gray-700">
+            Subject <span class="text-red-500">*</span>
+          </label>
+          {{ form.subject }}
+          {{ form.subject.errors }}
+        </div>
+
+        <!-- Message -->
+        <div class="mt-5">
+          <label class="block text-sm font-medium text-gray-700">
+            Description <span class="text-red-500">*</span>
+          </label>
+          {{ form.message }}
+          {{ form.message.errors }}
+        </div>
+
+        <!-- Honeypot -->
+        <div style="display:none;">
+          {{ form.website }}
+        </div>
+
+        <!-- Button: “close but different” theme vs login -->
+        <button type="submit" id="contact-submit-btn"
+                class="mt-8 w-full py-3 px-4 rounded-lg text-white text-sm font-medium
+                       bg-gradient-to-r from-indigo-500 via-blue-600 to-cyan-500
+                       hover:from-indigo-600 hover:via-blue-700 hover:to-cyan-600
+                       transform hover:scale-[1.02] transition-all duration-200
+                       disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none">
+          <span id="contact-submit-text">Send Message</span>
+          <span id="contact-submit-loading" class="hidden">
+            <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Sending…
+          </span>
+        </button>
+      </form>
+      <!-- Alternative: Discord -->
+      <div class="mt-8 border-t pt-6">
+        <p class="text-sm text-gray-600 mb-3">
+          Prefer real-time chat? Join the community on Discord and reach me there:
+        </p>
+
+        <a href="https://discord.gg/Sf3Ya4kskG" target="_blank"
+          class="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-white text-sm font-medium
+                  bg-gradient-to-r from-indigo-900 via-purple-800 to-blue-700
+                  hover:from-indigo-800 hover:via-purple-700 hover:to-blue-600
+                  transition-all">
+          <!-- simple Discord glyph -->
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 127.14 96.36" class="h-5 w-5" fill="currentColor" aria-hidden="true">
+            <path d="M107.7,8.07A105.15,105.15,0,0,0,81.5,0a72.06,72.06,0,0,0-3.38,6.94A97.68,97.68,0,0,0,48.92,6.9,72.37,72.37,0,0,0,45.54,0,105.89,105.89,0,0,0,19.32,8.09C2.79,33.5-1.71,58.36.54,83a106.59,106.59,0,0,0,31.72,12.83A77.7,77.7,0,0,0,39,83.16a68.67,68.67,0,0,1-10.79-5.23q1.35-1,2.63-2.06A75.36,75.36,0,0,0,63.57,82.6a75.27,75.27,0,0,0,32.73-6.73q1.29,1.08,2.63,2.06A68.6,68.6,0,0,1,88.14,83.2a77.35,77.35,0,0,0,6.76,12.65A106.74,106.74,0,0,0,126.62,83C129,57.25,122.62,32.47,107.7,8.07ZM42.43,65.69c-6.38,0-11.58-5.88-11.58-13.12S36,39.45,42.43,39.45,54,45.33,54,52.57,48.79,65.69,42.43,65.69Zm42.28,0c-6.38,0-11.58-5.88-11.58-13.12s5.2-13.12,11.58-13.12S96.29,45.33,96.29,52.57,91.09,65.69,84.71,65.69Z"/>
+          </svg>
+          Join our Discord
+        </a>
+      </div>
+    </div>
+
+    <div class="h-16 sm:h-24"></div>
+  </div>
+</section>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const form = document.getElementById('contact-form');
+  const submitBtn = document.getElementById('contact-submit-btn');
+  const submitText = document.getElementById('contact-submit-text');
+  const submitLoading = document.getElementById('contact-submit-loading');
+
+  form.addEventListener('submit', function () {
+    if (form.checkValidity()) {
+      submitBtn.disabled = true;
+      submitText.classList.add('hidden');
+      submitLoading.classList.remove('hidden');
+
+      // safety re-enable in case of server-side re-render with errors
+      setTimeout(function () {
+        submitBtn.disabled = false;
+        submitText.classList.remove('hidden');
+        submitLoading.classList.add('hidden');
+      }, 5000);
+    }
+  });
+});
+</script>
+
 
 {% endblock %}

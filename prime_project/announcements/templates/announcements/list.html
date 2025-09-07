@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% load static %}
+
+
+{% block content %}
+{% for announcement in announcements %}
+  <div class="rounded shadow p-4 mb-4 bg-white">
+    {% if announcement.thumbnail %}
+      <img src="{{ announcement.thumbnail.url }}" alt="Thumbnail" class="w-24 h-24 object-cover rounded mb-2">
+    {% endif %}
+    <h2 class="text-lg font-semibold">{{ announcement.title }}</h2>
+    <p>{{ announcement.message|truncatewords:20 }}</p>
+    <a href="{% url 'announcement_detail' announcement.id %}" class="text-blue-500">Read more</a>
+  </div>
+{% endfor %}
+{% endblock %}
+
