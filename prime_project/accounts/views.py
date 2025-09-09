@@ -32,36 +32,38 @@ def get_client_ip(request):
     return ip
 
 def is_rate_limited(request, key_suffix='', limit=5, period=300):
-    client_ip = get_client_ip(request)
-    cache_key = f"ratelimit:{client_ip}:{key_suffix}"
-    
-    current_count = cache.get(cache_key, 0)
-    if current_count >= limit:
-        return True
-    
-    cache.set(cache_key, current_count + 1, period)
-    return False
-
-# Turnstile verification (keeping your existing function)
-def verify_turnstile(request) -> bool:
-    token = request.POST.get("cf-turnstile-response")
-    secret = os.environ.get("TURNSTILE_SECRET_KEY")
-    if not token or not secret:
-        return False
     try:
-        resp = requests.post(
-            "https://challenges.cloudflare.com/turnstile/v0/siteverify",
-            data={
-                "secret": secret,
-                "response": token,
-                "remoteip": get_client_ip(request),
-            },
-            timeout=5,
-        )
-        data = resp.json()
-        return bool(data.get("success"))
-    except Exception:
+        client_ip = get_client_ip(request)
+        cache_key = f"ratelimit:{client_ip}:{key_suffix}"
+        current_count = cache.get(cache_key, 0) or 0
+        if current_count >= limit:
+            return True
+        cache.set(cache_key, current_count + 1, period)
         return False
+    except Exception as e:
+        logger.warning("Rate limit cache error: %s", e)
+        return False  # degrade gracefully
+
+# # Turnstile verification (keeping your existing function)
+# def verify_turnstile(request) -> bool:
+#     token = request.POST.get("cf-turnstile-response")
+#     secret = os.environ.get("TURNSTILE_SECRET_KEY")
+#     if not token or not secret:
+#         return False
+#     try:
+#         resp = requests.post(
+#             "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+#             data={
+#                 "secret": secret,
+#                 "response": token,
+#                 "remoteip": get_client_ip(request),
+#             },
+#             timeout=5,
+#         )
+#         data = resp.json()
+#         return bool(data.get("success"))
+#     except Exception:
+#         return False
 
 
 @method_decorator([csrf_protect, never_cache], name='dispatch')
@@ -260,7 +262,7 @@ class EmailLoginView(LoginView):
         user = form.get_user()
         client_ip = get_client_ip(self.request)
         cache.delete(f"ratelimit:{client_ip}:login_post")
-        logger.info(f"Attempting login for user: {user.email}")
+        logger.info("Attempting login for user_id=%s", user.pk)
 
         if not user.is_verified:
             logger.warning(f"User {user.email} is not verified")
