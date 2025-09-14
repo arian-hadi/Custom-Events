@@ -233,6 +233,8 @@ class EmailAuthenticationForm(AuthenticationForm):
 
     def clean_username(self):
         email = self.cleaned_data.get('username', '').strip().lower()
+        if not email:
+            raise ValidationError("Email is required.")
         validate_email(email)
         return email
 

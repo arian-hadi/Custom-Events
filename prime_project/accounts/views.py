@@ -266,7 +266,15 @@ class EmailLoginView(LoginView):
 
     def form_valid(self, form):
         try:
+            # Debug form data before authentication
+            logger.info(f"Login form data: {form.cleaned_data}")
+            
             user = form.get_user()
+            if not user:
+                logger.warning("No user returned from form.get_user()")
+                messages.error(self.request, "Invalid email or password.")
+                return self.form_invalid(form)
+                
             client_ip = get_client_ip(self.request)
             cache.delete(f"ratelimit:{client_ip}:login_post")
             logger.info("Attempting login for user_id=%s", user.pk)
@@ -306,6 +314,14 @@ class EmailLoginView(LoginView):
     def form_invalid(self, form):
         client_ip = get_client_ip(self.request)
         logger.warning(f"Login failed from IP {client_ip}")
+        
+        # Debug form errors
+        if form.errors:
+            logger.warning(f"Form errors: {form.errors}")
+        
+        # Debug form data
+        logger.warning(f"Form data: {form.data}")
+        
         messages.error(self.request, "Invalid email or password.")
         return super().form_invalid(form)
 
