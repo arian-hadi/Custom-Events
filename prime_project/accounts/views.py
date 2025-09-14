@@ -42,6 +42,7 @@ def is_rate_limited(request, key_suffix='', limit=5, period=300):
         return False
     except Exception as e:
         logger.warning("Rate limit cache error: %s", e)
+        # In production, if cache fails, be more permissive to avoid blocking users
         return False  # degrade gracefully
 
 # # Turnstile verification (keeping your existing function)
@@ -111,8 +112,13 @@ class RegisterUserView(CreateView):
             self.request.session["user_email"] = user.email
             self.request.session["registration_time"] = int(time.time())
 
-            send_code_to_user(user.email)
-            messages.success(self.request, "Account created! Please check your email for verification code.")
+            # Try to send OTP email, but don't fail registration if it fails
+            try:
+                send_code_to_user(user.email)
+                messages.success(self.request, "Account created! Please check your email for verification code.")
+            except Exception as email_error:
+                logger.error(f"Failed to send OTP email: {str(email_error)}")
+                messages.warning(self.request, "Account created! However, there was an issue sending the verification email. Please try logging in or contact support.")
 
             return redirect('verify_email')
             
@@ -259,38 +265,43 @@ class EmailLoginView(LoginView):
 
 
     def form_valid(self, form):
-        user = form.get_user()
-        client_ip = get_client_ip(self.request)
-        cache.delete(f"ratelimit:{client_ip}:login_post")
-        logger.info("Attempting login for user_id=%s", user.pk)
-
-        if not user.is_verified:
-            logger.warning(f"User {user.email} is not verified")
-            messages.error(self.request, "Please verify your email before logging in.")
-            return self.form_invalid(form)
-
-        if not user.is_active:
-            logger.warning(f"User {user.email} is not active")
-            messages.error(self.request, "Your account is not active.")
-            return self.form_invalid(form)
-
-        login(self.request, user)
-        logger.info(f"User {user.email} logged in successfully.")
-
-        cache.delete(f"login_failed:{client_ip}")
-
-        if user.is_admin():
-            next_name = 'dashboard:admin_dashboard'
-        else:
-            next_name = 'dashboard:user_dashboard'
-
         try:
-            reverse(next_name)  # explode early if missing in prod
-            return redirect(next_name)
-        except NoReverseMatch:
-            logger.exception("Missing URL name for post-login redirect: %s", next_name)
-            messages.error(self.request, "Dashboard is temporarily unavailable.")
-            return redirect('login')
+            user = form.get_user()
+            client_ip = get_client_ip(self.request)
+            cache.delete(f"ratelimit:{client_ip}:login_post")
+            logger.info("Attempting login for user_id=%s", user.pk)
+
+            if not user.is_verified:
+                logger.warning(f"User {user.email} is not verified")
+                messages.error(self.request, "Please verify your email before logging in.")
+                return self.form_invalid(form)
+
+            if not user.is_active:
+                logger.warning(f"User {user.email} is not active")
+                messages.error(self.request, "Your account is not active.")
+                return self.form_invalid(form)
+
+            login(self.request, user)
+            logger.info(f"User {user.email} logged in successfully.")
+
+            cache.delete(f"login_failed:{client_ip}")
+
+            if user.is_admin():
+                next_name = 'dashboard:admin_dashboard'
+            else:
+                next_name = 'dashboard:user_dashboard'
+
+            try:
+                reverse(next_name)  # explode early if missing in prod
+                return redirect(next_name)
+            except NoReverseMatch:
+                logger.exception("Missing URL name for post-login redirect: %s", next_name)
+                messages.error(self.request, "Dashboard is temporarily unavailable.")
+                return redirect('login')
+        except Exception as e:
+            logger.error(f"Login error: {str(e)}")
+            messages.error(self.request, "Login failed. Please try again.")
+            return self.form_invalid(form)
 
     def form_invalid(self, form):
         client_ip = get_client_ip(self.request)

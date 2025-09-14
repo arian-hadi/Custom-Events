@@ -19,11 +19,14 @@ SPAM_PATTERNS = [
     re.compile(r'(.)\1{4,}', re.I),   # Repeated characters (aaaaa, 11111)
 ]
 
-# Optional: enable MX check
+# Optional: enable MX check - Disabled for production deployment
 ENABLE_MX_CHECK = False  # Set to True if you install dnspython
 try:
     import dns.resolver  # pip install dnspython
-    ENABLE_MX_CHECK = True
+    # Only enable MX check in development, not in production
+    import os
+    if os.getenv('DEBUG', 'False').lower() == 'true':
+        ENABLE_MX_CHECK = True
 except ImportError:
     pass
 

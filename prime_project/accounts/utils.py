@@ -35,13 +35,21 @@ def send_code_to_user(email):
     )
     from_email = settings.DEFAULT_FROM_EMAIL
 
-    email_message = EmailMessage(
-        subject=subject,
-        body=email_body,
-        from_email=from_email,
-        to=[email]
-    )
-    email_message.send(fail_silently=False)
+    try:
+        email_message = EmailMessage(
+            subject=subject,
+            body=email_body,
+            from_email=from_email,
+            to=[email]
+        )
+        email_message.send(fail_silently=False)
+    except Exception as e:
+        # Log the error but don't fail the registration process
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Failed to send OTP email to {email}: {str(e)}")
+        # In production, you might want to handle this differently
+        # For now, we'll let the registration continue
 
 
 
