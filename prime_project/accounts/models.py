@@ -38,8 +38,16 @@ class CustomUser(AbstractUser):
 # One-Time Password Model
 class OneTimePassword(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
-    code = models.CharField(max_length=6, unique=True)
+    code = models.CharField(max_length=6)
     created_at = models.DateTimeField(default=now)
+
+    class Meta:
+        # At most one active code per user; allow different users to share the same 6-digit code.
+        unique_together = ('user', 'code')
+        indexes = [
+            models.Index(fields=['user', 'code']),
+            models.Index(fields=['created_at']),
+    ]
 
     def is_expired(self):
         return self.created_at < now() - timedelta(minutes=10)
