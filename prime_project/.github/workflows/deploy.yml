@@ -2,9 +2,9 @@ name: Deploy to Hetzner
 
 on:
   push:
-    branches: [ main ]  # Only deploy when pushing to main branch
+    branches: [ master ]  # Only deploy when pushing to master branch
   pull_request:
-    branches: [ main ]
+    branches: [ master ]
 
 jobs:
   test:
@@ -54,7 +54,7 @@ jobs:
   deploy:
     needs: test
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: github.ref == 'refs/heads/master' && github.event_name == 'push'
     
     steps:
     - uses: actions/checkout@v4
@@ -67,7 +67,7 @@ jobs:
         key: ${{ secrets.HETZNER_SSH_KEY }}
         script: |
           cd /path/to/your/project
-          git pull origin main
+          git pull origin master
           docker-compose down
           docker-compose up --build -d
           docker-compose exec web python manage.py migrate
