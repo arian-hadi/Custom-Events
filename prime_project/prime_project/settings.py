@@ -11,13 +11,16 @@ SECRET_KEY = env("SECRET_KEY")
 DEBUG = env.bool("DEBUG")  # Reads from .env, defaults to True if missing
 
 
-ALLOWED_HOSTS = [
-    'localhost',
-    '127.0.0.1',
-    '20transformers.com',
-    'www.20transformers.com'
-]
+# ALLOWED_HOSTS = [
+#     'localhost',
+#     '127.0.0.1',
+#     '20transformers.com',
+#     'www.20transformers.com'
+# ]
 
+ALLOWED_HOSTS = env.list(
+    "ALLOWED_HOSTS",
+)
  
 CACHES = {
     "default": {
@@ -228,16 +231,19 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 
-CSRF_TRUSTED_ORIGINS = [
-    "https://personal-website-production-fc26.up.railway.app",
-    "https://20transformers.com",
-]
+# CSRF_TRUSTED_ORIGINS = [
+#     "https://personal-website-production-fc26.up.railway.app",
+#     "https://20transformers.com",
+# ]
 
+CSRF_TRUSTED_ORIGINS = env.list(
+    "CSRF_TRUSTED_ORIGINS",
+    default=["http://localhost"]
+)
 
 #Email verification
-# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
-EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_BACKEND = env("EMAIL_BACKEND") 
+EMAIL_HOST = env("EMAIL_HOST") 
 EMAIL_HOST_USER = env("EMAIL_HOST_USER")  # Your Gmail address
 EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD") # Your Gmail app password
 DEFAULT_FROM_EMAIL = env("EMAIL_HOST_USER") 
