@@ -125,9 +125,9 @@ Desktop.ini
 *~
 
 # Docker-related files to ignore
-Dockerfile
-docker-compose.yml
-.dockerignore
+# Dockerfile
+# docker-compose.yml
+# .dockerignore
 
 
 # Ignore log files
