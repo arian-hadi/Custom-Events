@@ -1,0 +1,33 @@
+# Ignore Python stuff
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.sqlite3
+
+# Ignore envs
+.env
+*.env
+
+# Ignore Venvs
+venv/
+.venv/
+
+# Ignore git
+.git
+.gitignore
+
+# Ignore local files
+*.log
+*.pot
+*.pyc
+*.mo
+
+# Ignore node / Tailwind build caches if present
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Ignore static/media if collected/generated locally
+staticfiles/
+media/
