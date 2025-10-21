@@ -1,7 +1,9 @@
-name: Deploy to Hetzner
+name: CI/CD Pipeline
 
 on:
   push:
+    branches: [ master, develop ]
+  pull_request:
     branches: [ master ]
 
 jobs:
@@ -35,38 +37,69 @@ jobs:
     
     - name: Run tests
       env:
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
         SECRET_KEY: test-secret-key
         DEBUG: True
-        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
         ALLOWED_HOSTS: localhost
         CSRF_TRUSTED_ORIGINS: http://localhost
-        EMAIL_BACKEND: django.core.mail.backends.console.EmailBackend
-        EMAIL_HOST: smtp.gmail.com
-        EMAIL_HOST_USER: test@example.com
-        EMAIL_HOST_PASSWORD: test
-        SUPPORT_EMAIL: test@example.com
       run: |
-        python manage.py collectstatic --noinput
         python manage.py test
 
-  deploy:
-    needs: test
+  build:
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+    needs: test
+    if: github.ref == 'refs/heads/master'
     
     steps:
     - uses: actions/checkout@v4
     
-    - name: Deploy to Hetzner
+    - name: Build Docker image
+      run: |
+        docker build -t custom-events:latest .
+        echo "Docker image built successfully"
+
+  deploy:
+    needs: [test, build]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master'
+    
+    steps:
+    - name: Deploy to Hetzner VPS
       uses: appleboy/ssh-action@v1.0.0
       with:
         host: ${{ secrets.HETZNER_HOST }}
-        username: ${{ secrets.HETZNER_USER }}
+        username: ${{ secrets.HETZNER_USERNAME }}
         key: ${{ secrets.HETZNER_SSH_KEY }}
         script: |
-          cd /path/to/your/project
+          echo "Starting deployment..."
+          cd /root/Custom-Events/prime_project
+          
+          # Pull latest changes
           git pull origin master
-          docker-compose down
-          docker-compose up --build -d
-          docker-compose exec web python manage.py migrate
-          docker-compose exec web python manage.py collectstatic --noinput
+          
+          # Stop existing containers
+          docker compose down
+          
+          # Remove old images to free space
+          docker image prune -f
+          
+          # Start services
+          docker compose -f docker-compose.yml --env-file .env.prod up -d --build
+          
+          # Wait for database
+          echo "Waiting for database to be ready..."
+          sleep 15
+          
+          # Run migrations
+          echo "Running database migrations..."
+          docker compose exec -T web python manage.py migrate
+          
+          # Collect static files
+          echo "Collecting static files..."
+          docker compose exec -T web python manage.py collectstatic --noinput
+          
+          # Check container status
+          echo "Container status:"
+          docker compose ps
+          
+          echo "Deployment completed successfully!"
