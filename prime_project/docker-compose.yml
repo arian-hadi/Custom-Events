@@ -4,7 +4,8 @@ services:
   web:
     build: .
     command: >
-      sh -c "python manage.py collectstatic --noinput &&
+      sh -c "python manage.py migrate &&
+             python manage.py collectstatic --noinput &&
              gunicorn prime_project.wsgi:application --bind 0.0.0.0:8000"
     ports:
       - "8000:8000"
@@ -12,6 +13,21 @@ services:
       - .env.prod
     depends_on:
       - db
+    restart: unless-stopped
+    volumes:
+      - static_volume:/app/staticfiles
+      - media_volume:/app/mediafiles
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+      - static_volume:/app/staticfiles
+      - media_volume:/app/mediafiles
+    depends_on:
+      - web
     restart: unless-stopped
 
   db:
@@ -26,3 +42,5 @@ services:
 
 volumes:
   postgres_data:
+  static_volume:
+  media_volume:
