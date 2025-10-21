@@ -77,6 +77,31 @@ jobs:
           # Pull latest changes
           git pull origin master
           
+          # Create .env.prod file with secrets
+          cat > .env.prod << EOF
+          DEBUG=False
+          SECRET_KEY=${{ secrets.DJANGO_SECRET_KEY }}
+          ALLOWED_HOSTS=${{ secrets.ALLOWED_HOSTS }}
+          CSRF_TRUSTED_ORIGINS=${{ secrets.CSRF_TRUSTED_ORIGINS }}
+          
+          # Database
+          DB_ENGINE=django.db.backends.postgresql
+          DB_NAME=${{ secrets.DB_NAME }}
+          DB_USER=${{ secrets.DB_USER }}
+          DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+          DB_HOST=db
+          DB_PORT=5432
+          
+          # Email settings
+          EMAIL_BACKEND=${{ secrets.EMAIL_BACKEND }}
+          EMAIL_HOST=${{ secrets.EMAIL_HOST }}
+          EMAIL_HOST_USER=${{ secrets.EMAIL_HOST_USER }}
+          EMAIL_HOST_PASSWORD=${{ secrets.EMAIL_HOST_PASSWORD }}
+          SUPPORT_EMAIL=${{ secrets.SUPPORT_EMAIL }}
+          EMAIL_USE_SSL=True
+          EMAIL_PORT=465
+          EOF
+          
           # Stop existing containers
           docker compose down
           

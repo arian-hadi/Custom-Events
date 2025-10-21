@@ -33,11 +33,35 @@ You need to add these secrets to your GitHub repository:
 
 ### 2. Add These Secrets:
 
+#### **Server Access:**
 | Secret Name | Value | Description |
 |-------------|-------|-------------|
 | `HETZNER_HOST` | `128.140.40.7` | Your Hetzner VPS IP address |
 | `HETZNER_USERNAME` | `root` | SSH username for your VPS |
 | `HETZNER_SSH_KEY` | `[Your SSH Private Key]` | Private key for SSH access |
+
+#### **Django Configuration:**
+| Secret Name | Value | Description |
+|-------------|-------|-------------|
+| `DJANGO_SECRET_KEY` | `[Your Django Secret Key]` | Django secret key for production |
+| `ALLOWED_HOSTS` | `yourdomain.com,www.yourdomain.com,128.140.40.7` | Comma-separated list of allowed hosts |
+| `CSRF_TRUSTED_ORIGINS` | `https://yourdomain.com,https://www.yourdomain.com` | Comma-separated CSRF trusted origins |
+
+#### **Database Configuration:**
+| Secret Name | Value | Description |
+|-------------|-------|-------------|
+| `DB_NAME` | `postgres` | PostgreSQL database name |
+| `DB_USER` | `postgres` | PostgreSQL username |
+| `DB_PASSWORD` | `[Your DB Password]` | PostgreSQL password |
+
+#### **Email Configuration:**
+| Secret Name | Value | Description |
+|-------------|-------|-------------|
+| `EMAIL_BACKEND` | `django.core.mail.backends.smtp.EmailBackend` | Email backend |
+| `EMAIL_HOST` | `smtp.gmail.com` | SMTP host |
+| `EMAIL_HOST_USER` | `your-email@gmail.com` | Your email address |
+| `EMAIL_HOST_PASSWORD` | `[Your App Password]` | Gmail app password |
+| `SUPPORT_EMAIL` | `support@yourdomain.com` | Support email address |
 
 ### 3. Get Your SSH Private Key
 
