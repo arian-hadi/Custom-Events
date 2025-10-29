@@ -40,9 +40,7 @@ build/
 dist/
 staticfiles/
 mediafiles/
-static/
 media/
-assets/
 public/
 
 #######################################
