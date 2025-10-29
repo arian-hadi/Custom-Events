@@ -1,134 +1,87 @@
-# Environment variables
-.env
-*.env
-*.venv
+#######################################
+# PYTHON / DJANGO
+#######################################
+localsettings.py
+local_settings.py
 
-# Byte-compiled / cached files
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-
-# Secret keys, credentials, API keys (if stored in JSON/YAML)
-*.pem
-*.key
-*.crt
-*.pfx
-*.p12
-*.der
-secrets.json
-config.json
-settings_local.py
-
-
-# Environment variables
-.env
-*.env
-*.venv
-
-# Byte-compiled / cached files
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-
-# Secret keys, credentials, API keys (if stored in JSON/YAML)
-*.pem
-*.key
-*.crt
-*.pfx
-*.p12
-*.der
-secrets.json
-config.json
-settings_local.py
-
-# Virtualenv / Pipenv / Poetry
-venv/
-env/
-.venv/
-pip-log.txt
-pip-delete-this-directory.txt
-Pipfile
-Pipfile.lock
-poetry.lock
-
-
-# SQLite database
+# SQLite (local dev only)
 db.sqlite3
 db.sqlite3-journal
 
-# PostgreSQL
-*.dump
-*.sql
-
-# Redis, Celery, Cache
-celerybeat-schedule
-*.cache
-
-
-# Static files
-/static/
-# /staticfiles/
-
-# Media uploads
-/media/
-
-# Logs
+# Logs and runtime files
 *.log
-logs/
-debug.log
+*.pid
+*.py[cod]
+*$py.class
+__pycache__/
 
-# Node modules
+# Compiled translations
+*.mo
+*.pot
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+#######################################
+# FRONTEND (Tailwind / npm)
+#######################################
+frontend/
+myfrontend/
 node_modules/
-npm-debug.log*
-yarn-error.log
-yarn-debug.log
+npm-debug.log
 package-lock.json
+build/
+dist/
+staticfiles/
+mediafiles/
+static/
+media/
+assets/
+public/
 
-# # Docker files
-# docker-compose.override.yml
-# .dockerignore
+#######################################
+# DOCKER / DEPLOYMENT
+#######################################
+# Environment / production configs
+.env.prod
+.env.local
+.env.dev
+.env.backup
 
-# Kubernetes files
-*.kubeconfig
-*.k8s.yaml
+# Docker Compose configs
+docker-compose.yml
+docker-compose.override.yaml
 
-# VS Code
-.vscode/
-*.code-workspace
+# Nginx config
+nginx.conf
 
-# JetBrains / PyCharm
+# Certificates (Certbot / Let's Encrypt)
+certbot_certs/
+certbot_www/
+letsencrypt/
+etc/letsencrypt/
+
+#######################################
+# DATABASES / VOLUMES
+#######################################
+# PostgreSQL database data and volumes
+postgres_data/
+pg_data/
+data/
+volumes/
+db_data/
+
+#######################################
+# EDITORS & OS FILES
+#######################################
 .idea/
-*.iml
-
-# Sublime Text
-*.sublime-project
-*.sublime-workspace
-
-# Eclipse
-.project
-.classpath
-.settings/
-
-# Git merge conflicts
-*.orig
-
-# MacOS
+.vscode/
+*.swp
 .DS_Store
-
-# Windows
 Thumbs.db
-Desktop.ini
-
-# Linux
-*~
-
-# Docker-related files to ignore
-# Dockerfile
-# docker-compose.yml
-# .dockerignore
-
-
-# Ignore log files
-*.log

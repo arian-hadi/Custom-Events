@@ -248,8 +248,9 @@ EMAIL_HOST_USER = env("EMAIL_HOST_USER")  # Your Gmail address
 EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD") # Your Gmail app password
 DEFAULT_FROM_EMAIL = env("EMAIL_HOST_USER") 
 SUPPORT_INBOX = env("SUPPORT_EMAIL") # Support email address
-EMAIL_USE_SSL = True
-EMAIL_PORT = 465
+EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=True)
+EMAIL_USE_SSL = env.bool("EMAIL_USE_SSL", default=False)
+EMAIL_PORT = env.int("EMAIL_PORT", default=587)
 
 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
