@@ -9,12 +9,13 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_protect
 from .forms import CustomUserCreationForm, EmailAuthenticationForm, CustomPasswordResetForm, OTPVerificationForm
 from .models import OneTimePassword, CustomUser
-from .utils import send_code_to_user
+from .utils import send_code_to_user, verify_recaptcha
 import logging
 from django_ratelimit.decorators import ratelimit
 import os, requests, time
 from django.core.cache import cache
 from django.http import HttpResponse
+from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
@@ -258,13 +259,22 @@ class EmailLoginView(LoginView):
             messages.error(request, "Too many login attempts. Please try again later.")
             return render(request, self.template_name, {
                 'form': self.authentication_form(),
-                'rate_limited': True
+                'rate_limited': True,
+                'recaptcha_site_key': settings.RECAPTCHA_SITE_KEY
             })
         return super().dispatch(request, *args, **kwargs)
-
-
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['recaptcha_site_key'] = settings.RECAPTCHA_SITE_KEY
+        return context
 
     def form_valid(self, form):
+        # Verify reCAPTCHA before processing login
+        if not verify_recaptcha(self.request):
+            messages.error(self.request, "Please complete the reCAPTCHA verification.")
+            return self.form_invalid(form)
+        
         try:
             # Debug form data before authentication
             logger.info(f"Login form data: {form.cleaned_data}")
