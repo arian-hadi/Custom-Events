@@ -75,8 +75,10 @@ class RegisterUserView(CreateView):
     success_url = reverse_lazy('login')
 
     def dispatch(self, request, *args, **kwargs):
+        # Rate limiting relaxed - reCAPTCHA handles bot protection
         # Only rate-limit POSTs (actual sign-up attempts), not GET page views
-        if request.method == "POST" and is_rate_limited(request, 'register_post', limit=5, period=3600):
+        # Increased limit significantly since reCAPTCHA protects against bots
+        if request.method == "POST" and is_rate_limited(request, 'register_post', limit=50, period=3600):
             messages.error(request, "Too many registration attempts. Please try again later.")
             return render(request, self.template_name, {
                 'form': self.form_class(),
@@ -126,7 +128,7 @@ class RegisterUserView(CreateView):
 
             # Try to send OTP email, but don't fail registration if it fails
             try:
-                send_code_to_user(user.email)
+                send_code_to_user(user.email, request=self.request)
                 messages.success(self.request, "Account created! Please check your email for verification code.")
             except Exception as email_error:
                 logger.error(f"Failed to send OTP email: {str(email_error)}")
@@ -149,8 +151,9 @@ class RegisterUserView(CreateView):
 @method_decorator([csrf_protect, never_cache], name='dispatch')
 class VerifyUserEmail(View):
     def dispatch(self, request, *args, **kwargs):
-        # Rate limiting: 10 OTP attempts per IP per hour
-        if is_rate_limited(request, 'otp_verify', limit=10, period=3600):
+        # Rate limiting relaxed - reCAPTCHA handles bot protection
+        # Increased limit significantly for legitimate users
+        if is_rate_limited(request, 'otp_verify', limit=50, period=3600):
             messages.error(request, "Too many verification attempts. Please try again later.")
             return redirect("signup")
         return super().dispatch(request, *args, **kwargs)
@@ -225,8 +228,9 @@ class VerifyUserEmail(View):
 @method_decorator([csrf_protect, never_cache], name='dispatch')
 class ResendOTPView(View):
     def dispatch(self, request, *args, **kwargs):
-        # Rate limiting: 3 OTP resends per IP per hour
-        if is_rate_limited(request, 'otp_resend', limit=3, period=3600):
+        # Rate limiting relaxed - reCAPTCHA handles bot protection
+        # Increased limit significantly for legitimate users
+        if is_rate_limited(request, 'otp_resend', limit=20, period=3600):
             messages.error(request, "Too many resend requests. Please try again later.")
             return redirect("verify_email")
         return super().dispatch(request, *args, **kwargs)
@@ -248,7 +252,7 @@ class ResendOTPView(View):
                 messages.error(request, "Please wait before requesting another code.")
                 return redirect("verify_email")
             
-            send_code_to_user(user.email)
+            send_code_to_user(user.email, request=request)
             cache.set(last_resend_key, int(time.time()), 300)  # 5 minute cache
             messages.success(request, "A new OTP has been sent to your email.")
             
@@ -265,8 +269,10 @@ class EmailLoginView(LoginView):
 
 
     def dispatch(self, request, *args, **kwargs):
+        # Rate limiting relaxed - reCAPTCHA handles bot protection
         # Only rate-limit POSTs (login submissions), not viewing the login page
-        if request.method == "POST" and is_rate_limited(request, 'login_post', limit=10, period=3600):
+        # Increased limit significantly since reCAPTCHA protects against bots
+        if request.method == "POST" and is_rate_limited(request, 'login_post', limit=50, period=3600):
             messages.error(request, "Too many login attempts. Please try again later.")
             return render(request, self.template_name, {
                 'form': self.authentication_form(),
@@ -350,8 +356,9 @@ class EmailLoginView(LoginView):
 @method_decorator([csrf_protect, never_cache], name='dispatch')
 class ContinueVerificationView(View):
     def dispatch(self, request, *args, **kwargs):
-        # Rate limiting: 5 continue verification attempts per IP per hour
-        if is_rate_limited(request, 'continue_verify', limit=5, period=3600):
+        # Rate limiting relaxed - reCAPTCHA handles bot protection
+        # Increased limit significantly for legitimate users
+        if is_rate_limited(request, 'continue_verify', limit=30, period=3600):
             messages.error(request, "Too many attempts. Please try again later.")
             return render(request, "accounts/continue_verification.html", {'rate_limited': True})
         return super().dispatch(request, *args, **kwargs)
@@ -372,9 +379,18 @@ class ContinueVerificationView(View):
                 messages.info(request, "This account is already verified.")
                 return redirect("login")
             
+            # Restore session and send new OTP
             request.session["user_email"] = email
             request.session["registration_time"] = int(time.time())
-            messages.success(request, "Session restored. Please verify your OTP.")
+            
+            # Send new OTP so user can verify
+            try:
+                send_code_to_user(user.email, request=request)
+                messages.success(request, f"A new verification code has been sent to {email}. Please check your email and enter the code to verify.")
+            except Exception as e:
+                logger.error(f"Failed to send OTP during continue verification: {str(e)}")
+                messages.warning(request, "Session restored, but failed to send verification code. Please try resending from the verification page.")
+            
             return redirect("verify_email")
             
         except CustomUser.DoesNotExist:
@@ -395,8 +411,9 @@ class CustomPasswordResetView(PasswordResetView):
     template_name = 'registration/password_reset_form.html'
 
     def dispatch(self, request, *args, **kwargs):
-        # Rate limiting: 5 password reset attempts per IP per hour
-        if is_rate_limited(request, 'password_reset', limit=5, period=3600):
+        # Rate limiting relaxed - reCAPTCHA handles bot protection
+        # Increased limit significantly for legitimate users
+        if is_rate_limited(request, 'password_reset', limit=30, period=3600):
             messages.error(request, "Too many password reset attempts. Please try again later.")
             return render(request, self.template_name, {
                 'form': self.form_class(),

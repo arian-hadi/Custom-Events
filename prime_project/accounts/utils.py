@@ -16,7 +16,11 @@ def generateOtp():
         otp += str(random.randint(1,9))
     return otp
 
-def send_code_to_user(email):
+def send_code_to_user(email, request=None):
+    """
+    Send OTP verification code to user's email.
+    Includes a verification link for easy recovery.
+    """
     subject = "One-Time Passcode for Email Verification"
     otp_code = generateOtp()
 
@@ -30,12 +34,41 @@ def send_code_to_user(email):
 
     OneTimePassword.objects.create(user=user, code=otp_code)
 
+    # Build verification link
+    from django.urls import reverse
+    if request:
+        # Use request to build absolute URL (best method)
+        verification_url = request.build_absolute_uri(reverse('continue_verification'))
+    else:
+        # Fallback: construct URL manually
+        try:
+            from django.contrib.sites.models import Site
+            current_site = Site.objects.get_current()
+            domain = current_site.domain
+            protocol = 'https' if not settings.DEBUG else 'http'
+        except:
+            # Ultimate fallback - use ALLOWED_HOSTS or default
+            allowed_hosts = getattr(settings, 'ALLOWED_HOSTS', [])
+            if allowed_hosts and allowed_hosts[0] != '*':
+                domain = allowed_hosts[0]
+            else:
+                domain = '20transformers.com'  # Default domain
+            
+            # Determine protocol based on domain
+            protocol = 'https' if domain not in ['localhost', '127.0.0.1'] else 'http'
+        
+        verification_url = f"{protocol}://{domain}/accounts/continue-verification/"
+
     current_site = "20TF.com"
     email_body = (
         f"Hi {user.username},\n\n"
         f"Thanks for signing up on {current_site}. Please verify your email with the OTP passcode:\n\n"
-        f"{otp_code}\n\n"
-        "If you didn't request this, please ignore this email."
+        f"Your verification code: {otp_code}\n\n"
+        f"Enter this code on the verification page to activate your account.\n\n"
+        f"If you closed the verification page or need to continue verification, click this link:\n"
+        f"{verification_url}\n\n"
+        f"---\n"
+        f"If you didn't request this, please ignore this email."
     )
     from_email = settings.DEFAULT_FROM_EMAIL
 
@@ -49,8 +82,6 @@ def send_code_to_user(email):
         email_message.send(fail_silently=False)
     except Exception as e:
         # Log the error but don't fail the registration process
-        import logging
-        logger = logging.getLogger(__name__)
         logger.error(f"Failed to send OTP email to {email}: {str(e)}")
         # In production, you might want to handle this differently
         # For now, we'll let the registration continue

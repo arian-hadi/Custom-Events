@@ -1,12 +1,84 @@
 {% extends "base.html" %}
+{% block title %}Continue Verification{% endblock %}
+
 {% block content %}
-<div class="max-w-md mx-auto mt-10 bg-white shadow-md p-6 rounded-lg">
-  <h2 class="text-xl font-bold mb-4">Continue Email Verification</h2>
-  <form method="POST">
-    {% csrf_token %}
-    <label class="block mb-2">Enter your email:</label>
-    <input type="email" name="email" required class="w-full p-2 border rounded mb-4">
-    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Continue</button>
-  </form>
+<div class="min-h-screen flex items-center justify-center bg-gray-50/50 p-4 sm:p-6 lg:p-8">
+    <div class="w-full max-w-md bg-white rounded-xl p-8 relative
+                before:absolute before:inset-0 before:-z-10 before:rounded-xl before:p-1
+                before:bg-gradient-to-r before:from-emerald-500 before:via-blue-500 before:to-purple-500
+                before:animate-border-glow
+                after:absolute after:inset-0 after:-z-10 after:rounded-xl after:bg-white">
+        
+        <h2 class="text-3xl font-bold mb-6 text-center
+                   bg-gradient-to-r from-emerald-600 via-blue-600 to-purple-600 
+                   text-transparent bg-clip-text animate-gradient-x">
+            Continue Verification
+        </h2>
+
+        <p class="text-center text-sm text-gray-500 mb-6">
+            Enter your email address to receive a new verification code and continue where you left off.
+        </p>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="mb-4 p-4 rounded-lg {% if message.tags == 'error' %}bg-red-100 text-red-700{% elif message.tags == 'warning' %}bg-yellow-100 text-yellow-700{% elif message.tags == 'success' %}bg-green-100 text-green-700{% else %}bg-blue-100 text-blue-700{% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        {% if rate_limited %}
+            <div class="mb-6 p-4 bg-red-50 rounded-lg text-sm text-red-700 border border-red-200">
+                <p>Too many attempts. Please try again later.</p>
+            </div>
+        {% else %}
+            <form method="POST" class="space-y-6">
+                {% csrf_token %}
+                
+                <div class="space-y-1">
+                    <label for="email" class="block text-sm font-medium text-gray-700">
+                        Email Address <span class="text-red-500">*</span>
+                    </label>
+                    <input type="email" name="email" id="email" required
+                        class="mt-1 block w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm
+                                focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all
+                                hover:border-blue-400"
+                        placeholder="Enter your email address">
+                </div>
+
+                <button type="submit" 
+                        class="w-full py-3 px-4 rounded-lg text-white text-sm font-medium
+                               bg-gradient-to-r from-emerald-500 via-blue-500 to-purple-500
+                               hover:from-emerald-600 hover:via-blue-600 hover:to-purple-600
+                               transform hover:scale-[1.02] transition-all duration-200">
+                    Send Verification Code
+                </button>
+            </form>
+        {% endif %}
+
+        <p class="mt-6 text-center text-sm text-gray-600">
+            Remembered your code?
+            <a href="{% url 'verify_email' %}" class="text-blue-600 hover:text-purple-600 transition-colors hover:underline">
+                Enter OTP directly
+            </a>
+        </p>
+    </div>
 </div>
+
+<style>
+    @keyframes gradient-x {
+        0%, 100% {
+            background-size: 200% 200%;
+            background-position: left center;
+        }
+        50% {
+            background-size: 200% 200%;
+            background-position: right center;
+        }
+    }
+
+    .animate-gradient-x {
+        animation: gradient-x 15s ease infinite;
+    }
+</style>
 {% endblock %}
