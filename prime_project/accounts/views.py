@@ -80,11 +80,22 @@ class RegisterUserView(CreateView):
             messages.error(request, "Too many registration attempts. Please try again later.")
             return render(request, self.template_name, {
                 'form': self.form_class(),
-                'rate_limited': True
+                'rate_limited': True,
+                'recaptcha_site_key': settings.RECAPTCHA_SITE_KEY
             })
         return super().dispatch(request, *args, **kwargs)
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['recaptcha_site_key'] = settings.RECAPTCHA_SITE_KEY
+        return context
 
     def form_valid(self, form):
+        # Verify reCAPTCHA before processing registration
+        if not verify_recaptcha(self.request):
+            messages.error(self.request, "Please complete the reCAPTCHA verification.")
+            return self.form_invalid(form)
+        
         # Additional server-side validation
         email = form.cleaned_data["email"].lower()
         username = form.cleaned_data["username"]
