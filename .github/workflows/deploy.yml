@@ -13,6 +13,17 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Copy files to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          source: "prime_project/"
+          target: "/root/Custom-Events/"
+          strip_components: 0
+
       - name: Deploy via SSH to Hetzner
         uses: appleboy/ssh-action@v0.1.7
         with:
@@ -24,11 +35,6 @@ jobs:
             set -e
             cd /root/Custom-Events/prime_project
             echo "Current directory: $(pwd)"
-            echo "Fetching latest changes from origin..."
-            git fetch origin master
-            echo "Resetting to match remote..."
-            git reset --hard origin/master
-            echo "Current commit: $(git rev-parse HEAD)"
             echo "Stopping existing containers..."
             docker compose down
             echo "Building new images without cache..."
