@@ -21,9 +21,20 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.SSH_PORT || 22 }}
           script: |
+            set -e
             cd /root/Custom-Events/prime_project
-            git reset --hard
-            git pull
+            echo "Current directory: $(pwd)"
+            echo "Fetching latest changes from origin..."
+            git fetch origin master
+            echo "Resetting to match remote..."
+            git reset --hard origin/master
+            echo "Current commit: $(git rev-parse HEAD)"
+            echo "Stopping existing containers..."
             docker compose down
-            docker compose up -d --build
+            echo "Building new images without cache..."
+            docker compose build --no-cache web
+            echo "Starting containers..."
+            docker compose up -d
+            echo "Cleaning up unused Docker resources..."
             docker system prune -f
+            echo "Deployment completed successfully!"
