@@ -77,7 +77,14 @@
           {{ form.website }}
         </div>
 
-        <!-- Button: “close but different” theme vs login -->
+        <!-- reCAPTCHA -->
+        {% if recaptcha_site_key %}
+        <div class="flex justify-center my-6">
+          <div class="g-recaptcha" data-sitekey="{{ recaptcha_site_key }}"></div>
+        </div>
+        {% endif %}
+
+        <!-- Button: "close but different" theme vs login -->
         <button type="submit" id="contact-submit-btn"
                 class="mt-8 w-full py-3 px-4 rounded-lg text-white text-sm font-medium
                        bg-gradient-to-r from-indigo-500 via-blue-600 to-cyan-500
@@ -114,9 +121,14 @@
       </div>
     </div>
 
-    <div class="h-16 sm:h-24"></div>
+    <div class="h-16 sm:h-24">    </div>
   </div>
 </section>
+
+<!-- Google reCAPTCHA Script -->
+{% if recaptcha_site_key %}
+<script src="https://www.google.com/recaptcha/api.js" async defer></script>
+{% endif %}
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {

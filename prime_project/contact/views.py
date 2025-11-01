@@ -7,6 +7,7 @@ from django.views.generic.edit import FormView
 import logging
 
 from .forms import ContactForm
+from accounts.utils import verify_recaptcha
 
 logger = logging.getLogger(__name__)
 
@@ -15,8 +16,18 @@ class ContactView(SuccessMessageMixin, FormView):
     form_class = ContactForm
     success_url = reverse_lazy("contact")  # make sure this matches your URL name
     success_message = "Your message has been sent successfully!"
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['recaptcha_site_key'] = settings.RECAPTCHA_SITE_KEY
+        return context
 
     def form_valid(self, form):
+        # Verify reCAPTCHA before processing contact form
+        if not verify_recaptcha(self.request):
+            messages.error(self.request, "Please complete the reCAPTCHA verification.")
+            return self.form_invalid(form)
+        
         name = form.cleaned_data["name"]
         subject = form.cleaned_data["subject"]
         email = form.cleaned_data["email"]
