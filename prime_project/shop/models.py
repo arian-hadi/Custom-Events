@@ -1,6 +1,7 @@
 from django.db import models
 from django.core.validators import MinValueValidator
 from django.utils import timezone
+from django.conf import settings
 from ckeditor.fields import RichTextField
 
 
@@ -75,6 +76,14 @@ class Product(models.Model):
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    
+    # Favorites (Many-to-Many relationship with User)
+    favorites = models.ManyToManyField(
+        settings.AUTH_USER_MODEL,
+        related_name='favorite_products',
+        blank=True,
+        help_text="Users who have favorited this product"
+    )
     
     class Meta:
         ordering = ['-created_at']

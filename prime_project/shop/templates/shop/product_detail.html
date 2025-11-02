@@ -85,8 +85,22 @@
                         {% endif %}
                     </div>
 
-                    <!-- Product Name -->
-                    <h1 class="text-4xl font-bold text-gray-900">{{ product.name }}</h1>
+                    <!-- Product Name and Favorite Button -->
+                    <div class="flex items-start justify-between">
+                        <h1 class="text-4xl font-bold text-gray-900 flex-1">{{ product.name }}</h1>
+                        {% if user.is_authenticated %}
+                        <button type="button" 
+                                onclick="toggleFavorite(event, {{ product.id }})"
+                                class="ml-4 p-3 bg-white border-2 {% if is_favorited %}border-red-500{% else %}border-gray-300{% endif %} rounded-full shadow-lg hover:shadow-xl transition-all duration-300 {% if is_favorited %}text-red-500{% else %}text-gray-400 hover:text-red-500 hover:border-red-500{% endif %}">
+                            <svg class="w-6 h-6 {% if is_favorited %}fill-current{% else %}fill-none{% endif %}" 
+                                 stroke="currentColor" 
+                                 viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                      d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                            </svg>
+                        </button>
+                        {% endif %}
+                    </div>
 
                     <!-- Pricing Section -->
                     <div class="border-t border-b border-gray-200 py-6">
@@ -243,6 +257,59 @@
 <script>
 function changeImage(imageUrl) {
     document.getElementById('main-image').src = imageUrl;
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function toggleFavorite(event, productId) {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    const button = event.currentTarget;
+    const heartIcon = button.querySelector('svg');
+    const csrftoken = getCookie('csrftoken');
+    
+    fetch(`/shop/${productId}/toggle-favorite/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrftoken,
+            'Content-Type': 'application/json',
+        },
+        credentials: 'same-origin',
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Update heart icon appearance
+            if (data.is_favorited) {
+                heartIcon.classList.add('fill-current');
+                heartIcon.classList.remove('fill-none');
+                button.classList.remove('text-gray-400', 'border-gray-300');
+                button.classList.add('text-red-500', 'border-red-500');
+            } else {
+                heartIcon.classList.remove('fill-current');
+                heartIcon.classList.add('fill-none');
+                button.classList.remove('text-red-500', 'border-red-500');
+                button.classList.add('text-gray-400', 'border-gray-300');
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error toggling favorite:', error);
+    });
 }
 </script>
 {% endblock %}
