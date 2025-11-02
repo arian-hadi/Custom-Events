@@ -41,10 +41,13 @@ INSTALLED_APPS = [
     'corsheaders',
     'core.apps.CoreConfig',
     'widget_tweaks',
+    'ckeditor',
+    'ckeditor_uploader',
     'contact',
     'dashboard',
     'events',
     'announcements',
+    'shop',
     'tailwind',
     'theme',
     'ratelimit'
@@ -182,6 +185,19 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'mediafiles')
+
+# CKEditor Settings
+CKEDITOR_UPLOAD_PATH = 'uploads/'
+CKEDITOR_CONFIGS = {
+    'default': {
+        'toolbar': 'full',
+        'height': 300,
+        'width': '100%',
+        'extraPlugins': ','.join([
+            'codesnippet',
+        ]),
+    },
+}
 
 
 

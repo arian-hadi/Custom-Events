@@ -1,0 +1,205 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ product.name }} - Shop - 2.0Transformers{% endblock %}
+
+{% block content %}
+<main class="pt-16">
+    <!-- Breadcrumb -->
+    <section class="bg-gray-100 py-4">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <nav class="flex" aria-label="Breadcrumb">
+                <ol class="flex items-center space-x-2 text-sm">
+                    <li><a href="{% url 'home' %}" class="text-gray-500 hover:text-blue-600">Home</a></li>
+                    <li class="text-gray-400">/</li>
+                    <li><a href="{% url 'shop:product_list' %}" class="text-gray-500 hover:text-blue-600">Shop</a></li>
+                    <li class="text-gray-400">/</li>
+                    <li class="text-gray-900 font-medium">{{ product.name|truncatewords:5 }}</li>
+                </ol>
+            </nav>
+        </div>
+    </section>
+
+    <!-- Product Detail Section -->
+    <section class="bg-white py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Product Images -->
+                <div class="space-y-4">
+                    <!-- Main Image -->
+                    <div class="relative overflow-hidden rounded-lg border-2 border-gray-200 bg-gray-50">
+                        <img src="{{ product.main_image.url }}" 
+                             alt="{{ product.name }}"
+                             id="main-image"
+                             class="w-full h-96 object-contain transition-all duration-300">
+                    </div>
+                    
+                    <!-- Thumbnail (can be clicked to change main image) -->
+                    <div class="flex space-x-2">
+                        <img src="{{ product.thumbnail.url }}" 
+                             alt="{{ product.name }} thumbnail"
+                             onclick="changeImage('{{ product.thumbnail.url }}')"
+                             class="w-20 h-20 object-cover border-2 border-blue-500 rounded cursor-pointer hover:opacity-75 transition-opacity">
+                        <img src="{{ product.main_image.url }}" 
+                             alt="{{ product.name }}"
+                             onclick="changeImage('{{ product.main_image.url }}')"
+                             class="w-20 h-20 object-cover border-2 border-gray-200 rounded cursor-pointer hover:border-blue-500 transition-all">
+                    </div>
+                </div>
+
+                <!-- Product Information -->
+                <div class="space-y-6">
+                    <!-- Category and Platform Badges -->
+                    <div class="flex items-center space-x-2">
+                        {% if product.category == 'transformers_2_0' %}
+                        <span class="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-full">
+                            2.0 Transformers Products
+                        </span>
+                        {% else %}
+                        <span class="px-4 py-2 bg-purple-600 text-white text-sm font-semibold rounded-full">
+                            1.0 Merges & Figures
+                        </span>
+                        {% endif %}
+                        
+                        {% if product.show_ecommerce_badge %}
+                        <span class="px-4 py-2 bg-green-600 text-white text-sm font-semibold rounded-full capitalize">
+                            Available on {{ product.get_ecommerce_platform_display }}
+                        </span>
+                        {% endif %}
+                    </div>
+
+                    <!-- Product Name -->
+                    <h1 class="text-4xl font-bold text-gray-900">{{ product.name }}</h1>
+
+                    <!-- Pricing Section -->
+                    <div class="border-t border-b border-gray-200 py-6">
+                        {% if product.is_free %}
+                        <div class="space-y-2">
+                            <div class="flex items-center space-x-3">
+                                <span class="text-5xl font-bold text-green-600">FREE</span>
+                                {% if product.original_price > 0 %}
+                                <span class="text-2xl text-gray-500 line-through">${{ product.original_price }}</span>
+                                {% endif %}
+                            </div>
+                            {% if product.free_deadline %}
+                            <p class="text-sm text-gray-600">
+                                <span class="font-semibold text-red-600">Limited Time Offer!</span>
+                                Free until {{ product.free_deadline|date:"F j, Y \a\t g:i A" }}
+                            </p>
+                            {% endif %}
+                        </div>
+                        {% elif product.discount_active and product.discounted_price %}
+                        <div class="space-y-2">
+                            <div class="flex items-center space-x-3">
+                                <span class="text-5xl font-bold text-gray-900">${{ product.discounted_price }}</span>
+                                <span class="text-2xl text-gray-500 line-through">${{ product.original_price }}</span>
+                                <span class="px-3 py-1 bg-red-600 text-white text-lg font-bold rounded-full">
+                                    -{{ product.get_discount_percentage }}% OFF
+                                </span>
+                            </div>
+                            <p class="text-sm text-gray-600">You save ${{ product.get_discount_amount|floatformat:2 }}</p>
+                        </div>
+                        {% else %}
+                        <div>
+                            <span class="text-5xl font-bold text-gray-900">${{ product.original_price }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Product Description -->
+                    <div class="prose max-w-none prose-headings:text-gray-900 prose-p:text-gray-700 prose-a:text-blue-600 prose-strong:text-gray-900 prose-ul:text-gray-700 prose-ol:text-gray-700">
+                        <h3 class="text-xl font-semibold text-gray-900 mb-3">Description</h3>
+                        <div class="text-gray-700 leading-relaxed">
+                            {{ product.description|safe }}
+                        </div>
+                    </div>
+
+                    <!-- Redirect Button -->
+                    <div class="pt-6">
+                        <a href="{{ product.redirect_url }}" 
+                           target="_blank" 
+                           rel="noopener noreferrer"
+                           class="block w-full px-8 py-4 bg-blue-600 text-white text-lg font-semibold rounded-lg hover:bg-blue-700 transform hover:scale-105 transition-all duration-300 text-center shadow-lg">
+                            {% if product.is_free %}
+                            Get Free Product
+                            {% else %}
+                            Purchase Product
+                            {% endif %}
+                            <svg class="w-5 h-5 inline-block ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                            </svg>
+                        </a>
+                        <p class="text-xs text-gray-500 mt-2 text-center">
+                            You will be redirected to the product page
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Related Products Section -->
+    {% if related_products %}
+    <section class="bg-gray-50 py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 class="text-3xl font-bold text-gray-900 mb-8">Related Products</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                {% for related_product in related_products %}
+                <div class="bg-white rounded-lg border border-gray-200 hover:border-blue-300 shadow-sm hover:shadow-xl transform hover:-translate-y-2 transition-all duration-300 overflow-hidden group cursor-pointer">
+                    <a href="{% url 'shop:product_detail' related_product.id %}">
+                        <div class="relative overflow-hidden bg-gray-100">
+                            <img src="{{ related_product.thumbnail.url }}" 
+                                 alt="{{ related_product.name }}"
+                                 class="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-300">
+                            
+                            {% if related_product.category == 'transformers_2_0' %}
+                            <div class="absolute top-2 left-2">
+                                <span class="px-3 py-1 bg-blue-600 text-white text-xs font-semibold rounded-full shadow-lg">
+                                    2.0
+                                </span>
+                            </div>
+                            {% endif %}
+                            
+                            {% if related_product.is_free %}
+                            <div class="absolute bottom-2 left-2 right-2">
+                                <span class="block px-3 py-1 bg-green-600 text-white text-xs font-bold rounded-full shadow-lg text-center">
+                                    FREE
+                                </span>
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="p-4">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors line-clamp-2">
+                                {{ related_product.name }}
+                            </h3>
+                            
+                            <div class="flex items-center justify-between">
+                                {% if related_product.is_free %}
+                                <span class="text-xl font-bold text-green-600">FREE</span>
+                                {% elif related_product.discount_active and related_product.discounted_price %}
+                                <div>
+                                    <span class="text-lg font-bold text-gray-900">${{ related_product.discounted_price }}</span>
+                                    <span class="text-sm text-gray-500 line-through ml-2">${{ related_product.original_price }}</span>
+                                </div>
+                                {% else %}
+                                <span class="text-lg font-bold text-gray-900">${{ related_product.original_price }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+    {% endif %}
+</main>
+
+<script>
+function changeImage(imageUrl) {
+    document.getElementById('main-image').src = imageUrl;
+}
+</script>
+{% endblock %}
+

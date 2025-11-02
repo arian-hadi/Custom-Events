@@ -1,0 +1,231 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Shop - 2.0Transformers{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Ensure select dropdown options are visible */
+    select[name="category"] option {
+        background-color: #1f2937 !important;
+        color: #ffffff !important;
+        padding: 0.5rem !important;
+    }
+    
+    select[name="category"] {
+        color: #ffffff !important;
+    }
+    
+    select[name="category"]::-ms-expand {
+        color: #ffffff;
+    }
+    
+    /* For better visibility on different browsers */
+    select[name="category"]:focus option {
+        background-color: #374151 !important;
+        color: #ffffff !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="pt-16">
+    <!-- Shop Header Section with Search -->
+    <section class="bg-gradient-to-b from-gray-900 to-gray-800 py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <!-- Header Text -->
+            <div class="text-center mb-8">
+                <h1 class="text-4xl font-bold text-white mb-4">Shop</h1>
+                <p class="text-gray-300 text-lg">Discover our 2.0 Transformers products and curated figures</p>
+            </div>
+            
+            <!-- Search Form -->
+            <div class="max-w-5xl mx-auto bg-white/10 backdrop-blur-md rounded-lg shadow-lg p-3 border border-gray-700 relative group
+                        before:absolute before:w-full before:h-full before:inset-0 before:-z-10
+                        before:bg-gradient-to-r before:from-blue-500/20 before:via-purple-500/20 before:to-pink-500/20 before:rounded-lg
+                        before:opacity-0 hover:before:opacity-100 before:transition-opacity before:duration-500">
+                
+                <form method="GET" class="flex w-full items-center gap-3">
+                    <div class="flex-1 relative">
+                        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+                            <i class="fas fa-search"></i>
+                        </span>
+                        <input type="text" name="search" placeholder="Search products..." 
+                               value="{{ search_query }}"
+                               class="w-full pl-12 pr-4 py-3 bg-white/10 backdrop-blur rounded-md border border-gray-700 text-white
+                                      focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300
+                                      placeholder-gray-400 shadow-[0_0_15px_rgba(59,130,246,0.2)]">
+                    </div>
+                    
+                    <div class="flex-1 relative">
+                        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 z-10">
+                            <i class="fas fa-tags mr-2"></i>
+                        </span>
+                        <select name="category" 
+                                class="w-full pl-12 pr-4 py-3 bg-white/10 backdrop-blur rounded-md border border-gray-700 text-white
+                                       focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300
+                                       placeholder-gray-400 shadow-[0_0_15px_rgba(59,130,246,0.2)]
+                                       [&>option]:bg-gray-800 [&>option]:text-white [&>option]:p-2">
+                            <option value="" class="bg-gray-800 text-white">All Categories</option>
+                            <option value="transformers_2_0" {% if category_filter == 'transformers_2_0' %}selected{% endif %} class="bg-gray-800 text-white">
+                                2.0 Transformers Products ({{ transformers_count }})
+                            </option>
+                            <option value="merges_1_0" {% if category_filter == 'merges_1_0' %}selected{% endif %} class="bg-gray-800 text-white">
+                                1.0 Merges & Figures ({{ merges_count }})
+                            </option>
+                        </select>
+                    </div>
+
+                    <button type="submit" 
+                            class="px-8 py-3 bg-black text-white rounded-md border border-gray-700
+                                   hover:shadow-[0_0_20px_rgba(59,130,246,0.5)] hover:border-blue-500/50
+                                   transition-all duration-300 transform hover:-translate-y-0.5">
+                        Search
+                    </button>
+                    
+                    {% if search_query or category_filter %}
+                    <a href="{% url 'shop:product_list' %}" 
+                       class="px-6 py-3 bg-gray-700 text-white rounded-md border border-gray-600
+                              hover:bg-gray-600 transition-all duration-300">
+                        Clear
+                    </a>
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- Products Grid Section -->
+    <section class="bg-gray-50 py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            {% if products %}
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {% for product in products %}
+                <div class="bg-white rounded-lg border border-gray-200 hover:border-blue-300 shadow-sm hover:shadow-xl transform hover:-translate-y-2 transition-all duration-300 overflow-hidden group cursor-pointer">
+                    <a href="{% url 'shop:product_detail' product.id %}">
+                        <!-- Product Image Container -->
+                        <div class="relative overflow-hidden bg-gray-100">
+                            <img src="{{ product.thumbnail.url }}" 
+                                 alt="{{ product.name }}"
+                                 class="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-300">
+                            
+                            <!-- Category Badge -->
+                            <div class="absolute top-2 left-2">
+                                {% if product.category == 'transformers_2_0' %}
+                                <span class="px-3 py-1 bg-blue-600 text-white text-xs font-semibold rounded-full shadow-lg">
+                                    2.0 Transformers
+                                </span>
+                                {% else %}
+                                <span class="px-3 py-1 bg-purple-600 text-white text-xs font-semibold rounded-full shadow-lg">
+                                    1.0 Merges
+                                </span>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- E-commerce Platform Badge (for 1.0 products) -->
+                            {% if product.show_ecommerce_badge %}
+                            <div class="absolute top-2 right-2">
+                                <span class="px-3 py-1 bg-green-600 text-white text-xs font-semibold rounded-full shadow-lg capitalize">
+                                    {{ product.get_ecommerce_platform_display }}
+                                </span>
+                            </div>
+                            {% endif %}
+                            
+                            <!-- Free Badge -->
+                            {% if product.is_free %}
+                            <div class="absolute bottom-2 left-2 right-2">
+                                <span class="block px-3 py-1 bg-green-600 text-white text-xs font-bold rounded-full shadow-lg text-center">
+                                    FREE NOW
+                                </span>
+                            </div>
+                            {% endif %}
+                            
+                            <!-- Discount Badge -->
+                            {% if product.discount_active and product.discounted_price %}
+                            <div class="absolute top-2 right-2 {% if product.show_ecommerce_badge %}top-10{% endif %}">
+                                <span class="px-3 py-1 bg-red-600 text-white text-xs font-bold rounded-full shadow-lg">
+                                    -{{ product.get_discount_percentage }}%
+                                </span>
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Product Info -->
+                        <div class="p-4">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors line-clamp-2">
+                                {{ product.name }}
+                            </h3>
+                            
+                            <p class="text-gray-600 text-sm mb-4 line-clamp-2">
+                                {{ product.description|truncatewords:15 }}
+                            </p>
+                            
+                            <!-- Pricing -->
+                            <div class="flex items-center justify-between mb-4">
+                                <div>
+                                    {% if product.is_free %}
+                                    <span class="text-2xl font-bold text-green-600">FREE</span>
+                                    {% elif product.discount_active and product.discounted_price %}
+                                    <div>
+                                        <span class="text-2xl font-bold text-gray-900">${{ product.discounted_price }}</span>
+                                        <span class="text-sm text-gray-500 line-through ml-2">${{ product.original_price }}</span>
+                                    </div>
+                                    {% else %}
+                                    <span class="text-2xl font-bold text-gray-900">${{ product.original_price }}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <!-- View Details Button -->
+                            <button class="w-full px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transform hover:scale-105 transition-all duration-300">
+                                View Details
+                                <i class="fas fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
+                            </button>
+                        </div>
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <!-- Pagination -->
+            {% if products.has_other_pages %}
+            <div class="mt-12 flex justify-center">
+                <div class="flex space-x-2">
+                    {% if products.has_previous %}
+                    <a href="?page={{ products.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if category_filter %}&category={{ category_filter }}{% endif %}" 
+                       class="px-4 py-2 bg-white border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors">
+                        Previous
+                    </a>
+                    {% endif %}
+                    
+                    <span class="px-4 py-2 bg-blue-600 text-white rounded-md">
+                        Page {{ products.number }} of {{ products.paginator.num_pages }}
+                    </span>
+                    
+                    {% if products.has_next %}
+                    <a href="?page={{ products.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if category_filter %}&category={{ category_filter }}{% endif %}" 
+                       class="px-4 py-2 bg-white border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors">
+                        Next
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+            
+            {% else %}
+            <div class="text-center py-16">
+                <div class="text-gray-500 text-lg">
+                    <svg class="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                    </svg>
+                    <p class="text-xl font-semibold mb-2">No products found</p>
+                    <p>Try adjusting your search or filter criteria.</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </section>
+</main>
+{% endblock %}
+
+
