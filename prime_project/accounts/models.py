@@ -20,6 +20,7 @@ class CustomUser(AbstractUser):
     username = models.CharField(max_length=150, unique=True)  
     role = models.CharField(choices=ROLE_CHOICES, default='user', max_length=10)
     is_verified = models.BooleanField(default=False)
+    profile_picture = models.ImageField(upload_to='profile_pictures/', blank=True, null=True)
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username']  # Only 'username' will be required

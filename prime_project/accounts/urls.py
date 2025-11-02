@@ -3,7 +3,7 @@ from django.contrib.auth import views as auth_views
 from .views import *
 from .views import (
     RegisterUserView, VerifyUserEmail, EmailLoginView, CustomLogoutView,
-    CustomPasswordResetView, CustomPasswordResetConfirmView
+    CustomPasswordResetView, CustomPasswordResetConfirmView, ProfileView
 )
 
 from django.contrib.auth.views import PasswordResetDoneView, PasswordResetCompleteView
@@ -22,6 +22,7 @@ urlpatterns = [
     path('verify-email/', VerifyUserEmail.as_view(), name='verify_email'),
     path('login/', EmailLoginView.as_view(), name='login'),
     path('logout/', CustomLogoutView.as_view(), name='logout'),
+    path('profile/', ProfileView.as_view(), name='profile'),
     path('resend-otp/', ResendOTPView.as_view(), name='resend_otp'),
     path('continue-verification/', ContinueVerificationView.as_view(), name='continue_verification'),
 

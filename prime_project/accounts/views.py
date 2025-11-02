@@ -7,7 +7,7 @@ from django.contrib.auth import login
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_protect
-from .forms import CustomUserCreationForm, EmailAuthenticationForm, CustomPasswordResetForm, OTPVerificationForm
+from .forms import CustomUserCreationForm, EmailAuthenticationForm, CustomPasswordResetForm, OTPVerificationForm, UpdateEmailForm, UpdateUsernameForm, ChangePasswordForm, ProfileUpdateForm
 from .models import OneTimePassword, CustomUser
 from .utils import send_code_to_user, verify_recaptcha
 import logging
@@ -425,3 +425,92 @@ class CustomPasswordResetView(PasswordResetView):
 class CustomPasswordResetConfirmView(PasswordResetConfirmView):
     success_url = reverse_lazy('password_reset_complete')
     template_name = 'registration/password_reset_confirm.html'
+
+
+@method_decorator([csrf_protect, never_cache], name='dispatch')
+class ProfileView(View):
+    template_name = 'accounts/profile.html'
+    
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            messages.error(request, "Please log in to access your profile.")
+            return redirect('login')
+        return super().dispatch(request, *args, **kwargs)
+    
+    def get(self, request):
+        form = ProfileUpdateForm(initial={
+            'username': request.user.username,
+            'email': request.user.email,
+        }, user=request.user)
+        
+        context = {
+            'form': form,
+            'user': request.user,
+        }
+        return render(request, self.template_name, context)
+    
+    def post(self, request):
+        action = request.POST.get('action')
+        
+        if action == 'delete_account':
+            # Delete account functionality
+            user = request.user
+            from django.contrib.auth import logout
+            user.delete()
+            logout(request)
+            messages.success(request, "Your account has been deleted successfully.")
+            return redirect('home')
+        
+        # Handle password change if provided
+        old_password = request.POST.get('old_password')
+        new_password1 = request.POST.get('new_password1')
+        new_password2 = request.POST.get('new_password2')
+        
+        if old_password and new_password1 and new_password2:
+            password_form = ChangePasswordForm({
+                'old_password': old_password,
+                'new_password1': new_password1,
+                'new_password2': new_password2,
+            }, user=request.user)
+            
+            if password_form.is_valid():
+                password_form.save()
+                from django.contrib.auth import update_session_auth_hash
+                update_session_auth_hash(request, request.user)
+                messages.success(request, "Password changed successfully!")
+            else:
+                # If password form is invalid, add errors to messages
+                for field, errors in password_form.errors.items():
+                    for error in errors:
+                        messages.error(request, f"Password: {error}")
+        
+        # Handle profile update
+        form = ProfileUpdateForm(request.POST, request.FILES, user=request.user)
+        
+        if form.is_valid():
+            user = request.user
+            user.username = form.cleaned_data['username']
+            user.email = form.cleaned_data['email']
+            
+            # Handle profile picture upload
+            if 'profile_picture' in request.FILES:
+                user.profile_picture = request.FILES['profile_picture']
+            
+            user.save()
+            
+            # Only show success if password wasn't changed (to avoid double messages)
+            if not (old_password and new_password1 and new_password2):
+                messages.success(request, "Profile updated successfully!")
+            
+            return redirect('profile')
+        
+        # If profile form is invalid, show errors
+        for field, errors in form.errors.items():
+            for error in errors:
+                messages.error(request, f"{field}: {error}")
+        
+        context = {
+            'form': form,
+            'user': request.user,
+        }
+        return render(request, self.template_name, context)

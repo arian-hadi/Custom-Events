@@ -275,3 +275,190 @@ class OTPVerificationForm(forms.Form):
         if len(code) != 6:
             raise ValidationError("OTP must be exactly 6 digits.")
         return code
+
+
+class ProfileUpdateForm(forms.Form):
+    username = forms.CharField(
+        label="Name",
+        max_length=150,
+        widget=forms.TextInput(attrs={
+            'class': 'w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all hover:border-blue-400',
+            'placeholder': 'Enter your name'
+        })
+    )
+    email = forms.EmailField(
+        label="Email",
+        widget=forms.EmailInput(attrs={
+            'class': 'w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all hover:border-blue-400',
+            'placeholder': 'Enter your email address'
+        })
+    )
+    profile_picture = forms.ImageField(
+        label="Profile Picture",
+        required=False,
+        widget=forms.FileInput(attrs={
+            'class': 'hidden',
+            'accept': 'image/*',
+            'id': 'profile-picture-input'
+        })
+    )
+    
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+    
+    def clean_username(self):
+        username = (self.cleaned_data.get("username") or "").strip()
+        
+        # Basic validation
+        if not SAFE_USERNAME.fullmatch(username):
+            raise ValidationError("Usernames may contain letters, numbers, ., _, - (3–30 chars).")
+        
+        # Check for URLs and spam patterns
+        if URL_LIKE.search(username) or contains_spam_patterns(username):
+            raise ValidationError("Username contains prohibited content.")
+        
+        # Check for suspicious patterns
+        if username.lower() in ['admin', 'administrator', 'test', 'user', 'guest']:
+            raise ValidationError("This username is not allowed.")
+        
+        # Check for existing username (case insensitive), excluding current user
+        if self.user and CustomUser.objects.filter(username__iexact=username).exclude(pk=self.user.pk).exists():
+            raise ValidationError("A user with this username already exists.")
+        
+        return username
+    
+    def clean_email(self):
+        email = self.cleaned_data.get('email', '').strip().lower()
+        validate_email(email)
+        
+        # Check if email is already in use by another user
+        if self.user and CustomUser.objects.filter(email=email).exclude(pk=self.user.pk).exists():
+            raise ValidationError("This email is already registered to another account.")
+        
+        # Check for blocked domains
+        if is_blocked_domain(email):
+            raise ValidationError("Sorry, this email domain is not allowed.")
+        
+        # Check for disposable email services
+        if is_disposable_email(email):
+            raise ValidationError("Disposable email addresses are not allowed.")
+        
+        return email
+
+
+class UpdateEmailForm(forms.Form):
+    email = forms.EmailField(
+        label="New Email",
+        widget=forms.EmailInput(attrs={
+            'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent',
+            'placeholder': 'Enter new email address'
+        })
+    )
+    
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+    
+    def clean_email(self):
+        email = self.cleaned_data.get('email', '').strip().lower()
+        validate_email(email)
+        
+        # Check if email is already in use by another user
+        if self.user and CustomUser.objects.filter(email=email).exclude(pk=self.user.pk).exists():
+            raise ValidationError("This email is already registered to another account.")
+        
+        # Check for blocked domains
+        if is_blocked_domain(email):
+            raise ValidationError("Sorry, this email domain is not allowed.")
+        
+        # Check for disposable email services
+        if is_disposable_email(email):
+            raise ValidationError("Disposable email addresses are not allowed.")
+        
+        return email
+
+
+class UpdateUsernameForm(forms.Form):
+    username = forms.CharField(
+        label="New Username",
+        max_length=150,
+        widget=forms.TextInput(attrs={
+            'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent',
+            'placeholder': 'Enter new username'
+        })
+    )
+    
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+    
+    def clean_username(self):
+        username = (self.cleaned_data.get("username") or "").strip()
+        
+        # Basic validation
+        if not SAFE_USERNAME.fullmatch(username):
+            raise ValidationError("Usernames may contain letters, numbers, ., _, - (3–30 chars).")
+        
+        # Check for URLs and spam patterns
+        if URL_LIKE.search(username) or contains_spam_patterns(username):
+            raise ValidationError("Username contains prohibited content.")
+        
+        # Check for suspicious patterns
+        if username.lower() in ['admin', 'administrator', 'test', 'user', 'guest']:
+            raise ValidationError("This username is not allowed.")
+        
+        # Check for existing username (case insensitive), excluding current user
+        if self.user and CustomUser.objects.filter(username__iexact=username).exclude(pk=self.user.pk).exists():
+            raise ValidationError("A user with this username already exists.")
+        
+        return username
+
+
+class ChangePasswordForm(forms.Form):
+    old_password = forms.CharField(
+        label="Current Password",
+        widget=forms.PasswordInput(attrs={
+            'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent',
+            'placeholder': 'Enter current password'
+        })
+    )
+    new_password1 = forms.CharField(
+        label="New Password",
+        widget=forms.PasswordInput(attrs={
+            'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent',
+            'placeholder': 'Enter new password'
+        }),
+        min_length=8,
+        help_text="Password must be at least 8 characters long."
+    )
+    new_password2 = forms.CharField(
+        label="Confirm New Password",
+        widget=forms.PasswordInput(attrs={
+            'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent',
+            'placeholder': 'Confirm new password'
+        })
+    )
+    
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+    
+    def clean_old_password(self):
+        old_password = self.cleaned_data.get('old_password')
+        if not self.user.check_password(old_password):
+            raise ValidationError("Your current password is incorrect.")
+        return old_password
+    
+    def clean_new_password2(self):
+        password1 = self.cleaned_data.get('new_password1')
+        password2 = self.cleaned_data.get('new_password2')
+        if password1 and password2 and password1 != password2:
+            raise ValidationError("The two password fields didn't match.")
+        return password2
+    
+    def save(self):
+        password = self.cleaned_data['new_password1']
+        self.user.set_password(password)
+        self.user.save()
+        return self.user
