@@ -109,24 +109,41 @@
                                  alt="{{ product.name }}"
                                  class="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-300">
                             
-                            <!-- Category Badge -->
+                            <!-- Category Badge (Only for 2.0 Transformers) -->
+                            {% if product.category == 'transformers_2_0' %}
                             <div class="absolute top-2 left-2">
-                                {% if product.category == 'transformers_2_0' %}
                                 <span class="px-3 py-1 bg-blue-600 text-white text-xs font-semibold rounded-full shadow-lg">
                                     2.0 Transformers
                                 </span>
-                                {% else %}
-                                <span class="px-3 py-1 bg-purple-600 text-white text-xs font-semibold rounded-full shadow-lg">
-                                    1.0 Merges
-                                </span>
-                                {% endif %}
                             </div>
+                            {% endif %}
                             
-                            <!-- E-commerce Platform Badge (for 1.0 products) -->
-                            {% if product.show_ecommerce_badge %}
-                            <div class="absolute top-2 right-2">
-                                <span class="px-3 py-1 bg-green-600 text-white text-xs font-semibold rounded-full shadow-lg capitalize">
+                            <!-- E-commerce Platform Badge (for 1.0 products - Left Side) -->
+                            {% if product.category == 'merges_1_0' and product.show_ecommerce_badge %}
+                            <div class="absolute top-2 left-2">
+                                <span class="flex items-center px-3 py-1 bg-white text-gray-900 text-xs font-semibold rounded-full shadow-lg capitalize border border-gray-200">
+                                    {% if product.ecommerce_platform == 'amazon' %}
+                                    <svg class="w-4 h-4 mr-1.5" viewBox="2.167 .438 251.038 259.969" fill="currentColor">
+                                        <g fill-rule="evenodd">
+                                            <path d="m221.503 210.324c-105.235 50.083-170.545 8.18-212.352-17.271-2.587-1.604-6.984.375-3.169 4.757 13.928 16.888 59.573 57.593 119.153 57.593 59.621 0 95.09-32.532 99.527-38.207 4.407-5.627 1.294-8.731-3.16-6.872zm29.555-16.322c-2.826-3.68-17.184-4.366-26.22-3.256-9.05 1.078-22.634 6.609-21.453 9.93.606 1.244 1.843.686 8.06.127 6.234-.622 23.698-2.826 27.337 1.931 3.656 4.79-5.57 27.608-7.255 31.288-1.628 3.68.622 4.629 3.68 2.178 3.016-2.45 8.476-8.795 12.14-17.774 3.639-9.028 5.858-21.622 3.71-24.424z" fill="#f90"/>
+                                            <path d="m150.744 108.13c0 13.141.332 24.1-6.31 35.77-5.361 9.489-13.853 15.324-23.341 15.324-12.952 0-20.495-9.868-20.495-24.432 0-28.75 25.76-33.968 50.146-33.968zm34.015 82.216c-2.23 1.992-5.456 2.135-7.97.806-11.196-9.298-13.189-13.615-19.356-22.487-18.502 18.882-31.596 24.527-55.601 24.527-28.37 0-50.478-17.506-50.478-52.565 0-27.373 14.85-46.018 35.96-55.126 18.313-8.066 43.884-9.489 63.43-11.718v-4.365c0-8.018.616-17.506-4.08-24.432-4.128-6.215-12.003-8.777-18.93-8.777-12.856 0-24.337 6.594-27.136 20.257-.57 3.037-2.799 6.026-5.835 6.168l-32.735-3.51c-2.751-.618-5.787-2.847-5.028-7.07 7.543-39.66 43.36-51.616 75.43-51.616 16.415 0 37.858 4.365 50.81 16.795 16.415 15.323 14.849 35.77 14.849 58.02v52.565c0 15.798 6.547 22.724 12.714 31.264 2.182 3.036 2.657 6.69-.095 8.966-6.879 5.74-19.119 16.415-25.855 22.393l-.095-.095" fill="#000"/>
+                                        </g>
+                                    </svg>
+                                    Amazon
+                                    {% elif product.ecommerce_platform == 'aliexpress' %}
+                                    <svg class="w-4 h-4 mr-1.5" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
+                                    </svg>
+                                    AliExpress
+                                    {% elif product.ecommerce_platform == 'ebay' %}
+                                    <svg class="w-4 h-4 mr-1.5" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M20.5 7.44V7.3c0-.64-.06-1.25-.18-1.82-.12-.57-.3-1.08-.54-1.52-.24-.44-.54-.8-.9-1.08-.36-.28-.78-.42-1.26-.42-.26 0-.5.05-.72.14-.22.09-.41.22-.57.38-.16.16-.29.35-.38.57-.09.22-.14.46-.14.72 0 .24.04.46.12.66.08.2.2.37.36.51.16.14.35.25.57.33.22.08.46.12.72.12.18 0 .35-.02.51-.06.16-.04.31-.1.45-.18.14-.08.27-.17.39-.28.12-.11.23-.24.33-.39.1-.15.18-.32.24-.51.06-.19.09-.4.09-.63 0-.23-.03-.44-.09-.63-.06-.19-.14-.36-.24-.51-.1-.15-.21-.28-.33-.39-.12-.11-.25-.2-.39-.28-.14-.08-.29-.14-.45-.18-.16-.04-.33-.06-.51-.06-.26 0-.5.04-.72.12-.22.08-.41.19-.57.33-.16.14-.28.31-.36.51-.08.2-.12.42-.12.66 0 .26.05.5.14.72.09.22.22.41.38.57.16.16.35.29.57.38.22.09.46.14.72.14.48 0 .9-.14 1.26-.42.36-.28.66-.64.9-1.08.24-.44.42-.95.54-1.52.12-.57.18-1.18.18-1.82v-.14h-5.5v7.5h1.5v-6h4v.5z"/>
+                                    </svg>
+                                    eBay
+                                    {% else %}
+                                    <i class="fas fa-shopping-cart mr-1.5"></i>
                                     {{ product.get_ecommerce_platform_display }}
+                                    {% endif %}
                                 </span>
                             </div>
                             {% endif %}
@@ -140,9 +157,9 @@
                             </div>
                             {% endif %}
                             
-                            <!-- Discount Badge -->
+                            <!-- Discount Badge (Right Side) -->
                             {% if product.discount_active and product.discounted_price %}
-                            <div class="absolute top-2 right-2 {% if product.show_ecommerce_badge %}top-10{% endif %}">
+                            <div class="absolute top-2 right-2">
                                 <span class="px-3 py-1 bg-red-600 text-white text-xs font-bold rounded-full shadow-lg">
                                     -{{ product.get_discount_percentage }}%
                                 </span>
