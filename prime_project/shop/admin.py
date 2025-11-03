@@ -31,7 +31,7 @@ class ProductAdmin(admin.ModelAdmin):
             'fields': ('name', 'description', 'category', 'is_active')
         }),
         ('Images', {
-            'fields': ('thumbnail', 'main_image')
+            'fields': ('thumbnail', 'main_image', 'video_url')
         }),
         ('Pricing', {
             'fields': (

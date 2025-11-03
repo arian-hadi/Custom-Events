@@ -36,6 +36,8 @@ class Product(models.Model):
     # Images
     thumbnail = models.ImageField(upload_to='shop/thumbnails/')
     main_image = models.ImageField(upload_to='shop/images/')
+    # Optional video URL (e.g., YouTube/TikTok) for 2.0 Transformers products
+    video_url = models.URLField(blank=True, null=True, help_text="Optional video URL (YouTube/TikTok) for media gallery")
     
     # Pricing
     original_price = models.DecimalField(

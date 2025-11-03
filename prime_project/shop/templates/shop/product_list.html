@@ -172,6 +172,13 @@
                                 </span>
                             </div>
                             {% endif %}
+                            {% if product.category == 'transformers_2_0' and product.video_url %}
+                            <div class="absolute top-1 right-1 sm:top-2 sm:right-2">
+                                <span class="px-1.5 py-0.5 bg-black/70 text-white text-[10px] sm:text-xs font-semibold rounded shadow">
+                                    <i class="fas fa-play text-[10px] sm:text-xs mr-0.5"></i> Video
+                                </span>
+                            </div>
+                            {% endif %}
                             
                             <!-- E-commerce Platform Badge (for 1.0 products - Left Side) -->
                             {% if product.category == 'merges_1_0' and product.show_ecommerce_badge %}
