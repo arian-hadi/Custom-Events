@@ -40,58 +40,101 @@
             </div>
             
             <!-- Search Form -->
-            <div class="max-w-5xl mx-auto bg-white/10 backdrop-blur-md rounded-lg shadow-lg p-3 border border-gray-700 relative group
+            <div class="max-w-5xl mx-auto bg-white/10 backdrop-blur-md rounded-lg shadow-lg p-3 sm:p-4 border border-gray-700 relative group
                         before:absolute before:w-full before:h-full before:inset-0 before:-z-10
                         before:bg-gradient-to-r before:from-blue-500/20 before:via-purple-500/20 before:to-pink-500/20 before:rounded-lg
                         before:opacity-0 hover:before:opacity-100 before:transition-opacity before:duration-500">
                 
-                <form method="GET" class="flex w-full items-center gap-3">
+                <form method="GET" class="flex flex-col sm:flex-row w-full items-stretch sm:items-center gap-3">
                     <div class="flex-1 relative">
                         <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
-                            <i class="fas fa-search"></i>
+                            <i class="fas fa-search text-base sm:text-lg"></i>
                         </span>
                         <input type="text" name="search" placeholder="Search products..." 
                                value="{{ search_query }}"
-                               class="w-full pl-12 pr-4 py-3 bg-white/10 backdrop-blur rounded-md border border-gray-700 text-white
+                               class="w-full pl-12 sm:pl-12 pr-4 py-3 sm:py-3 text-base sm:text-sm bg-white/10 backdrop-blur rounded-md border border-gray-700 text-white
                                       focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300
                                       placeholder-gray-400 shadow-[0_0_15px_rgba(59,130,246,0.2)]">
                     </div>
                     
                     <div class="flex-1 relative">
                         <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 z-10">
-                            <i class="fas fa-tags mr-2"></i>
+                            <i class="fas fa-tags text-base sm:text-lg sm:mr-2"></i>
                         </span>
                         <select name="category" 
-                                class="w-full pl-12 pr-4 py-3 bg-white/10 backdrop-blur rounded-md border border-gray-700 text-white
+                                class="w-full pl-12 sm:pl-12 pr-4 py-3 sm:py-3 text-base sm:text-sm bg-white/10 backdrop-blur rounded-md border border-gray-700 text-white
                                        focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300
                                        placeholder-gray-400 shadow-[0_0_15px_rgba(59,130,246,0.2)]
                                        [&>option]:bg-gray-800 [&>option]:text-white [&>option]:p-2">
                             <option value="" class="bg-gray-800 text-white">All Categories</option>
                             <option value="transformers_2_0" {% if category_filter == 'transformers_2_0' %}selected{% endif %} class="bg-gray-800 text-white">
-                                2.0 Transformers Products ({{ transformers_count }})
+                                2.0 Transformers ({{ transformers_count }})
                             </option>
                             <option value="merges_1_0" {% if category_filter == 'merges_1_0' %}selected{% endif %} class="bg-gray-800 text-white">
-                                Merch, Figures & Collectibles ({{ merges_count }})
+                                Merch & Figures ({{ merges_count }})
                             </option>
                         </select>
                     </div>
 
-                    <button type="submit" 
-                            class="px-8 py-3 bg-black text-white rounded-md border border-gray-700
-                                   hover:shadow-[0_0_20px_rgba(59,130,246,0.5)] hover:border-blue-500/50
-                                   transition-all duration-300 transform hover:-translate-y-0.5">
-                        Search
-                    </button>
-                    
-                    {% if search_query or category_filter %}
-                    <a href="{% url 'shop:product_list' %}" 
-                       class="px-6 py-3 bg-gray-700 text-white rounded-md border border-gray-600
-                              hover:bg-gray-600 transition-all duration-300">
-                        Clear
-                    </a>
-                    {% endif %}
+                    <div class="flex gap-2 sm:flex-none">
+                        <button type="submit" 
+                                class="flex-1 sm:flex-none px-6 sm:px-8 py-3 text-base sm:text-sm font-semibold bg-black text-white rounded-md border border-gray-700
+                                       hover:shadow-[0_0_20px_rgba(59,130,246,0.5)] hover:border-blue-500/50
+                                       transition-all duration-300 transform hover:-translate-y-0.5">
+                            Search
+                        </button>
+                        
+                        {% if search_query or category_filter %}
+                        <a href="{% url 'shop:product_list' %}" 
+                           class="flex-1 sm:flex-none px-4 sm:px-6 py-3 text-base sm:text-sm font-semibold bg-gray-700 text-white rounded-md border border-gray-600
+                                  hover:bg-gray-600 transition-all duration-300">
+                            Clear
+                        </a>
+                        {% endif %}
+                    </div>
                 </form>
             </div>
+        </div>
+    </section>
+
+    <!-- Sort/Filter Toolbar (separate from search) -->
+    <section class="bg-white py-3 border-b">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <form method="GET" class="flex items-center gap-3 flex-wrap">
+                <!-- Keep search and category in query when changing sort/filter -->
+                <input type="hidden" name="search" value="{{ search_query }}">
+                <input type="hidden" name="category" value="{{ category_filter }}">
+
+                <div class="flex items-center text-gray-600 mr-1">
+                    <i class="fas fa-sort text-lg"></i>
+                    <span class="ml-2 text-sm font-medium">Sort & Filter</span>
+                </div>
+
+                <!-- Filter: Free/Discounted -->
+                <div class="relative">
+                    <select name="filter"
+                            class="min-w-[9rem] pl-3 pr-8 py-2 text-sm bg-white border border-gray-300 rounded-md text-gray-700
+                                   focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 transition-colors">
+                        <option value="">All</option>
+                        <option value="free" {% if request.GET.filter == 'free' %}selected{% endif %}>Free</option>
+                        <option value="discounted" {% if request.GET.filter == 'discounted' %}selected{% endif %}>Discounted</option>
+                    </select>
+                </div>
+
+                <!-- Sort -->
+                <div class="relative">
+                    <select name="sort"
+                            class="min-w-[12rem] pl-3 pr-8 py-2 text-sm bg-white border border-gray-300 rounded-md text-gray-700
+                                   focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 transition-colors">
+                        <option value="latest" {% if request.GET.sort == 'latest' or not request.GET.sort %}selected{% endif %}>Latest</option>
+                        <option value="oldest" {% if request.GET.sort == 'oldest' %}selected{% endif %}>Oldest</option>
+                        <option value="price_low_high" {% if request.GET.sort == 'price_low_high' %}selected{% endif %}>Price: Low → High</option>
+                        <option value="price_high_low" {% if request.GET.sort == 'price_high_low' %}selected{% endif %}>Price: High → Low</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">Apply</button>
+            </form>
         </div>
     </section>
 
@@ -99,7 +142,7 @@
     <section class="bg-gray-50 py-12">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             {% if products %}
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
                 {% for product in products %}
                 <div class="bg-white rounded-lg border border-gray-200 hover:border-blue-300 shadow-sm hover:shadow-xl transform hover:-translate-y-2 transition-all duration-300 overflow-hidden group cursor-pointer">
                     <a href="{% url 'shop:product_detail' product.id %}">
@@ -107,37 +150,35 @@
                         <div class="relative overflow-hidden bg-gray-100">
                             <img src="{{ product.thumbnail.url }}" 
                                  alt="{{ product.name }}"
-                                 class="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-300">
+                                 class="w-full h-32 sm:h-40 lg:h-48 object-cover group-hover:scale-110 transition-transform duration-300">
                             
-                            <!-- Favorite Heart Icon (Top Right) -->
-                            {% if user.is_authenticated %}
+                            <!-- Favorite Heart Icon (Top Right) - visible for all -->
                             <button type="button" 
                                     onclick="toggleFavorite(event, {{ product.id }})"
-                                    class="absolute top-2 right-2 z-10 p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-lg hover:bg-white transition-all duration-300 {% if product.id in favorited_product_ids %}text-red-500{% else %}text-gray-400 hover:text-red-500{% endif %}">
-                                <svg class="w-5 h-5 {% if product.id in favorited_product_ids %}fill-current{% else %}fill-none{% endif %}" 
+                                    class="absolute top-1 right-1 sm:top-2 sm:right-2 z-10 p-1.5 sm:p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-lg hover:bg-white transition-all duration-300 {% if product.id in favorited_product_ids %}text-red-500{% else %}text-gray-400 hover:text-red-500{% endif %}">
+                                <svg class="w-4 h-4 sm:w-5 sm:h-5 {% if product.id in favorited_product_ids %}fill-current{% else %}fill-none{% endif %}" 
                                      stroke="currentColor" 
                                      viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
                                           d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
                                 </svg>
                             </button>
-                            {% endif %}
                             
                             <!-- Category Badge (Only for 2.0 Transformers) -->
                             {% if product.category == 'transformers_2_0' %}
-                            <div class="absolute top-2 left-2">
-                                <span class="px-3 py-1 bg-blue-600 text-white text-xs font-semibold rounded-full shadow-lg">
-                                    2.0 Transformers
+                            <div class="absolute top-1 left-1 sm:top-2 sm:left-2">
+                                <span class="px-2 py-0.5 sm:px-3 sm:py-1 bg-blue-600 text-white text-[10px] sm:text-xs font-semibold rounded-full shadow-lg">
+                                    2.0
                                 </span>
                             </div>
                             {% endif %}
                             
                             <!-- E-commerce Platform Badge (for 1.0 products - Left Side) -->
                             {% if product.category == 'merges_1_0' and product.show_ecommerce_badge %}
-                            <div class="absolute top-2 left-2">
-                                <span class="flex items-center px-3 py-1 bg-white text-gray-900 text-xs font-semibold rounded-full shadow-lg capitalize border border-gray-200">
+                            <div class="absolute top-1 left-1 sm:top-2 sm:left-2">
+                                <span class="flex items-center px-1.5 py-0.5 sm:px-3 sm:py-1 bg-white text-gray-900 text-[10px] sm:text-xs font-semibold rounded-full shadow-lg capitalize border border-gray-200">
                                     {% if product.ecommerce_platform == 'amazon' %}
-                                    <svg class="w-4 h-4 mr-1.5" viewBox="2.167 .438 251.038 259.969" fill="currentColor">
+                                    <svg class="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-1.5" viewBox="2.167 .438 251.038 259.969" fill="currentColor">
                                         <g fill-rule="evenodd">
                                             <path d="m221.503 210.324c-105.235 50.083-170.545 8.18-212.352-17.271-2.587-1.604-6.984.375-3.169 4.757 13.928 16.888 59.573 57.593 119.153 57.593 59.621 0 95.09-32.532 99.527-38.207 4.407-5.627 1.294-8.731-3.16-6.872zm29.555-16.322c-2.826-3.68-17.184-4.366-26.22-3.256-9.05 1.078-22.634 6.609-21.453 9.93.606 1.244 1.843.686 8.06.127 6.234-.622 23.698-2.826 27.337 1.931 3.656 4.79-5.57 27.608-7.255 31.288-1.628 3.68.622 4.629 3.68 2.178 3.016-2.45 8.476-8.795 12.14-17.774 3.639-9.028 5.858-21.622 3.71-24.424z" fill="#f90"/>
                                             <path d="m150.744 108.13c0 13.141.332 24.1-6.31 35.77-5.361 9.489-13.853 15.324-23.341 15.324-12.952 0-20.495-9.868-20.495-24.432 0-28.75 25.76-33.968 50.146-33.968zm34.015 82.216c-2.23 1.992-5.456 2.135-7.97.806-11.196-9.298-13.189-13.615-19.356-22.487-18.502 18.882-31.596 24.527-55.601 24.527-28.37 0-50.478-17.506-50.478-52.565 0-27.373 14.85-46.018 35.96-55.126 18.313-8.066 43.884-9.489 63.43-11.718v-4.365c0-8.018.616-17.506-4.08-24.432-4.128-6.215-12.003-8.777-18.93-8.777-12.856 0-24.337 6.594-27.136 20.257-.57 3.037-2.799 6.026-5.835 6.168l-32.735-3.51c-2.751-.618-5.787-2.847-5.028-7.07 7.543-39.66 43.36-51.616 75.43-51.616 16.415 0 37.858 4.365 50.81 16.795 16.415 15.323 14.849 35.77 14.849 58.02v52.565c0 15.798 6.547 22.724 12.714 31.264 2.182 3.036 2.657 6.69-.095 8.966-6.879 5.74-19.119 16.415-25.855 22.393l-.095-.095" fill="#000"/>
@@ -145,7 +186,7 @@
                                     </svg>
                                     Amazon
                                     {% elif product.ecommerce_platform == 'aliexpress' %}
-                                    <svg class="w-4 h-4 mr-1.5" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" fill-rule="evenodd" clip-rule="evenodd" stroke-linejoin="round" stroke-miterlimit="2">
+                                    <svg class="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-1.5" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" fill-rule="evenodd" clip-rule="evenodd" stroke-linejoin="round" stroke-miterlimit="2">
                                         <path d="M6 118.468C6 56.356 56.356 6 118.468 6H393.53C455.643 6 506 56.356 506 118.468V393.53C505.999 455.643 455.643 506 393.53 506H118.468C56.356 505.999 6 455.643 6 393.53V118.468z" fill="#f90" fill-rule="nonzero"/>
                                         <path d="M6 159.843c0-50.206 40.7-90.906 90.912-90.906h318.18c50.207 0 90.907 40.7 90.907 90.906V393.53C505.999 455.643 455.643 506 393.53 506H118.468C56.356 505.999 6 455.643 6 393.53V159.843z" fill="#e43225" fill-rule="nonzero"/>
                                         <path d="M145.28 149.78c1.888 7.7.826 16.013 2.676 23.838 6.469-4.731 10.775-12.543 9.894-20.68-.132-14.563-16.513-25.976-30.22-21.076-8.618 2.463-14.993 10.2-16.437 18.938-1.725 10.006 4.282 20.237 13.22 24.812-.882-8.619-2.957-17.706-.638-26.137 3.537-9.194 18.23-9.007 21.506.306zm255.056 10.438c3.144-11.3-3.693-24.4-14.9-28.018-10.774-4.232-24.112 1.156-28.862 11.656-5.294 9.719-2.094 23.55 7.588 29.244 1.912-7.8.5-16.163 2.768-23.744 3.619-9.056 18.131-8.794 21.431.387 2.1 8.207.2 16.825-.593 25.106 6.575-2.03 10.675-8.312 12.562-14.606l.006-.025z" fill="#b32100" fill-rule="nonzero"/>
@@ -153,7 +194,7 @@
                                     </svg>
                                     AliExpress
                                     {% elif product.ecommerce_platform == 'ebay' %}
-                                    <svg class="w-4 h-4 mr-1.5" viewBox="0 0 1000 400.75098" xmlns="http://www.w3.org/2000/svg">
+                                    <svg class="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-1.5" viewBox="0 0 1000 400.75098" xmlns="http://www.w3.org/2000/svg">
                                         <style>
                                             .ebay-cls-1 { fill: #0968f6; }
                                             .ebay-cls-1, .ebay-cls-2, .ebay-cls-3, .ebay-cls-4 { stroke-width: 0px; }
@@ -170,8 +211,8 @@
                                     </svg>
                                     eBay
                                     {% else %}
-                                    <i class="fas fa-shopping-cart mr-1.5"></i>
-                                    {{ product.get_ecommerce_platform_display }}
+                                    <i class="fas fa-shopping-cart text-xs sm:text-sm mr-1 sm:mr-1.5"></i>
+                                    <span class="hidden sm:inline">{{ product.get_ecommerce_platform_display }}</span>
                                     {% endif %}
                                 </span>
                             </div>
@@ -188,39 +229,43 @@
                         </div>
                         
                         <!-- Product Info -->
-                        <div class="p-4">
-                            <h3 class="text-lg font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors line-clamp-2">
+                        <div class="p-2 sm:p-4">
+                <h3 class="text-sm sm:text-base lg:text-lg font-semibold text-gray-900 mb-1 sm:mb-2 group-hover:text-blue-600 transition-colors line-clamp-2 leading-tight">
                                 {{ product.name }}
                             </h3>
                             
-                            <p class="text-gray-600 text-sm mb-4 line-clamp-2">
-                                {{ product.description|truncatewords:15 }}
+                            <!-- Description - Hidden on mobile -->
+                <p class="hidden sm:block text-gray-600 text-sm mb-4 line-clamp-2">
+                    {{ product.description|striptags|truncatewords:15 }}
                             </p>
                             
                             <!-- Pricing -->
-                            <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center justify-between mb-2 sm:mb-4">
                                 <div>
                                     {% if product.is_free %}
-                                    <span class="text-2xl font-bold text-green-600">FREE</span>
+                                    <span class="text-lg sm:text-xl lg:text-2xl font-bold text-green-600">FREE</span>
                                     {% elif product.discount_active and product.discounted_price %}
-                                    <div class="flex items-baseline gap-2 flex-wrap">
-                                        <span class="text-2xl font-bold text-gray-900">${{ product.discounted_price }}</span>
-                                        <span class="px-2 py-0.5 bg-red-600 text-white text-xs font-bold rounded">
+                                    <div class="flex items-baseline gap-1 sm:gap-2 flex-wrap">
+                                        <span class="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">${{ product.discounted_price }}</span>
+                                        <span class="px-1.5 sm:px-2 py-0.5 bg-red-600 text-white text-[10px] sm:text-xs font-bold rounded">
                                             -{{ product.get_discount_percentage }}%
                                         </span>
-                                        <span class="text-sm text-gray-500 line-through">${{ product.original_price }}</span>
+                                        <span class="text-xs sm:text-sm text-gray-500 line-through">${{ product.original_price }}</span>
                                     </div>
                                     {% else %}
-                                    <span class="text-2xl font-bold text-gray-900">${{ product.original_price }}</span>
+                                    <span class="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">${{ product.original_price }}</span>
                                     {% endif %}
                                 </div>
                             </div>
                             
                             <!-- View Details Button -->
-                            <button class="w-full px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transform hover:scale-105 transition-all duration-300">
-                                View Details
-                                <i class="fas fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
+                <div class="border-t border-gray-100 mt-2 pt-2">
+                <button class="w-full px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-600 text-white text-xs sm:text-sm font-medium rounded-md hover:bg-blue-700 transform hover:scale-105 transition-all duration-300">
+                                <span class="hidden sm:inline">View Details</span>
+                                <span class="sm:hidden">Details</span>
+                                <i class="fas fa-arrow-right ml-1 sm:ml-2 group-hover:translate-x-1 transition-transform"></i>
                             </button>
+                </div>
                         </div>
                     </a>
                 </div>
@@ -299,8 +344,18 @@ function toggleFavorite(event, productId) {
         },
         credentials: 'same-origin',
     })
-    .then(response => response.json())
+    .then(async response => {
+        if (response.status === 401) {
+            showToast('Please log in to add favorites.', 'warning');
+            setTimeout(() => {
+                window.location.href = "{% url 'login' %}?next=" + encodeURIComponent(window.location.pathname + window.location.search);
+            }, 1200);
+            return null;
+        }
+        return response.json();
+    })
     .then(data => {
+        if (!data) return;
         if (data.success) {
             // Update heart icon appearance
             if (data.is_favorited) {
@@ -308,16 +363,19 @@ function toggleFavorite(event, productId) {
                 heartIcon.classList.remove('fill-none');
                 button.classList.remove('text-gray-400');
                 button.classList.add('text-red-500');
+                showToast('Added to favorites', 'success');
             } else {
                 heartIcon.classList.remove('fill-current');
                 heartIcon.classList.add('fill-none');
                 button.classList.remove('text-red-500');
                 button.classList.add('text-gray-400');
+                showToast('Removed from favorites', 'success');
             }
         }
     })
     .catch(error => {
         console.error('Error toggling favorite:', error);
+        showToast('Something went wrong. Please try again.', 'error');
     });
 }
 </script>

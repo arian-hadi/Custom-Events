@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+
+{% block title %}Your Event Applications - Dashboard{% endblock %}
+
+{% block content %}
+<main class="pt-16">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div class="mb-6 flex items-center justify-between">
+            <h1 class="text-2xl font-semibold text-gray-900">Your Event Applications</h1>
+            <a href="{% url 'dashboard:user_dashboard' %}" class="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-md hover:bg-gray-200 transition-colors">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                Back to dashboard
+            </a>
+        </div>
+
+        <div class="bg-white rounded-lg shadow">
+            <div class="p-6 border-b border-gray-200">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="flex items-center p-3 rounded-lg bg-gray-50">
+                        <div class="p-2 rounded-full bg-blue-100 text-blue-600">
+                            <i class="fas fa-calendar-alt"></i>
+                        </div>
+                        <div class="ml-3">
+                            <div class="text-base font-semibold">{{ total_applications }}</div>
+                            <div class="text-xs text-gray-500 mt-0.5">Total</div>
+                        </div>
+                    </div>
+                    <div class="flex items-center p-3 rounded-lg bg-gray-50">
+                        <div class="p-2 rounded-full bg-yellow-100 text-yellow-600">
+                            <i class="fas fa-hourglass-half"></i>
+                        </div>
+                        <div class="ml-3">
+                            <div class="text-base font-semibold">{{ pending_applications }}</div>
+                            <div class="text-xs text-gray-500 mt-0.5">Pending</div>
+                        </div>
+                    </div>
+                    <div class="flex items-center p-3 rounded-lg bg-gray-50">
+                        <div class="p-2 rounded-full bg-green-100 text-green-600">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="ml-3">
+                            <div class="text-base font-semibold">{{ accepted_applications }}</div>
+                            <div class="text-xs text-gray-500 mt-0.5">Approved</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Event Name</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Organizer</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Applied Date</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for application in applications %}
+                        <tr>
+                            <td class="px-6 py-4">
+                                <a href="{% url 'events:event_detail' application.event.id %}" class="text-sm font-medium text-blue-600 hover:text-blue-900">
+                                    {{ application.event.title }}
+                                </a>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="text-sm text-gray-900">{{ application.event.created_by.username }}</div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="text-sm text-gray-500">{{ application.applied_date|date:"M d, Y" }}</div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                    {% if application.status == 'pending' %}bg-yellow-100 text-yellow-800
+                                    {% elif application.status == 'accepted' %}bg-green-100 text-green-800
+                                    {% elif application.status == 'rejected' %}bg-red-100 text-red-800
+                                    {% elif application.status == 'under_review' %}bg-blue-100 text-blue-800
+                                    {% endif %}">
+                                    {{ application.get_status_display }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="flex space-x-3">
+                                    {% if application.status == 'pending' or application.status == 'under_review' %}
+                                        <a href="{% url 'dashboard:edit_application' application.id %}" 
+                                           class="text-blue-600 hover:text-blue-800 hover:underline flex items-center">
+                                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                                      d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                            </svg>
+                                            Edit
+                                        </a>
+                                        <button onclick="confirmWithdraw('{{ application.id }}')" 
+                                                class="text-red-600 hover:text-red-900 flex items-center">
+                                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                            </svg>
+                                            Withdraw
+                                        </button>
+                                        <form id="withdraw-form-{{ application.id }}" 
+                                              action="{% url 'dashboard:withdraw_application' application.id %}" 
+                                              method="POST" class="hidden">
+                                            {% csrf_token %}
+                                        </form>
+                                    {% else %}
+                                        <span class="text-gray-400 text-sm">No actions available</span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="px-6 py-4 text-center text-gray-500">
+                                No event applications yet
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <script>
+        function confirmWithdraw(applicationId) {
+            if (confirm('Are you sure you want to withdraw from this event? This action cannot be undone.')) {
+                document.getElementById(`withdraw-form-${applicationId}`).submit();
+            }
+        }
+        </script>
+    </div>
+</main>
+{% endblock %}
+
+

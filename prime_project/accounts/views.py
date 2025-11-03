@@ -289,8 +289,10 @@ class EmailLoginView(LoginView):
     def form_valid(self, form):
         # Verify reCAPTCHA before processing login
         if not verify_recaptcha(self.request):
+            # Attach error and re-render without adding misleading credential errors
+            form.add_error(None, "Please complete the reCAPTCHA verification.")
             messages.error(self.request, "Please complete the reCAPTCHA verification.")
-            return self.form_invalid(form)
+            return self.render_to_response(self.get_context_data(form=form))
         
         try:
             # Debug form data before authentication
@@ -348,8 +350,9 @@ class EmailLoginView(LoginView):
         
         # Debug form data
         logger.warning(f"Form data: {form.data}")
-        
-        messages.error(self.request, "Invalid email or password.")
+        # Only show the generic credential error if reCAPTCHA was solved
+        if verify_recaptcha(self.request):
+            messages.error(self.request, "Invalid email or password.")
         return super().form_invalid(form)
 
 

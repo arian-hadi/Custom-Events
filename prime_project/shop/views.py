@@ -1,5 +1,6 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.core.paginator import Paginator
+from django.db.models import Q, Case, When, F, DecimalField
 from django.db.models import Q
 from django.utils import timezone
 from django.contrib.auth.decorators import login_required
@@ -11,7 +12,9 @@ from .models import Product
 def product_list(request):
     """Display list of all active products with filtering by category."""
     category_filter = request.GET.get('category', '')
-    search_query = request.GET.get('search', '')
+    search_query = request.GET.get('search', '').strip()
+    selected_filter = request.GET.get('filter', '')
+    sort = request.GET.get('sort', 'latest')
     
     products = Product.objects.filter(is_active=True)
     
@@ -25,6 +28,34 @@ def product_list(request):
             Q(name__icontains=search_query) |
             Q(description__icontains=search_query)
         )
+
+    # Additional filters
+    if selected_filter == 'free':
+        products = products.filter(
+            Q(free_deadline_active=True) |
+            Q(original_price=0) |
+            Q(discount_active=True, discounted_price=0)
+        )
+    elif selected_filter == 'discounted':
+        products = products.filter(discount_active=True)
+
+    # Sorting: annotate effective_price
+    products = products.annotate(
+        effective_price=Case(
+            When(discount_active=True, then=F('discounted_price')),
+            default=F('original_price'),
+            output_field=DecimalField(max_digits=10, decimal_places=2)
+        )
+    )
+
+    if sort == 'oldest':
+        products = products.order_by('created_at')
+    elif sort == 'price_low_high':
+        products = products.order_by('effective_price')
+    elif sort == 'price_high_low':
+        products = products.order_by('-effective_price')
+    else:
+        products = products.order_by('-created_at')
     
     # Pagination
     paginator = Paginator(products, 12)  # Show 12 products per page
@@ -52,6 +83,8 @@ def product_list(request):
         'products': products,
         'category_filter': category_filter,
         'search_query': search_query,
+        'selected_filter': selected_filter,
+        'sort': sort,
         'transformers_count': transformers_count,
         'merges_count': merges_count,
         'favorited_product_ids': favorited_product_ids,
@@ -84,10 +117,16 @@ def product_detail(request, product_id):
     return render(request, 'shop/product_detail.html', context)
 
 
-@login_required
 @require_POST
 def toggle_favorite(request, product_id):
     """Toggle favorite status for a product (AJAX endpoint)."""
+    if not request.user.is_authenticated:
+        return JsonResponse({
+            'success': False,
+            'auth_required': True,
+            'message': 'Please log in to manage favorites.'
+        }, status=401)
+
     product = get_object_or_404(Product, id=product_id, is_active=True)
     
     if product.favorites.filter(id=request.user.id).exists():

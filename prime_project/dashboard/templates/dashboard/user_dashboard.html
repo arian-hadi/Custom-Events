@@ -5,128 +5,94 @@
 {% block content %}
 <main class="pt-16">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <!-- Stats Overview -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div class="bg-white rounded-lg shadow p-6">
-                <div class="flex items-center">
-                    <div class="p-3 rounded-full bg-custom/10 text-custom">
-                        <i class="fas fa-calendar-alt text-xl"></i>
+        <!-- Profile Header -->
+        <div class="flex flex-col items-center text-center mb-10">
+            <div class="relative">
+                {% if user.profile_picture %}
+                <img src="{{ user.profile_picture.url }}" alt="{{ user.username }}" class="w-24 h-24 sm:w-28 sm:h-28 rounded-full object-cover ring-2 ring-gray-200" />
+                {% else %}
+                <div class="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-gray-100 flex items-center justify-center ring-2 ring-gray-200">
+                    <svg class="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                </div>
+                {% endif %}
+            </div>
+            <h1 class="mt-4 text-2xl sm:text-3xl font-semibold text-gray-900">{{ user.username }}</h1>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+            <!-- Favorites CTA -->
+            <div class="bg-white rounded-lg border border-gray-200 p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-lg font-semibold text-gray-900">Your Favorites</h2>
+                        <p class="text-sm text-gray-500 mt-1">View and manage products you saved.</p>
                     </div>
-                    <div class="ml-4">
-                        <p class="text-sm text-gray-500">Total Event Applications</p>
-                        <p class="text-2xl font-semibold">{{ total_applications }}</p>
-                    </div>
+                    {% if user.favorite_products.count > 0 %}
+                    <span class="ml-2 px-2 py-0.5 text-xs font-semibold text-white bg-red-500 rounded-full inline-flex items-center">
+                        <svg class="w-3.5 h-3.5 mr-1" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                            <path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                        </svg>
+                        {{ user.favorite_products.count }}
+                    </span>
+                    {% endif %}
+                </div>
+                <div class="mt-4">
+                    <a href="{% url 'shop:favorites_list' %}" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors">
+                        <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                        </svg>
+                        <span>View all your favorites</span>
+                        <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                    </a>
                 </div>
             </div>
-            <div class="bg-white rounded-lg shadow p-6">
-                <div class="flex items-center">
-                    <div class="p-3 rounded-full bg-yellow-100 text-yellow-600">
-                        <i class="fas fa-hourglass-half text-xl"></i>
+
+            <!-- Events Summary -->
+            <div class="bg-white rounded-lg border border-gray-200 p-6">
+                <h2 class="text-lg font-semibold text-gray-900">Event Applications</h2>
+                <div class="mt-4 grid grid-cols-2 md:grid-cols-3 gap-6">
+                    <div class="flex items-center p-3 rounded-lg bg-gray-50">
+                        <div class="p-2 rounded-full bg-blue-100 text-blue-600">
+                            <i class="fas fa-calendar-alt"></i>
+                        </div>
+                        <div class="ml-3">
+                            <div class="text-base font-semibold">{{ total_applications }}</div>
+                            <div class="text-xs text-gray-500 mt-0.5">Total</div>
+                        </div>
                     </div>
-                    <div class="ml-4">
-                        <p class="text-sm text-gray-500">Pending Applications</p>
-                        <p class="text-2xl font-semibold">{{ pending_applications }}</p>
+                    <div class="flex items-center p-3 rounded-lg bg-gray-50">
+                        <div class="p-2 rounded-full bg-yellow-100 text-yellow-600">
+                            <i class="fas fa-hourglass-half"></i>
+                        </div>
+                        <div class="ml-3">
+                            <div class="text-base font-semibold">{{ pending_applications }}</div>
+                            <div class="text-xs text-gray-500 mt-0.5">Pending</div>
+                        </div>
+                    </div>
+                    <div class="flex items-center p-3 rounded-lg bg-gray-50">
+                        <div class="p-2 rounded-full bg-green-100 text-green-600">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="ml-3">
+                            <div class="text-base font-semibold">{{ accepted_applications }}</div>
+                            <div class="text-xs text-gray-500 mt-0.5">Approved</div>
+                        </div>
                     </div>
                 </div>
-            </div>
-            <div class="bg-white rounded-lg shadow p-6">
-                <div class="flex items-center">
-                    <div class="p-3 rounded-full bg-green-100 text-green-600">
-                        <i class="fas fa-check-circle text-xl"></i>
-                    </div>
-                    <div class="ml-4">
-                        <p class="text-sm text-gray-500">Approved Applications</p>
-                        <p class="text-2xl font-semibold">{{ accepted_applications }}</p>
-                    </div>
+                <div class="mt-6">
+                    <a href="{% url 'dashboard:user_applications' %}"
+                       class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors">
+                        View your event applications
+                        <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                    </a>
                 </div>
             </div>
         </div>
 
-        <!-- Applications List -->
-        <div class="bg-white rounded-lg shadow">
-            <div class="p-6 border-b border-gray-200">
-                <h2 class="text-xl font-semibold">Your Event Applications</h2>
-            </div>
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Event Name</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Organizer</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Applied Date</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                        {% for application in applications %}
-                        <tr>
-                            <td class="px-6 py-4">
-                                <a href="{% url 'events:event_detail' application.event.id %}" class="text-sm font-medium text-blue-600 hover:text-blue-900">
-                                    {{ application.event.title }}
-                                </a>
-                            </td>
-                            <td class="px-6 py-4">
-                                <div class="text-sm text-gray-900">{{ application.event.created_by.username }}</div>
-                            </td>
-                            <td class="px-6 py-4">
-                                <div class="text-sm text-gray-500">{{ application.applied_date|date:"M d, Y" }}</div>
-                            </td>
-                            <td class="px-6 py-4">
-                                <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
-                                    {% if application.status == 'pending' %}bg-yellow-100 text-yellow-800
-                                    {% elif application.status == 'accepted' %}bg-green-100 text-green-800
-                                    {% elif application.status == 'rejected' %}bg-red-100 text-red-800
-                                    {% elif application.status == 'under_review' %}bg-blue-100 text-blue-800
-                                    {% endif %}">
-                                    {{ application.get_status_display }}
-                                </span>
-                            </td>
-                            <td class="px-6 py-4">
-                                <div class="flex space-x-3">
-                                    {% if application.status == 'pending' or application.status == 'under_review' %}
-                                        <!-- ✅ Edit Button -->
-                                        <a href="{% url 'dashboard:edit_application' application.id %}" 
-                                           class="text-blue-600 hover:text-blue-800 hover:underline flex items-center">
-                                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                                                      d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                                            </svg>
-                                            Edit
-                                        </a>
-                            
-                                        <!-- Withdraw Button -->
-                                        <button onclick="confirmWithdraw('{{ application.id }}')" 
-                                                class="text-red-600 hover:text-red-900 flex items-center">
-                                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                                                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                                            </svg>
-                                            Withdraw
-                                        </button>
-                            
-                                        <form id="withdraw-form-{{ application.id }}" 
-                                              action="{% url 'dashboard:withdraw_application' application.id %}" 
-                                              method="POST" class="hidden">
-                                            {% csrf_token %}
-                                        </form>
-                                    {% else %}
-                                        <span class="text-gray-400 text-sm">No actions available</span>
-                                    {% endif %}
-                                </div>
-                            </td>
-                            
-                        {% empty %}
-                        <tr>
-                            <td colspan="5" class="px-6 py-4 text-center text-gray-500">
-                                No event applications yet
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
+        <!-- Applications moved to dedicated page -->
 
         <script>
         function confirmWithdraw(applicationId) {

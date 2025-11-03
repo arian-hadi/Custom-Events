@@ -60,6 +60,23 @@ def user_dashboard(request):
     }
     return render(request, 'dashboard/user_dashboard.html', context)
 
+
+@login_required
+def user_applications(request):
+    if request.user.role != 'user':
+        messages.error(request, "Access denied. User account required.")
+        return redirect('home')
+
+    applications = EventApplication.objects.filter(applicant=request.user).order_by('-applied_date')
+
+    context = {
+        'applications': applications,
+        'total_applications': applications.count(),
+        'pending_applications': applications.filter(status='pending').count(),
+        'accepted_applications': applications.filter(status='accepted').count(),
+    }
+    return render(request, 'dashboard/user_applications.html', context)
+
 @login_required
 def manage_application(request, application_id):
     if request.user.role != 'admin':  # Only event hosts (admins) can manage applications
