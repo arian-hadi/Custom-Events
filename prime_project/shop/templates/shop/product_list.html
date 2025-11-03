@@ -98,22 +98,22 @@
     </section>
 
     <!-- Sort/Filter Toolbar (separate from search) -->
-    <section class="bg-white py-3 border-b">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <form method="GET" class="flex items-center gap-3 flex-wrap">
+    <section class="bg-white py-2 sm:py-3 border-b">
+        <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
+            <form method="GET" class="flex items-center gap-2 sm:gap-3 flex-nowrap overflow-x-auto">
                 <!-- Keep search and category in query when changing sort/filter -->
                 <input type="hidden" name="search" value="{{ search_query }}">
                 <input type="hidden" name="category" value="{{ category_filter }}">
 
-                <div class="flex items-center text-gray-600 mr-1">
-                    <i class="fas fa-sort text-lg"></i>
-                    <span class="ml-2 text-sm font-medium">Sort & Filter</span>
+                <div class="flex items-center text-gray-600 flex-shrink-0">
+                    <i class="fas fa-sort text-base sm:text-lg"></i>
+                    <span class="hidden sm:inline ml-2 text-sm font-medium">Sort & Filter</span>
                 </div>
 
                 <!-- Filter: Free/Discounted -->
-                <div class="relative">
+                <div class="relative flex-shrink-0">
                     <select name="filter"
-                            class="min-w-[9rem] pl-3 pr-8 py-2 text-sm bg-white border border-gray-300 rounded-md text-gray-700
+                            class="w-auto min-w-[6rem] sm:min-w-[9rem] pl-2 sm:pl-3 pr-6 sm:pr-8 py-1.5 sm:py-2 text-xs sm:text-sm bg-white border border-gray-300 rounded-md text-gray-700
                                    focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 transition-colors">
                         <option value="">All</option>
                         <option value="free" {% if request.GET.filter == 'free' %}selected{% endif %}>Free</option>
@@ -122,9 +122,9 @@
                 </div>
 
                 <!-- Sort -->
-                <div class="relative">
+                <div class="relative flex-shrink-0">
                     <select name="sort"
-                            class="min-w-[12rem] pl-3 pr-8 py-2 text-sm bg-white border border-gray-300 rounded-md text-gray-700
+                            class="w-auto min-w-[7rem] sm:min-w-[12rem] pl-2 sm:pl-3 pr-6 sm:pr-8 py-1.5 sm:py-2 text-xs sm:text-sm bg-white border border-gray-300 rounded-md text-gray-700
                                    focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 transition-colors">
                         <option value="latest" {% if request.GET.sort == 'latest' or not request.GET.sort %}selected{% endif %}>Latest</option>
                         <option value="oldest" {% if request.GET.sort == 'oldest' %}selected{% endif %}>Oldest</option>
@@ -133,7 +133,7 @@
                     </select>
                 </div>
 
-                <button type="submit" class="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">Apply</button>
+                <button type="submit" class="flex-shrink-0 px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors whitespace-nowrap">Apply</button>
             </form>
         </div>
     </section>
