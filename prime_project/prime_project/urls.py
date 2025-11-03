@@ -7,12 +7,14 @@ from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('summernote/', include('django_summernote.urls')),  # Uncomment after rebuilding container
     path('contact/', include('contact.urls')),
     path('',include('core.urls')),
     path('events/', include('events.urls')),
     path('dashboard/', include('dashboard.urls', namespace='dashboard')),
     path('accounts/', include('accounts.urls')),
     path('announcements/', include('announcements.urls')),
+    path('shop/', include('shop.urls', namespace='shop')),
   
 ]
 

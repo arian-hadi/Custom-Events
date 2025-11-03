@@ -22,6 +22,9 @@
         body { font-family: 'Poppins', sans-serif; }
     </style>
 
+    <!-- Toastify CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4466546061409567"
     crossorigin="anonymous"></script>
 
@@ -73,19 +76,43 @@
 
     <script src="https://unpkg.com/swiper/swiper-bundle.min.js"></script>
 
+    <!-- Toastify JS -->
+    <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+
+    <script>
+        // Global helper to show toast messages
+        function showToast(message, type = 'info') {
+            const background = (
+                type === 'success' ? "linear-gradient(135deg, #16a34a, #22c55e)" :
+                type === 'error' ? "linear-gradient(135deg, #dc2626, #ef4444)" :
+                type === 'warning' ? "linear-gradient(135deg, #ca8a04, #f59e0b)" :
+                "linear-gradient(135deg, #2563eb, #3b82f6)"
+            );
+            Toastify({
+                text: message,
+                duration: 3000,
+                close: true,
+                gravity: "top",
+                position: "right",
+                stopOnFocus: true,
+                style: { background }
+            }).showToast();
+        }
+    </script>
+
     {% block extra_css %}{% endblock %}
 </head>
 <body class="bg-gray-50">
     {% include 'header.html' %}
     
     {% if messages %}
-    <div class="pt-16">
-        {% for message in messages %}
-        <div class="bg-{{ message.tags }}-100 border-l-4 border-{{ message.tags }}-500 text-{{ message.tags }}-700 p-4" role="alert">
-            <p>{{ message }}</p>
-        </div>
-        {% endfor %}
-    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            {% for message in messages %}
+            showToast("{{ message|escapejs }}", "{{ message.tags|default:'info' }}");
+            {% endfor %}
+        });
+    </script>
     {% endif %}
     <!-- Idle Warning Modal -->
     <div id="idleModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden z-50">

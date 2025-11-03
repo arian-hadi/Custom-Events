@@ -1,0 +1,248 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Favorites - Shop - 2.0Transformers{% endblock %}
+
+{% block content %}
+<main class="pt-16">
+    <!-- Favorites Header Section -->
+    <section class="bg-gradient-to-b from-gray-900 to-gray-800 py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-8">
+                <h1 class="text-4xl font-bold text-white mb-4">My Favorites</h1>
+                <p class="text-gray-300 text-lg">Your saved products and items</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Favorites Products Grid Section -->
+    <section class="bg-gray-50 py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            {% if favorites %}
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {% for product in favorites %}
+                <div class="bg-white rounded-lg border border-gray-200 hover:border-blue-300 shadow-sm hover:shadow-xl transform hover:-translate-y-2 transition-all duration-300 overflow-hidden group cursor-pointer">
+                    <a href="{% url 'shop:product_detail' product.id %}">
+                        <!-- Product Image Container -->
+                        <div class="relative overflow-hidden bg-gray-100">
+                            <img src="{{ product.thumbnail.url }}" 
+                                 alt="{{ product.name }}"
+                                 class="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-300">
+                            
+                            <!-- Favorite Heart Icon (Top Right) -->
+                            <button type="button" 
+                                    onclick="toggleFavorite(event, {{ product.id }})"
+                                    class="absolute top-2 right-2 z-10 p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-lg hover:bg-white transition-all duration-300 text-red-500">
+                                <svg class="w-5 h-5 fill-current" 
+                                     stroke="currentColor" 
+                                     viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                          d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                                </svg>
+                            </button>
+                            
+                            <!-- Category Badge (Only for 2.0 Transformers) -->
+                            {% if product.category == 'transformers_2_0' %}
+                            <div class="absolute top-2 left-2">
+                                <span class="px-3 py-1 bg-blue-600 text-white text-xs font-semibold rounded-full shadow-lg">
+                                    2.0 Transformers
+                                </span>
+                            </div>
+                            {% endif %}
+                            
+                            <!-- E-commerce Platform Badge (for 1.0 products) -->
+                            {% if product.category == 'merges_1_0' and product.show_ecommerce_badge %}
+                            <div class="absolute top-2 left-2">
+                                <span class="flex items-center px-3 py-1 bg-white text-gray-900 text-xs font-semibold rounded-full shadow-lg capitalize border border-gray-200">
+                                    {% if product.ecommerce_platform == 'amazon' %}
+                                    <svg class="w-4 h-4 mr-1.5" viewBox="2.167 .438 251.038 259.969" fill="currentColor">
+                                        <g fill-rule="evenodd">
+                                            <path d="m221.503 210.324c-105.235 50.083-170.545 8.18-212.352-17.271-2.587-1.604-6.984.375-3.169 4.757 13.928 16.888 59.573 57.593 119.153 57.593 59.621 0 95.09-32.532 99.527-38.207 4.407-5.627 1.294-8.731-3.16-6.872zm29.555-16.322c-2.826-3.68-17.184-4.366-26.22-3.256-9.05 1.078-22.634 6.609-21.453 9.93.606 1.244 1.843.686 8.06.127 6.234-.622 23.698-2.826 27.337 1.931 3.656 4.79-5.57 27.608-7.255 31.288-1.628 3.68.622 4.629 3.68 2.178 3.016-2.45 8.476-8.795 12.14-17.774 3.639-9.028 5.858-21.622 3.71-24.424z" fill="#f90"/>
+                                            <path d="m150.744 108.13c0 13.141.332 24.1-6.31 35.77-5.361 9.489-13.853 15.324-23.341 15.324-12.952 0-20.495-9.868-20.495-24.432 0-28.75 25.76-33.968 50.146-33.968zm34.015 82.216c-2.23 1.992-5.456 2.135-7.97.806-11.196-9.298-13.189-13.615-19.356-22.487-18.502 18.882-31.596 24.527-55.601 24.527-28.37 0-50.478-17.506-50.478-52.565 0-27.373 14.85-46.018 35.96-55.126 18.313-8.066 43.884-9.489 63.43-11.718v-4.365c0-8.018.616-17.506-4.08-24.432-4.128-6.215-12.003-8.777-18.93-8.777-12.856 0-24.337 6.594-27.136 20.257-.57 3.037-2.799 6.026-5.835 6.168l-32.735-3.51c-2.751-.618-5.787-2.847-5.028-7.07 7.543-39.66 43.36-51.616 75.43-51.616 16.415 0 37.858 4.365 50.81 16.795 16.415 15.323 14.849 35.77 14.849 58.02v52.565c0 15.798 6.547 22.724 12.714 31.264 2.182 3.036 2.657 6.69-.095 8.966-6.879 5.74-19.119 16.415-25.855 22.393l-.095-.095" fill="#000"/>
+                                        </g>
+                                    </svg>
+                                    Amazon
+                                    {% elif product.ecommerce_platform == 'aliexpress' %}
+                                    <svg class="w-4 h-4 mr-1.5" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" fill-rule="evenodd" clip-rule="evenodd" stroke-linejoin="round" stroke-miterlimit="2">
+                                        <path d="M6 118.468C6 56.356 56.356 6 118.468 6H393.53C455.643 6 506 56.356 506 118.468V393.53C505.999 455.643 455.643 506 393.53 506H118.468C56.356 505.999 6 455.643 6 393.53V118.468z" fill="#f90" fill-rule="nonzero"/>
+                                        <path d="M6 159.843c0-50.206 40.7-90.906 90.912-90.906h318.18c50.207 0 90.907 40.7 90.907 90.906V393.53C505.999 455.643 455.643 506 393.53 506H118.468C56.356 505.999 6 455.643 6 393.53V159.843z" fill="#e43225" fill-rule="nonzero"/>
+                                        <path d="M145.28 149.78c1.888 7.7.826 16.013 2.676 23.838 6.469-4.731 10.775-12.543 9.894-20.68-.132-14.563-16.513-25.976-30.22-21.076-8.618 2.463-14.993 10.2-16.437 18.938-1.725 10.006 4.282 20.237 13.22 24.812-.882-8.619-2.957-17.706-.638-26.137 3.537-9.194 18.23-9.007 21.506.306zm255.056 10.438c3.144-11.3-3.693-24.4-14.9-28.018-10.774-4.232-24.112 1.156-28.862 11.656-5.294 9.719-2.094 23.55 7.588 29.244 1.912-7.8.5-16.163 2.768-23.744 3.619-9.056 18.131-8.794 21.431.387 2.1 8.207.2 16.825-.593 25.106 6.575-2.03 10.675-8.312 12.562-14.606l.006-.025z" fill="#b32100" fill-rule="nonzero"/>
+                                        <path d="M366.962 149.35c-2.282 7.662-.87 15.95-2.77 23.75-5.637 33.862-28.312 64.13-59.012 79.3a109.319 109.319 0 01-98.506-.126c-30.418-15.13-52.912-45.143-58.693-78.643-1.85-7.838-.8-16.063-2.681-23.838-3.263-9.237-17.963-9.506-21.507-.312-2.306 8.512-.23 17.531.644 26.137 6.463 41.875 34.481 79.475 72.437 98.138a133.42 133.42 0 0056.032 13.8 133.357 133.357 0 0056.612-11.138c41.05-17.725 71.737-57.312 78.3-101.6.793-8.281 2.693-16.906.587-25.106-3.312-9.181-17.812-9.431-21.437-.381l-.006.019zM164.893 391.061v-56.324h33.294v7.062h-26.4v17.319h23.712v7.062h-23.712v17.656h28.25v7.063h-35.144v.162zM235.018 391.061L223.587 376.1l-11.438 14.962h-8.068l15.637-20.006-16.481-20.68h9.081l11.269 15.468 11.431-15.469h8.913l-15.638 20.681 14.794 20.006h-8.069zM254.18 385.011v27.744h-6.893v-41.531c0-10.594 8.069-21.862 20.681-21.862 12.781 0 22.362 8.075 22.362 21.356 0 12.95-9.75 21.856-20.85 21.856-5.38 0-12.612-2.35-15.3-7.563zm28.92-14.293c0-9.081-5.882-14.463-16.307-13.956-5.044.168-12.781 3.868-12.106 16.812.169 4.206 4.537 12.106 14.125 12.106 8.237 0 14.287-4.706 14.287-14.962zM296.218 350.374h6.894v4.369c3.362-3.869 8.575-5.213 14.125-5.213v7.4c-.838-.168-9.082-1.175-14.125 9.582v24.718h-6.894v-40.856zM319.087 370.718c0-11.769 8.406-21.356 20.012-21.356 14.456 0 19.838 9.587 19.838 21.862v3.363h-32.282c.507 7.73 7.4 11.768 13.788 11.6 4.706-.17 7.9-1.513 11.262-4.876l4.544 4.707c-4.206 4.037-9.587 6.725-16.144 6.725-12.275-.169-21.018-9.244-21.018-22.025zm19.506-14.463c-6.556 0-11.6 5.719-11.938 11.938h25.05c0-6.05-4.368-11.938-13.112-11.938zM362.468 385.349l5.05-4.544c-.169 0 2.519 2.694 2.856 2.863 1.175 1.006 2.35 1.681 3.869 2.018 4.368 1.175 12.275.838 12.943-5.212.338-3.363-2.18-5.213-5.043-6.394-3.7-1.343-7.731-1.85-11.431-3.531-4.207-1.85-6.894-5.044-6.894-9.75 0-12.275 17.487-14.294 25.387-8.575.338.338 4.206 3.869 4.038 3.869l-5.044 4.031c-2.525-3.025-4.881-4.537-10.263-4.537-2.687 0-6.387 1.175-7.056 4.037-1.012 4.031 3.532 5.544 6.556 6.388 4.038 1.006 8.407 1.68 11.938 3.868 4.875 3.025 6.056 9.581 4.206 14.625-2.019 5.55-8.075 7.738-13.456 7.906-6.387.332-11.937-1.68-16.475-6.225-.337 0-1.181-.837-1.181-.837zM397.949 385.349l5.044-4.544c-.17 0 2.525 2.694 2.862 2.863 1.175 1.006 2.35 1.681 3.863 2.018 4.375 1.175 12.275.838 12.95-5.212.337-3.363-2.188-5.213-5.044-6.394-3.7-1.343-7.738-1.85-11.438-3.531-4.2-1.85-6.893-5.044-6.893-9.75 0-12.275 17.487-14.294 25.393-8.575.338.338 4.2 3.869 4.032 3.869l-5.044 4.031c-2.519-3.025-4.875-4.537-10.256-4.537-2.688 0-6.388 1.175-7.063 4.037-1.006 4.031 3.531 5.544 6.563 6.388 4.03 1.006 8.406 1.68 11.937 3.868 4.875 3.025 6.05 9.581 4.2 14.625-2.012 5.55-8.069 7.738-13.45 7.906-6.387.332-11.937-1.68-16.481-6.225-.331 0-1.175-.837-1.175-.837zM430.73 350.368v-4.369h-1.512v-.844h4.037V346h-1.519v4.369h-1.006zM438.293 350.368v-4.031l-1.513 4.03h-.337l-1.513-4.03v4.03h-.844v-5.212h1.35l1.344 3.532 1.344-3.532h1.344v5.213h-1.175zM118.143 391.061l-5.043-13.45H85.862l-5.044 13.45h-7.23l21.855-56.324h7.907l21.687 56.324h-6.894zm-19-48.256l-10.256 27.913h21.356l-11.1-27.913zM129.58 334.737h7.063v56.33h-7.062zM147.237 351.212h7.063v39.85h-7.063zM161.03 338.268v-.675c-5.38-.169-9.755-4.538-9.924-9.919H150.1c-.17 5.381-4.544 9.75-9.92 9.919v.675c5.376.169 9.75 4.537 9.92 9.919h1.006c.169-5.382 4.544-9.75 9.925-9.92z" fill="#fff" fill-rule="nonzero"/>
+                                    </svg>
+                                    AliExpress
+                                    {% elif product.ecommerce_platform == 'ebay' %}
+                                    <svg class="w-4 h-4 mr-1.5" viewBox="0 0 1000 400.75098" xmlns="http://www.w3.org/2000/svg">
+                                        <style>
+                                            .ebay-cls-1 { fill: #0968f6; }
+                                            .ebay-cls-1, .ebay-cls-2, .ebay-cls-3, .ebay-cls-4 { stroke-width: 0px; }
+                                            .ebay-cls-2 { fill: #92c821; }
+                                            .ebay-cls-3 { fill: #f02d2d; }
+                                            .ebay-cls-4 { fill: #ffbd14; }
+                                        </style>
+                                        <g>
+                                            <path class="ebay-cls-4" d="m 633.07803,212.53323 c -45.43873,1.48929 -73.6715,9.689 -73.6715,39.61897 0,19.37591 15.44713,40.38162 54.66334,40.38162 52.57698,0 80.64259,-28.65902 80.64259,-75.66331 l 0.003,-5.16994 c -18.43302,0 -41.16414,0.16089 -61.63704,0.83266 z m 111.75103,62.10248 c 0,14.58313 0.42155,28.9782 1.69406,41.94092 h -46.61408 c -1.24325,-10.67368 -1.6972,-21.27945 -1.6972,-31.56656 -25.20195,30.97941 -55.17735,39.88537 -96.76149,39.88537 -61.67674,0 -94.70072,-32.59982 -94.70072,-70.30689 0,-54.61215 44.91583,-73.86739 122.89013,-75.65391 21.32332,-0.48686 45.27419,-0.55894 65.07531,-0.55894 l -0.003,-5.33606 c 0,-36.56098 -23.44364,-51.59335 -64.06765,-51.59335 -30.15876,0 -52.38579,12.48057 -54.6764,34.0468 h -52.65168 c 5.57217,-53.77165 62.06643,-67.37115 111.74005,-67.37115 59.50837,0 109.77228,21.17288 109.77228,84.11481 z"/>
+                                            <path class="ebay-cls-3" d="m 199.63633,185.86602 c -1.94427,-46.87735 -35.77951,-64.41973 -71.94139,-64.41973 -38.99421,0 -70.12667,19.7327 -75.58026,64.41973 z M 51.034408,219.1909 c 2.704332,45.48365 34.069782,72.38437 77.197532,72.38437 29.88033,0 56.45979,-12.17498 65.35948,-38.66041 h 51.68424 c -10.05205,53.73979 -67.15384,71.98058 -116.303,71.98058 C 39.606424,324.89544 0,275.67889 0,209.30653 0,136.24203 40.965642,88.12194 129.78809,88.12194 c 70.69867,0 122.49992,36.99926 122.49992,117.75572 v 13.31324 z"/>
+                                            <path class="ebay-cls-1" d="m 380.83181,290.6235 c 46.57228,0 78.44078,-33.52181 78.44078,-84.10854 0,-50.58203 -31.8685,-84.10854 -78.44078,-84.10854 -46.31058,0 -78.44392,33.52651 -78.44392,84.10854 0,50.58673 32.13334,84.10854 78.44392,84.10854 z M 252.2854,0 h 50.10249 l -0.005,125.87707 c 24.55682,-29.25975 58.38892,-37.75513 91.68976,-37.75513 55.83503,0 117.85132,37.6773 117.85132,119.02875 0,68.12232 -49.32155,117.74475 -118.78114,117.74475 -36.35726,0 -70.58062,-13.04265 -91.68663,-38.88294 0,10.32107 -0.57618,20.72364 -1.70503,30.56413 h -49.17162 c 0.85513,-15.90944 1.70555,-35.7184 1.70555,-51.74693 z"/>
+                                            <path class="ebay-cls-2" d="M 1000,96.45747 845.05541,400.75099 H 788.94926 L 833.49578,316.25589 716.89033,96.45747 h 58.6266 l 85.80469,171.73057 85.56283,-171.73057 z"/>
+                                        </g>
+                                    </svg>
+                                    eBay
+                                    {% else %}
+                                    <i class="fas fa-shopping-cart mr-1.5"></i>
+                                    {{ product.get_ecommerce_platform_display }}
+                                    {% endif %}
+                                </span>
+                            </div>
+                            {% endif %}
+                            
+                            <!-- Free Badge -->
+                            {% if product.is_free %}
+                            <div class="absolute bottom-2 left-2 right-2">
+                                <span class="block px-3 py-1 bg-green-600 text-white text-xs font-bold rounded-full shadow-lg text-center">
+                                    FREE NOW
+                                </span>
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Product Info -->
+                        <div class="p-4">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors line-clamp-2">
+                                {{ product.name }}
+                            </h3>
+                            
+                            <p class="text-gray-600 text-sm mb-4 line-clamp-2">
+                                {{ product.description|truncatewords:15 }}
+                            </p>
+                            
+                            <!-- Pricing -->
+                            <div class="flex items-center justify-between mb-4">
+                                <div>
+                                    {% if product.is_free %}
+                                    <span class="text-2xl font-bold text-green-600">FREE</span>
+                                    {% elif product.discount_active and product.discounted_price %}
+                                    <div class="flex items-baseline gap-2 flex-wrap">
+                                        <span class="text-2xl font-bold text-gray-900">${{ product.discounted_price }}</span>
+                                        <span class="px-2 py-0.5 bg-red-600 text-white text-xs font-bold rounded">
+                                            -{{ product.get_discount_percentage }}%
+                                        </span>
+                                        <span class="text-sm text-gray-500 line-through">${{ product.original_price }}</span>
+                                    </div>
+                                    {% else %}
+                                    <span class="text-2xl font-bold text-gray-900">${{ product.original_price }}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <!-- View Details Button -->
+                            <button class="w-full px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transform hover:scale-105 transition-all duration-300">
+                                View Details
+                                <i class="fas fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
+                            </button>
+                        </div>
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <!-- Pagination -->
+            {% if favorites.has_other_pages %}
+            <div class="mt-12 flex justify-center">
+                <div class="flex space-x-2">
+                    {% if favorites.has_previous %}
+                    <a href="?page={{ favorites.previous_page_number }}" 
+                       class="px-4 py-2 bg-white border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors">
+                        Previous
+                    </a>
+                    {% endif %}
+                    
+                    <span class="px-4 py-2 bg-blue-600 text-white rounded-md">
+                        Page {{ favorites.number }} of {{ favorites.paginator.num_pages }}
+                    </span>
+                    
+                    {% if favorites.has_next %}
+                    <a href="?page={{ favorites.next_page_number }}" 
+                       class="px-4 py-2 bg-white border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors">
+                        Next
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+            
+            {% else %}
+            <div class="text-center py-16">
+                <div class="text-gray-500 text-lg">
+                    <svg class="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                    </svg>
+                    <p class="text-xl font-semibold mb-2">No favorites yet</p>
+                    <p class="mb-4">Start adding products to your favorites by clicking the heart icon on any product.</p>
+                    <a href="{% url 'shop:product_list' %}" 
+                       class="inline-block px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
+                        Browse Products
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </section>
+</main>
+
+<script>
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function toggleFavorite(event, productId) {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    const button = event.currentTarget;
+    const heartIcon = button.querySelector('svg');
+    const csrftoken = getCookie('csrftoken');
+    
+    fetch(`/shop/${productId}/toggle-favorite/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrftoken,
+            'Content-Type': 'application/json',
+        },
+        credentials: 'same-origin',
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            if (!data.is_favorited) {
+                // Remove the product card from the page
+                button.closest('.bg-white.rounded-lg').style.transition = 'opacity 0.3s';
+                button.closest('.bg-white.rounded-lg').style.opacity = '0';
+                setTimeout(() => {
+                    button.closest('.bg-white.rounded-lg').remove();
+                    // Check if favorites list is now empty
+                    const favoritesGrid = document.querySelector('.grid');
+                    if (favoritesGrid && favoritesGrid.children.length === 0) {
+                        location.reload();
+                    }
+                }, 300);
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error toggling favorite:', error);
+    });
+}
+</script>
+{% endblock %}
+

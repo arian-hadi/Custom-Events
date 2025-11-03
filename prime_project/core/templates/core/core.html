@@ -1,584 +1,416 @@
 {% extends "base.html" %}
 {% load static %}
-{% block title %}2.0Tranformers-homepage{% endblock %}
+{% block title %}2.0Transformers - Homepage{% endblock %}
 
 {% block extra_css %}
-    <link rel="stylesheet" href="{% static 'core/css/style.css' %}">
+    <style>
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    .slide-up-on-load {
+        animation: slideUp 1s ease-out forwards;
+        opacity: 0;
+        }
+        .animate-float {
+            animation: float 6s ease-in-out infinite;
+        }
+    .review-card {
+        break-inside: avoid;
+        page-break-inside: avoid;
+        margin-bottom: 1.5rem;
+        }
+    </style>
 {% endblock %}
 
 {% block content %}
-<body>
-    <main class="pt-10">
-      <header id="header">
-        <div class="overlay overlay-lg">
-          <img src="{% static 'core/images/shapes/square.png' %}" class="shape square" alt="" /><img src="{% static 'core/images/shapes/square.png' %}" class="shape square" alt="" />
-          <img src="{% static 'core/images/shapes/circle.png' %}" class="shape circle" alt="" />
-          <img
-            src="{% static 'core/images/shapes/half-circle.png' %}"
-            class="shape half-circle1"
-            alt=""
-          />
-          <img
-            src="{% static 'core/images/shapes/half-circle.png' %}"
-            class="shape half-circle2"
-            alt=""
-          />
-          <img src="{% static 'core/images/shapes/x.png' %}" class="shape xshape" alt="" />
-          <img src="{% static 'core/images/shapes/wave.png' %}" class="shape wave wave1" alt="" />
-          <img src="{% static 'core/images/shapes/wave.png' %}" class="shape wave wave2" alt="" />
-          <img src="{% static 'core/images/shapes/triangle.png' %}" class="shape triangle" alt="" />
-          <img src="{% static 'core/images/shapes/points1.png' %}" class="points points1" alt="" />
-        </div>
-
-        <div class="header-content">
-          <div class="container grid-2">
-            <div class="column-1">
-              <h1 class="header-title">2.0Transformers</h1>
-              <p class = "text"><h2><b>Hey there, welcome to the official 2.0 Transformers website!🚀</b></h2></p>
-              <p class="text">   
-                This is the place for all things 2.0 Transformers — edits, events, updates, and everything in between.
-                Here you'll find the latest news, special announcements, new edit drops, behind-the-scenes looks, tutorials, and anything exciting happening in the world of 2.0 Transformers.
-                It's also the spot to connect, get involved, and stay in the loop with everything we’ve got going on. Thanks for being part of the squad — let's roll out together!
-              </p>
-              <!-- <a href="#" class="btn">Learn More</a> -->
+<main class="pt-16 bg-gradient-to-b from-white via-violet-200 to-purple-300 min-h-screen">
+    <!-- Hero Section -->
+    <section class="py-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div class="grid md:grid-cols-2 gap-12 items-center">
+            <!-- Left Column - Text Content -->
+            <div class="space-y-8">
+              <div class="inline-block slide-up-on-load" style="animation-delay: 0.2s;">
+                        <span class="px-4 py-2 bg-blue-100 text-blue-600 rounded-full text-sm font-semibold">
+                            🚀 Welcome to the Editors’ Hub
+                </span>
+              </div>
+              
+                    <h1 class="text-5xl md:text-6xl font-bold leading-tight slide-up-on-load text-gray-900" style="animation-delay: 0.4s;">
+                        The Ultimate<br>
+                        <span class="text-blue-600">2.0 Transformers</span><br>
+                        Editing Hub
+              </h1>
+              
+                    <p class="text-xl text-gray-600 leading-relaxed slide-up-on-load" style="animation-delay: 0.6s;">
+                        A creative hub where editors can connect, compete, and grow together.
+                        Here you can explore and purchase editing tools and presets, take part in exciting contests, and have fun improving your skills alongside other passionate editors from every franchise.
+                    </p>
+                    
+                    <div class="flex flex-wrap gap-4 slide-up-on-load" style="animation-delay: 0.8s;">
+                <a href="{% url 'events:event_list' %}" 
+                           class="px-8 py-4 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transform hover:scale-105 transition-all duration-300 flex items-center gap-2 shadow-lg">
+                  <span>Explore Events</span>
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+                  </svg>
+                </a>
+                        <a href="{% url 'shop:product_list' %}" 
+                           class="px-8 py-4 bg-white border-2 border-gray-300 text-gray-700 rounded-lg font-semibold hover:border-blue-600 hover:text-blue-600 transition-all duration-300">
+                            Shop Products
+                </a>
+              </div>
             </div>
 
-            <div class="column-2 image">
-              <img
-              src="{% static 'core/images/shapes/points2.png' %}"
-                class="points points2"
-                alt=""
-              />
-              <img src="{% static 'core/images/2.0pfp.webp' %}" class="img-element z-index" alt="" />
+                <!-- Right Column - Main Image from Admin -->
+            <div class="relative slide-up-on-load" style="animation-delay: 0.6s;">
+                    <div class="relative z-10 animate-float inline-block" style="filter: drop-shadow(0 0 30px rgba(139, 92, 246, 0.4)) drop-shadow(0 0 60px rgba(139, 92, 246, 0.2)); padding: 4px; background: linear-gradient(135deg, #3b82f6, #8b5cf6, #a855f7); border-radius: 9999px;">
+                        {% if site_logo %}
+                        <img src="{{ site_logo.image.url }}" 
+                             alt="{{ site_logo.name }}" 
+                             class="w-full max-w-lg mx-auto rounded-full shadow-2xl transform hover:scale-105 transition-transform duration-500 object-cover aspect-square block">
+                        {% else %}
+                <img src="{% static 'core/images/2.0pfp.webp' %}" 
+                     alt="2.0Transformers" 
+                             class="w-full max-w-lg mx-auto rounded-full shadow-2xl transform hover:scale-105 transition-transform duration-500 object-cover aspect-square block">
+                        {% endif %}
+              </div>
+              <!-- Decorative Elements -->
+                    <div class="absolute top-10 -right-10 w-32 h-32 bg-blue-100 rounded-full blur-3xl animate-float"></div>
+                    <div class="absolute bottom-10 -left-10 w-40 h-40 bg-purple-100 rounded-full blur-3xl animate-float" style="animation-delay: 1s;"></div>
+                </div>
             </div>
-          </div>
         </div>
+      </section>
 
-        
-      </header>
-
-      <section class="services section" id="services">
-        <div class="container">
-          <div class="section-header">
-            <h3 class="title" data-title="What’s on This Platform">About Me</h3>
-            <p class="text">
-              Explore everything this space offers for Transformers fans and creative editors.
+    <!-- Showcase Section (Second Section inspired by provided design) -->
+    <section class="py-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <!-- Row 1: Big image left, content right -->
+            <div class="grid md:grid-cols-2 gap-10 items-center mb-16">
+                <div class="rounded-2xl p-[2px] bg-gradient-to-br from-blue-500 via-violet-500 to-purple-500" style="box-shadow: 0 0 20px rgba(139, 92, 246, 0.4), 0 0 40px rgba(139, 92, 246, 0.3);">
+                    <div class="rounded-2xl bg-white p-4 h-full">
+                        <img src="{% static 'core/images/editor.jpg' %}" alt="Feature Showcase"
+                             class="w-full rounded-xl shadow-xl" />
+                    </div>
+                </div>
+                <div class="rounded-2xl p-[2px] bg-gradient-to-br from-blue-500 via-violet-500 to-purple-500" style="box-shadow: 0 0 20px rgba(139, 92, 246, 0.4), 0 0 40px rgba(139, 92, 246, 0.3);">
+                    <div class="space-y-4 rounded-2xl bg-white p-6 h-full">
+                    <div class="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center shadow">
+                        {% if site_logo %}
+                        <img src="{{ site_logo.image.url }}" alt="{{ site_logo.name }}" class="w-12 h-12 rounded-full object-cover" />
+                        {% else %}
+                        <img src="{% static 'core/images/2.0pfp.webp' %}" alt="2.0Transformers" class="w-12 h-12 rounded-full object-cover" />
+                        {% endif %}
+                    </div>
+                    <h2 class="text-3xl md:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">
+                        Editing Packs & Tools
+            </h2>
+                    <p class="text-gray-600 text-lg">
+                        Access ready-to-use presets, transitions, overlays, and effects to enhance your edits instantly. Designed for all editing styles — fast, creative, and powerful.
             </p>
           </div>
-
-          <div class="cards">
-            <div class="card-wrap">
-              <img
-              src="{% static 'core/images/shapes/points3.png' %}"
-                class="points points1 points-sq"
-                alt=""
-              />
-              <div class="card" data-card="Edit">
-                <div class="card-content z-index">
-                  <img src="{% static 'core/images/edit.png' %}" class="icon" alt="" />
-                  <h3 class="title-sm"> Transformers Edits</h3>
-                  <p class="text">
-                    Watch high-quality Transformers edits – from intense battle scenes to nostalgic character moments.
-                  </p>
-                  <a href="https://youtube.com/shorts/2JXbjJwIPls?si=QIO0cItquMddbqds" class="btn small">Show Me!</a>
-                </div>
               </div>
             </div>
 
-            <div class="card-wrap">
-              <div class="card" data-card="Edit">
-                <div class="card-content z-index">
-                  <img src="{% static 'core/images/teach.png' %}" class="icon" alt="" />
-                  <h3 class="title-sm">Editing Tutorials</h3>
-                  <p class="text">
-                    Learn how I create viral edits. Tips, tools, and breakdowns for beginners to pros.
-                  </p>
-                  <a href="https://youtu.be/k1S9t-Ykl80?si=tfYcAHWIcQ0_4CSi" class="btn small">Show Me!</a>
+            <!-- Row 2: Two columns (each with small logo + heading + text + big image) -->
+            <div class="grid md:grid-cols-2 gap-12">
+                <!-- Column A -->
+                <div class="rounded-2xl p-[2px] bg-gradient-to-br from-blue-500 via-violet-500 to-purple-500" style="box-shadow: 0 0 20px rgba(139, 92, 246, 0.4), 0 0 40px rgba(139, 92, 246, 0.3);">
+                    <div class="rounded-2xl bg-white p-6 h-full">
+                        <div class="flex items-center gap-4 mb-4">
+                            <div class="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center shadow">
+                                {% if site_logo %}
+                                <img src="{{ site_logo.image.url }}" alt="{{ site_logo.name }}" class="w-9 h-9 rounded-full object-cover" />
+                                {% else %}
+                                <img src="{% static 'core/images/2.0pfp.webp' %}" alt="2.0Transformers" class="w-9 h-9 rounded-full object-cover" />
+                                {% endif %}
+                            </div>
+                            <h3 class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">Merch & Collectibles</h3>
+                        </div>
+                        <p class="text-gray-600 mb-6">
+                            Explore exclusive figures, gear, and editing-themed merch inspired by your favorite universes — Transformers, Anime, Marvel, and more. Perfect for collectors and fans alike.
+                        </p>
+                        <a href="{% url 'shop:product_list' %}" class="inline-block text-blue-600 font-semibold mb-6">Browse Library →</a>
+                        <img src="https://luffytoys.cl/cdn/shop/files/portadawebnueva_d2bf67c8-d387-4c77-9c0a-04d33fd58413_1200x.jpg?v=1691615756" alt="Library Preview"
+                             class="w-full rounded-xl shadow-xl" />
+                    </div>
                 </div>
-              </div>
+
+                <!-- Column B -->
+                <div class="rounded-2xl p-[2px] bg-gradient-to-br from-blue-500 via-violet-500 to-purple-500" style="box-shadow: 0 0 20px rgba(139, 92, 246, 0.4), 0 0 40px rgba(139, 92, 246, 0.3);">
+                    <div class="rounded-2xl bg-white p-6 h-full">
+                        <div class="flex items-center gap-4 mb-4">
+                            <div class="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center shadow">
+                                {% if site_logo %}
+                                <img src="{{ site_logo.image.url }}" alt="{{ site_logo.name }}" class="w-9 h-9 rounded-full object-cover" />
+                                {% else %}
+                                <img src="{% static 'core/images/2.0pfp.webp' %}" alt="2.0Transformers" class="w-9 h-9 rounded-full object-cover" />
+                                {% endif %}
+                            </div>
+                            <h3 class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">Editing Contests & Events</h3>
+                        </div>
+                        <p class="text-gray-600 mb-6">
+                            Join monthly challenges, tournaments, and creative events to test your skills, win rewards, and connect with other editors from around the world.
+                        </p>
+                        <a href="{% url 'events:event_list' %}" class="inline-block text-blue-600 font-semibold mb-6">See Events →</a>
+                        <img src="{% static 'core/images/EditingContest.png' %}" alt="Editing Contests & Events"
+                             class="w-full rounded-xl shadow-xl" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section - 3 Feature Cards -->
+    <section class="py-24">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl md:text-5xl font-bold text-black mb-4">
+                    A Few Reasons to Join the 2.0 Transformers Editing Hub
+                </h2>
+                <p class="text-xl text-gray-600 max-w-2xl mx-auto">
+                    Built by editors, for editors. 2.0 Transformers is all about creativity, growth, and community.
+                    Whether you're here to improve your edits, join contests, or discover tools that boost your workflow, you'll always find support and inspiration here.
+                </p>
             </div>
 
-            <div class="card-wrap">
-              <img
-              src="{% static 'core/images/shapes/points3.png' %}"
-                class="points points2 points-sq"
-                alt=""
-              />
-              <div class="card" data-card="Event">
-                <div class="card-content z-index">
-                  <img src="{% static 'core/images/trophy.png' %}" class="icon" alt="" />
-                  <h3 class="title-sm"> Community Competitions</h3>
-                  <p class="text">
-                    Join editing challenges, fan-vote battles, and special themed events for epic rewards.
-                  </p>
-                  <a href="{% url 'events:event_list' %}" class="btn small">See Events</a>
+            <div class="grid md:grid-cols-3 gap-8">
+                <!-- Feature 1: Creative Events & Community -->
+                <div class="text-center">
+                    <div class="mb-6 relative">
+                        <div class="w-full h-64 bg-gradient-to-br from-blue-100 to-purple-100 rounded-2xl flex items-center justify-center">
+                            <svg class="w-32 h-32 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                  </svg>
+                        </div>
+                    </div>
+                    <h3 class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 mb-4">Creative Events & Community</h3>
                 </div>
+
+                <!-- Feature 2: High-Quality Editing Tools -->
+                <div class="text-center">
+                    <div class="mb-6 relative">
+                        <div class="w-full h-64 bg-gradient-to-br from-green-100 to-blue-100 rounded-2xl flex items-center justify-center">
+                            <svg class="w-32 h-32 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                  </svg>
+              </div>
+                    </div>
+                    <h3 class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 mb-4">High-Quality Editing Tools</h3>
+            </div>
+
+                <!-- Feature 3: Support That Helps You Grow -->
+                <div class="text-center">
+                    <div class="mb-6 relative">
+                        <div class="w-full h-64 bg-gradient-to-br from-purple-100 to-pink-100 rounded-2xl flex items-center justify-center">
+                            <svg class="w-36 h-36 text-purple-500" viewBox="-5 -2 100 70" fill="currentColor" preserveAspectRatio="xMidYMid meet">
+                                <path d="M 89.983 5.63 c -0.006 -0.267 -0.016 -0.534 -0.026 -0.802 c -0.011 -0.299 -0.02 -0.597 -0.036 -0.897 c -0.031 -0.602 -0.07 -1.207 -0.121 -1.814 c -0.081 -0.973 -0.854 -1.745 -1.827 -1.827 c -0.607 -0.051 -1.21 -0.089 -1.811 -0.121 c -0.305 -0.016 -0.607 -0.025 -0.909 -0.036 c -0.262 -0.009 -0.525 -0.02 -0.786 -0.025 c -0.437 -0.01 -0.871 -0.013 -1.304 -0.013 c -0.072 0 -0.145 0 -0.217 0.001 c -8.628 0.042 -16.548 2.16 -24.544 6.526 C 58.261 6.7 58.12 6.773 57.979 6.85 c -0.05 0.028 -0.099 0.052 -0.149 0.08 c -0.011 0.006 -0.02 0.016 -0.031 0.022 c -6.556 3.654 -13.101 8.811 -19.875 15.585 c -0.77 0.77 -1.523 1.55 -2.268 2.334 l -13.164 1.001 c -0.385 0.029 -0.753 0.169 -1.06 0.402 L 0.785 41.987 c -0.657 0.5 -0.94 1.352 -0.711 2.145 c 0.228 0.793 0.92 1.364 1.742 1.439 l 19.373 1.749 l 6.134 6.134 c -2.174 0.497 -4.389 1.715 -6.286 3.611 c -1.136 1.137 -2.048 2.411 -2.716 3.803 c -0.873 1.849 -2.79 6.61 -4.82 11.651 l -0.991 2.459 c -0.3 0.744 -0.127 1.595 0.441 2.162 c 0.382 0.383 0.894 0.586 1.415 0.586 c 0.251 0 0.505 -0.048 0.748 -0.146 l 2.547 -1.027 c 5 -2.014 9.723 -3.917 11.576 -4.79 c 1.38 -0.664 2.655 -1.576 3.79 -2.711 c 1.896 -1.896 3.113 -4.111 3.61 -6.285 l 5.952 5.952 l 1.749 19.372 c 0.074 0.822 0.646 1.514 1.439 1.742 c 0.183 0.053 0.369 0.078 0.553 0.078 c 0.614 0 1.207 -0.283 1.592 -0.789 l 15.711 -20.646 c 0.233 -0.307 0.373 -0.675 0.402 -1.06 l 0.971 -12.775 c 0.857 -0.811 1.706 -1.635 2.547 -2.475 c 6.779 -6.779 11.939 -13.327 15.594 -19.887 c 0.004 -0.007 0.01 -0.013 0.014 -0.02 c 0.018 -0.032 0.033 -0.063 0.051 -0.095 c 0.167 -0.301 0.326 -0.602 0.486 -0.904 c 4.207 -7.847 6.251 -15.635 6.295 -24.099 c 0.001 -0.083 0.001 -0.165 0.001 -0.248 C 89.996 6.488 89.993 6.06 89.983 5.63 z M 64.413 37.493 c -1.577 1.577 -3.675 2.447 -5.907 2.447 c -2.231 0 -4.329 -0.869 -5.907 -2.447 c -3.257 -3.258 -3.257 -8.557 0 -11.815 v 0 c 3.259 -3.257 8.559 -3.255 11.814 0 c 1.578 1.577 2.448 3.675 2.448 5.907 S 65.992 35.915 64.413 37.493 z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <h3 class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600 mb-4">Support That Helps You Grow</h3>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    <!-- Stats Section - Social Media Followers -->
+    <section class="py-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="bg-white rounded-2xl shadow-lg p-8">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+            <!-- YouTube -->
+            <div class="text-center group">
+                        <div class="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-red-500 to-red-700 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                            <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                  </svg>
+                </div>
+                        <h3 class="text-3xl md:text-4xl font-bold text-gray-900 mb-2" data-num="250000">0</h3>
+                        <p class="text-gray-600 font-semibold">YouTube</p>
+          </div>
+
+            <!-- Instagram -->
+            <div class="text-center group">
+                        <div class="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-pink-500 via-purple-500 to-orange-500 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                            <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                  </svg>
+                </div>
+                        <h3 class="text-3xl md:text-4xl font-bold text-gray-900 mb-2" data-num="10000">0</h3>
+                        <p class="text-gray-600 font-semibold">Instagram</p>
+          </div>
+
+            <!-- TikTok -->
+            <div class="text-center group">
+                        <div class="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-gray-800 to-black rounded-full flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                            <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
+                  </svg>
+                </div>
+                        <h3 class="text-3xl md:text-4xl font-bold text-gray-900 mb-2" data-num="110000">0</h3>
+                        <p class="text-gray-600 font-semibold">TikTok</p>
+          </div>
+
+            <!-- Discord -->
+            <div class="text-center group">
+                        <div class="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-indigo-500 to-indigo-700 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                            <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515a.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0a12.64 12.64 0 0 0-.617-1.25a.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057a19.9 19.9 0 0 0 5.993 3.03a.078.078 0 0 0 .084-.028a14.09 14.09 0 0 0 1.226-1.994a.076.076 0 0 0-.041-.106a13.107 13.107 0 0 1-1.872-.892a.077.077 0 0 1-.008-.128a10.2 10.2 0 0 0 .372-.292a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127a12.299 12.299 0 0 1-1.873.892a.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028a19.839 19.839 0 0 0 6.002-3.03a.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.956-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42c0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.955-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42c0 1.333-.946 2.418-2.157 2.418z"/>
+                  </svg>
+                </div>
+                        <h3 class="text-3xl md:text-4xl font-bold text-gray-900 mb-2" data-num="1600">0</h3>
+                        <p class="text-gray-600 font-semibold">Discord</p>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-
-
-      <section class="records" style= "background-color:rgb(42, 99, 231);">
-        <div class="overlay overlay-sm">
-          <img src="{% static 'core/images/shapes/square.png' %}" alt="" class="shape square1" />
-          <img src="{% static 'core/images/shapes/square.png' %}" alt="" class="shape square2" />
-          <img src="{% static 'core/images/shapes/circle.png' %}" alt="" class="shape circle" />
-          <img
-          src="{% static 'core/images/shapes/half-circle.png' %}"
-            alt=""
-            class="shape half-circle"
-          />
-          <img src="{% static 'core/images/shapes/wave.png' %}" alt="" class="shape wave wave1" />
-          <img src="{% static 'core/images/shapes/wave.png' %}" alt="" class="shape wave wave2" />
-          <img src="{% static 'core/images/shapes/x.png' %}" alt="" class="shape xshape" />
-          <img src="{% static 'core/images/shapes/triangle.png' %}" alt="" class="shape triangle" />
-        </div>
-
-        <section class="portfolio section" style="padding-top: 0;">
-          <div class="background-bg" style = "background-color: rgb(42, 99, 231);">
-            <div class="overlay overlay-sm">
-              <img
-              src="{% static 'core/images/shapes/half-circle.png' %}"
-                class="shape half-circle1"
-                alt=""
-              />
-              <img
-              src="{% static 'core/images/shapes/half-circle.png' %}"
-                class="shape half-circle2"
-                alt=""
-              />
-              <img src="{% static 'core/images/shapes/square.png' %}" class="shape square" alt="" />
-              <img src="{% static 'core/images/shapes/wave.png' %}" class="shape wave" alt="" />
-              <img src="{% static 'core/images/shapes/circle.png' %}" class="shape circle" alt="" />
-              <img
-              src="{% static 'core/images/shapes/triangle.png' %}"
-                class="shape triangle"
-                alt=""
-              />
-              <img src="{% static 'core/images/shapes/x.png' %}" class="shape xshape" alt="" />
+    <!-- Reviews Section -->
+    <section class="py-24 bg-gradient-to-br from-purple-600 to-blue-600">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div class="text-center mb-16">
+                <h2 class="text-4xl md:text-5xl font-bold text-white mb-4">
+                    Don't Just Take Our Words.<br>
+                    See What Other People Are Talking About Us
+            </h2>
             </div>
-          </div>   
-          <div class="section-header">
-            <h3 class="title" data-title="My platforms">Platforms Followers</h3>
-          </div>
 
-        </section>
+            <div class="columns-1 md:columns-3" style="column-gap: 1.5rem;">
+                <!-- Review Card 1 -->
+                <div class="review-card bg-white rounded-xl p-6 shadow-xl">
+                    <div class="flex items-center gap-2 mb-4">
+                        <div class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+                            <span class="text-white text-xs font-bold">MT</span>
+              </div>
+                        <span class="text-gray-900 text-sm font-semibold">MT</span>
+                    </div>
+                    <p class="text-gray-700 leading-relaxed">
+                        "This is lowkey great, from the discord server to the website, you got people who are always willing to help and support new people, and the website is a great way to interact with 2.0s different platforms"
+                      </p>
+                        </div>
 
-        <div class="container">       
-          <div class="wrap">
-            <div class="record-circle">
-              <h2 class="number" data-num="250000">0</h2>
-              <h4 class="sub-title">YouTube</h4>
-            </div>
-          </div>
+                <!-- Review Card 2 -->
+                <div class="review-card bg-white rounded-xl p-6 shadow-xl">
+                    <div class="flex items-center gap-2 mb-4">
+                        <div class="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center">
+                            <span class="text-white text-xs font-bold">K</span>
+                        </div>
+                        <span class="text-gray-900 text-sm font-semibold">Kai</span>
+                    </div>
+                    <p class="text-gray-700 leading-relaxed">
+                        "Yo! Think the website's pretty great with so many amazing features whether you're looking for editing help or any competition. Can't wait to see future updates and improvements."
+                    </p>
+                  </div>
+      
+                <!-- Review Card 3 -->
+                <div class="review-card bg-white rounded-xl p-6 shadow-xl">
+                    <div class="flex items-center gap-2 mb-4">
+                        <div class="w-8 h-8 bg-yellow-600 rounded-full flex items-center justify-center">
+                            <span class="text-white text-xs font-bold">A</span>
+                        </div>
+                        <span class="text-gray-900 text-sm font-semibold">Atom 66</span>
+                    </div>
+                    <p class="text-gray-700 leading-relaxed">
+                        "Site is great. Details are amazing. I can't wait for the tournaments! 5 stars"
+                      </p>
+                        </div>
 
-          <div class="wrap">
-            <div class="record-circle active">
-              <h2 class="number" data-num="10000">0</h2>
-              <h4 class="sub-title">Instagram</h4>
-            </div>
-          </div>
+                <!-- Review Card 4 -->
+                <div class="review-card bg-white rounded-xl p-6 shadow-xl">
+                    <div class="flex items-center gap-2 mb-4">
+                        <div class="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center">
+                            <span class="text-white text-xs font-bold">S</span>
+                        </div>
+                        <span class="text-gray-900 text-sm font-semibold">Stormy</span>
+                    </div>
+                    <p class="text-gray-700 leading-relaxed">
+                        "Wassup, the website's lowkey amazing. From the layout to how easy it is to find stuff, it just feels right. The way everything from the Discord, edits, and comps connects in one place is actually sick."
+                    </p>
+                  </div>
+      
+                <!-- Review Card 5 -->
+                <div class="review-card bg-white rounded-xl p-6 shadow-xl">
+                    <div class="flex items-center gap-2 mb-4">
+                        <div class="w-8 h-8 bg-red-600 rounded-full flex items-center justify-center">
+                            <span class="text-white text-xs font-bold">EP</span>
+                        </div>
+                        <span class="text-gray-900 text-sm font-semibold">EditorPro</span>
+                    </div>
+                    <p class="text-gray-700 leading-relaxed">
+                        "Excellent platform for Transformers editors. The competitions are well-organized and the community support is outstanding!"
+                      </p>
+                        </div>
 
-          <div class="wrap">
-            <div class="record-circle">
-              <h2 class="number" data-num="110000">0</h2>
-              <h4 class="sub-title">TikTok</h4>
-            </div>
-          </div>
-
-          <div class="wrap">
-            <div class="record-circle">
-              <h2 class="number" data-num="1600">0</h2>
-              <h4 class="sub-title">Discord</h4>
+                <!-- Review Card 6 -->
+                <div class="review-card bg-white rounded-xl p-6 shadow-xl">
+                    <div class="flex items-center gap-2 mb-4">
+                        <div class="w-8 h-8 bg-indigo-600 rounded-full flex items-center justify-center">
+                            <span class="text-white text-xs font-bold">TF</span>
+                        </div>
+                        <span class="text-gray-900 text-sm font-semibold">TransformFan</span>
+                    </div>
+                    <p class="text-gray-700 leading-relaxed">
+                        "There are very good people working behind. It is a platform that fulfills its mission. The integration of all features in one place makes it perfect for editors."
+                    </p>
             </div>
           </div>
         </div>
       </section>
 
-      <section class="blog section">
-        <div class="container">
-          <div class="section-header">
-            <h3 class="title" data-title="Latest Updates">Our Events</h3>
-            <p class="text">
-              This is where you can highlight updates, upcoming events, new Transformers edits, editing tutorials, or fan spotlights.
-              Here's a themed rewrite:
-            </p>
-          </div>
-
-          <div class="blog-wrapper">
-            <div class="blog-wrap">
-              <img
-                src="{% static 'core/images/shapes/points3.png' %}"
-                alt=""
-                class="points points-sq"
-              />
-
-              <div class="blog-card">
-                <div class="blog-image">
-                  <img src="{% static 'core/images/editor.jpg' %}" alt="" />
-                </div>
-
-                <div class="blog-content">
-                  <div class="blog-info">
-                    <h5 class="blog-date">March, 19 2025</h5>
-                    <h5 class="blog-user"><i class="fas fa-user"></i>2.0Transformers</h5>
-                  </div>
-                  <h3 class="title-sm">Reacting to Edits</h3>
-                  <p class="blog-text">
-                    Send in your best video edits and get featured! At 2.0 Transformers, we react to your creative work live—giving feedback, shoutouts, and maybe even challenges. Whether you're a beginner or pro, we want to see what you've got!
-                  </p>
-                  <a href="{% url 'events:event_list' %}" class="btn small">Read more</a>
-                </div>
-              </div>
-            </div>
-
-            <div class="blog-wrap">
-              <div class="blog-card">
-                <div class="blog-image">
-                  <img src="{% static 'core/images/Competition.jpeg' %}" alt="" />
-                </div>
-
-                <div class="blog-content">
-                  <div class="blog-info">
-                    <h5 class="blog-date">August, 02 2025</h5>
-                    <h5 class="blog-user"><i class="fas fa-user"></i>2.0Transformers</h5>
-                  </div>
-                  <h3 class="title-sm">Editor Face-Off: Let the Edits Speak</h3>
-                  <p class="blog-text">
-                    Step into the arena and compete in thrilling editing showdowns! This is your chance to show off your skills, challenge other editors, and rise in the ranks. Amazing prizes and recognition await the boldest creatives.
-                  </p>
-                  <a href="{% url 'events:event_list' %}" class="btn small">Read more</a>
-                </div>
-              </div>
-            </div>
-
-            <div class="blog-wrap">
-              <div class="blog-card">
-                <div class="blog-image">
-                  <img src="{% static 'core/images/discord.jpg' %}" alt="" />
-                </div>
-
-                <div class="blog-content">
-                  <div class="blog-info">
-                    <h5 class="blog-date">February, 12 2025</h5>
-                    <h5 class="blog-user"><i class="fas fa-user"></i>Aizen</h5>
-                  </div>
-                  <h3 class="title-sm"> Join Our Discord: Events & Mod Roles</h3>
-                  <p class="blog-text">
-                    Hop into our Discord community to take part in exciting live events, Q&As, and creative collabs. Want to be more involved? We're also on the lookout for dedicated moderators and event coordinators!
-                  </p>
-                  <a href="{% url 'events:event_list' %}" class="btn small">Read more</a>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="testimonials section" id="testimonials">
-        <div class="container">
-          <div class="section-header">
-            <h3 class="title" data-title="What People Say">Testimonials</h3>
-          </div>
-      
-          <div class="testi-content grid-2">
-            <div class="column-1 reviews">
-              <div class="swiper testimonial-swiper">
-                <div class="swiper-wrapper">
-                  <div class="swiper-slide review">
-                    <i class="fas fa-quote-left quote"></i>
-                    <div class="rate">
-                      <i class="fas fa-star"></i>
-                      <i class="fas fa-star"></i>
-                      <i class="fas fa-star"></i>
-                      <i class="fas fa-star"></i>
-                      <i class="fas fa-star"></i>
-                    </div>
-      
-                    <p class="review-text">
-                      This is lowkey great, from the discord server to the website, you got people who are always willing to help and support new people, and the website is a great way to interact with 2.0s different platforms
-                    </p>
-      
-                    <div class="review-info">
-                      <h3 class="review-name">MT</h3>
-                      <h5 class="review-job">YT Editor</h5>
-                    </div>
-                  </div>
-      
-                  <div class="swiper-slide review">
-                    <i class="fas fa-quote-left quote"></i>
-                    <div class="rate">
-                      <i class="fas fa-star"></i>
-                      <i class="fas fa-star"></i>
-                      <i class="fas fa-star"></i>
-                      <i class="fas fa-star"></i>
-                      <i class="fas fa-star"></i>
-                    </div>
-      
-                    <p class="review-text">
-                      Yo! Think the website's pretty great with so many amazing features whether you're looking for editing help or any competition. Can't wait to see future updates and improvements. Uncle 2.0 pretty yummy for bringing all his fanbase throughout different platforms together 😊 
-                    </p>
-      
-                    <div class="review-info">
-                      <h3 class="review-name">Kai</h3>
-                      <h5 class="review-job">Editor</h5>
-                    </div>
-                  </div>
-      
-                  <div class="swiper-slide review">
-                    <i class="fas fa-quote-left quote"></i>
-                    <div class="rate">
-                      <i class="fas fa-star"></i>
-                      <i class="fas fa-star"></i>
-                      <i class="fas fa-star"></i>
-                      <i class="fas fa-star"></i>
-                      <i class="fas fa-star"></i>
-                    </div>
-      
-                    <p class="review-text">
-                      Site is great. Details are amazing. I can't wait for the tournaments! 5 stars
-                    </p>
-      
-                    <div class="review-info">
-                      <h3 class="review-name">Atom 66</h3>
-                      <h5 class="review-job">YouTube Editor</h5>
-                    </div>
-                  </div>
-      
-                  <div class="swiper-slide review">
-                    <i class="fas fa-quote-left quote"></i>
-                    <div class="rate">
-                      <i class="fas fa-star"></i>
-                      <i class="fas fa-star"></i>
-                      <i class="fas fa-star"></i>
-                      <i class="fas fa-star"></i>
-                      <i class="fas fa-star"></i>
-                    </div>
-      
-                    <p class="review-text">
-                      Wassup, the website’s lowkey amazing. From the layout to how easy it is to find stuff, it just feels right. The way everything from the Discord, edits, and comps connects in one place is actually sick. Seeing how much effort’s gone into this makes me excited for what’s next.
-                    </p>
-      
-                    <div class="review-info">
-                      <h3 class="review-name">Stormy</h3>
-                      <h5 class="review-job">Editor</h5>
-                    </div>
-                  </div>
-                </div>
-      
-                <!-- Navigation Arrows -->
-                <div class="review-nav swiper-button-prev">
-                  <i class="fas fa-long-arrow-alt-left"></i>
-                </div>
-                <div class="review-nav swiper-button-next">
-                  <i class="fas fa-long-arrow-alt-right"></i>
-                </div>
-              </div>
-            </div>
-      
-            <div class="column-2 image">
-              <img src="{% static 'core/images/Optimus.png' %}" alt="" class="img-element" />
-            </div>
-          </div>
-        </div>
-      </section>
-      
-
-      <!-- <section class="contact" id="contact">
-        <div class="container">
-          <div class="contact-box">
-            <div class="contact-info">
-              <h3 class="title">Get in touch</h3>
-              <p class="text">
-                Lorem ipsum dolor sit amet consectetur adipisicing elit. Nisi
-                rerum odio incidunt doslorum officia dolorem eaque aprim?
-              </p>
-              <div class="information-wrap">
-                <div class="information">
-                  <div class="contact-icon">
-                    <i class="fas fa-map-marker-alt"></i>
-                  </div>
-                  <p class="info-text">92 Cherry Drive Unimodale, NY 11553</p>
-                </div>
-
-                <div class="information">
-                  <div class="contact-icon">
-                    <i class="fas fa-paper-plane"></i>
-                  </div>
-                  <p class="info-text">lorem@ipsum.com</p>
-                </div>
-
-                <div class="information">
-                  <div class="contact-icon">
-                    <i class="fas fa-phone-alt"></i>
-                  </div>
-                  <p class="info-text">123-456-789</p>
-                </div>
-              </div>
-            </div>
-
-            <div class="contact-form">
-              <h3 class="title">Contact me</h3>
-              <div class="row">
-                <input
-                  type="text"
-                  class="contact-input"
-                  placeholder="First Name"
-                />
-                <input
-                  type="text"
-                  class="contact-input"
-                  placeholder="Last Name"
-                />
-              </div>
-
-              <div class="row">
-                <input type="text" class="contact-input" placeholder="Phone" />
-                <input type="email" class="contact-input" placeholder="Email" />
-              </div>
-
-              <div class="row">
-                <textarea
-                  name="message"
-                  class="contact-input textarea"
-                  placeholder="Message"
-                ></textarea>
-              </div>
-              <a href="#" class="btn">Send</a>
-            </div>
-          </div>
-        </div>
-      </section> -->
-
-      <!-- <section class="hireme" id="hireme">
-        <div class="container">
-          <h3 class="title">Let's talk about a project</h3>
-          <p class="text">
-            Lorem ipsum dolor sit amet consectetur, adipisicing elit. Odio,
-            culpa. Commodi suscipit animi officia dignissimos unde, ipsum fugiat
-            consequuntur, fugit ratione vel aperiam, similique distinctio
-            mollitia repellendus quasi rem vero!
-          </p>
-          <a href="#" class="btn">Hire me</a>
-        </div>
-      </section> -->
     </main>
 
-    <!-- <footer class="footer">
-      <div class="container">
-        <div class="grid-4">
-          <div class="grid-4-col footer-about">
-            <h3 class="title-sm">About</h3>
-            <p class="text">
-              Lorem ipsum dolor sit amet consectetur adipisicing elit. Dolores
-              officiis quo officia quia?
-            </p>
-          </div>
+    <script>
+      // Counter Animation
+      function animateCounter(element) {
+        const target = parseInt(element.getAttribute('data-num'));
+        const duration = 2000;
+        const increment = target / (duration / 16);
+        let current = 0;
+        
+        const updateCounter = () => {
+          current += increment;
+          if (current < target) {
+            element.textContent = Math.floor(current).toLocaleString();
+            requestAnimationFrame(updateCounter);
+          } else {
+            element.textContent = target.toLocaleString();
+          }
+        };
+        
+        updateCounter();
+      }
 
-          <div class="grid-4-col footer-links">
-            <h3 class="title-sm">Links</h3>
-            <ul>
-              <li>
-                <a href="#services">Services</a>
-              </li>
-              <li>
-                <a href="#portfolio">Portfolio</a>
-              </li>
-              <li>
-                <a href="#about">About</a>
-              </li>
-              <li>
-                <a href="#testimonials">Testimonials</a>
-              </li>
-              <li>
-                <a href="#contact">Contact</a>
-              </li>
-            </ul>
-          </div>
+      // Intersection Observer for counters
+      const observerOptions = {
+        threshold: 0.5,
+        rootMargin: '0px'
+      };
 
-          <div class="grid-4-col footer-links">
-            <h3 class="title-sm">Services</h3>
-            <ul>
-              <li>
-                <a href="#">Web Design</a>
-              </li>
-              <li>
-                <a href="#">Web Dev</a>
-              </li>
-              <li>
-                <a href="#">App Design</a>
-              </li>
-              <li>
-                <a href="#">Marketing</a>
-              </li>
-              <li>
-                <a href="#">UI Design</a>
-              </li>
-            </ul>
-          </div>
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting && !entry.target.classList.contains('counted')) {
+            entry.target.classList.add('counted');
+            animateCounter(entry.target);
+          }
+        });
+      }, observerOptions);
 
-          <div class="grid-4-col footer-newstletter">
-            <h3 class="title-sm">Subscribe</h3>
-            <p class="text">
-              Lorem ipsum dolor, sit amet ipsum dolor sit amet.
-            </p>
-            <div class="footer-input-wrap">
-              <input type="email" class="footer-input" placeholder="Email" />
-              <a href="#" class="input-arrow">
-                <i class="fas fa-angle-right"></i>
-              </a>
-            </div>
-          </div>
-        </div>
-
-        <div class="bottom-footer">
-          <div class="copyright">
-            <p class="text">
-              Copyright&copy;2020 All rights reserved | Made by
-              <span>True Coder</span>
-            </p>
-          </div>
-
-          <div class="followme-wrap">
-            <div class="followme">
-              <h3>Follow me</h3>
-              <span class="footer-line"></span>
-              <div class="social-media">
-                <a href="#">
-                  <i class="fab fa-facebook-f"></i>
-                </a>
-                <a href="#">
-                  <i class="fab fa-twitter"></i>
-                </a>
-                <a href="#">
-                  <i class="fab fa-instagram"></i>
-                </a>
-                <a href="#">
-                  <i class="fab fa-linkedin-in"></i>
-                </a>
-              </div>
-            </div>
-
-            <div class="back-btn-wrap">
-              <a href="#" class="back-btn">
-                <i class="fas fa-chevron-up"></i>
-              </a>
-            </div>
-          </div>
-        </div>
-      </div>
-    </footer> -->
-
-    <!-- jQuery (needed for Isotope) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-    <script src="{% static 'core/js/isotope.pkgd.min.js' %}"></script>
-    <script src="https://unpkg.com/swiper/swiper-bundle.min.js"></script>
-    <script src="{% static 'core/js/app.js' %}"></script>   <!-- ✅ FIXED -->
-  </body>
-
-  
-
+      document.querySelectorAll('[data-num]').forEach(counter => {
+        observer.observe(counter);
+      });
+    </script>
 {% endblock %}
