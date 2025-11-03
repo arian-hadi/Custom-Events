@@ -50,7 +50,8 @@ INSTALLED_APPS = [
     'shop',
     'tailwind',
     'theme',
-    'ratelimit'
+    'ratelimit',
+    'django_summernote',  # Uncomment after rebuilding container with django-summernote installed
 ]
 
 

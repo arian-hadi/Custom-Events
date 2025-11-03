@@ -6,7 +6,7 @@ from django.utils import timezone
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
-from .models import Product
+from .models import Product, SiteLogo
 
 
 def product_list(request):
@@ -88,6 +88,7 @@ def product_list(request):
         'transformers_count': transformers_count,
         'merges_count': merges_count,
         'favorited_product_ids': favorited_product_ids,
+        'site_logo': SiteLogo.get_active_logo(),
     }
     
     return render(request, 'shop/product_list.html', context)
@@ -112,6 +113,7 @@ def product_detail(request, product_id):
         'product': product,
         'related_products': related_products,
         'is_favorited': is_favorited,
+        'site_logo': SiteLogo.get_active_logo(),
     }
     
     return render(request, 'shop/product_detail.html', context)

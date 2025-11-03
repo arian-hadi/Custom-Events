@@ -2,7 +2,7 @@ from django.db import models
 from django.core.validators import MinValueValidator
 from django.utils import timezone
 from django.conf import settings
-from ckeditor.fields import RichTextField
+from django.db import models as dj_models  # alias to avoid confusion
 
 
 class Product(models.Model):
@@ -26,7 +26,8 @@ class Product(models.Model):
     
     # Basic Information
     name = models.CharField(max_length=200)
-    description = RichTextField()
+    # Use plain TextField; rich editing handled by django-summernote in admin
+    description = dj_models.TextField()
     category = models.CharField(
         max_length=20, 
         choices=PRODUCT_CATEGORY_CHOICES,
@@ -146,3 +147,48 @@ class Product(models.Model):
     def show_ecommerce_badge(self):
         """Determine if e-commerce platform badge should be shown."""
         return self.category == 'merges_1_0' and self.ecommerce_platform != 'none'
+
+
+class SiteLogo(models.Model):
+    """
+    Model for storing the main site logo/image.
+    Uses singleton pattern - only one active logo can exist at a time.
+    """
+    name = models.CharField(
+        max_length=200,
+        default='Site Logo',
+        help_text="Name/description for this logo (e.g., 'Main Logo', 'Channel Image')"
+    )
+    image = models.ImageField(
+        upload_to='site/logo/',
+        help_text="Upload your main site logo/channel image"
+    )
+    is_active = models.BooleanField(
+        default=True,
+        help_text="Only one logo can be active at a time. Setting this to active will deactivate others."
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-is_active', '-created_at']
+        verbose_name = 'Site Logo'
+        verbose_name_plural = 'Site Logos'
+    
+    def __str__(self):
+        status = "Active" if self.is_active else "Inactive"
+        return f"{self.name} - {status}"
+    
+    def save(self, *args, **kwargs):
+        # If this logo is being set as active, deactivate all others
+        if self.is_active:
+            SiteLogo.objects.filter(is_active=True).exclude(pk=self.pk).update(is_active=False)
+        super().save(*args, **kwargs)
+    
+    @classmethod
+    def get_active_logo(cls):
+        """Get the currently active logo, or None if no active logo exists."""
+        try:
+            return cls.objects.get(is_active=True)
+        except cls.DoesNotExist:
+            return None

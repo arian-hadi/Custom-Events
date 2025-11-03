@@ -65,7 +65,12 @@
                     <!-- Category and Platform Badges -->
                     <div class="flex items-center space-x-2 flex-wrap gap-2">
                         {% if product.category == 'transformers_2_0' %}
-                        <span class="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-full">
+                        <span class="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-full">
+                            {% if site_logo %}
+                            <img src="{{ site_logo.image.url }}" 
+                                 alt="{{ site_logo.name }}" 
+                                 class="w-6 h-6 rounded-full border-2 border-white shadow-lg object-cover">
+                            {% endif %}
                             2.0 Transformers Products
                         </span>
                         {% endif %}
@@ -210,7 +215,12 @@
                                  class="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-300">
                             
                             {% if related_product.category == 'transformers_2_0' %}
-                            <div class="absolute top-2 left-2">
+                            <div class="absolute top-2 left-2 flex items-center gap-1.5">
+                                {% if site_logo %}
+                                <img src="{{ site_logo.image.url }}" 
+                                     alt="{{ site_logo.name }}" 
+                                     class="w-5 h-5 rounded-full border-2 border-white shadow-lg object-cover">
+                                {% endif %}
                                 <span class="px-3 py-1 bg-blue-600 text-white text-xs font-semibold rounded-full shadow-lg">
                                     2.0 Transformers
                                 </span>

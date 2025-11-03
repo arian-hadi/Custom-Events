@@ -167,15 +167,13 @@
                             <!-- Category Badge (Only for 2.0 Transformers) -->
                             {% if product.category == 'transformers_2_0' %}
                             <div class="absolute top-1 left-1 sm:top-2 sm:left-2">
-                                <span class="px-2 py-0.5 sm:px-3 sm:py-1 bg-blue-600 text-white text-[10px] sm:text-xs font-semibold rounded-full shadow-lg">
-                                    2.0
-                                </span>
-                            </div>
-                            {% endif %}
-                            {% if product.category == 'transformers_2_0' and product.video_url %}
-                            <div class="absolute top-1 right-1 sm:top-2 sm:right-2">
-                                <span class="px-1.5 py-0.5 bg-black/70 text-white text-[10px] sm:text-xs font-semibold rounded shadow">
-                                    <i class="fas fa-play text-[10px] sm:text-xs mr-0.5"></i> Video
+                                <span class="flex items-center gap-1.5 sm:gap-2 px-2 py-0.5 sm:px-3 sm:py-1 bg-blue-600 text-white text-[10px] sm:text-xs font-semibold rounded-full shadow-lg">
+                                    {% if site_logo %}
+                                    <img src="{{ site_logo.image.url }}" 
+                                         alt="{{ site_logo.name }}" 
+                                         class="w-4 h-4 sm:w-5 sm:h-5 rounded-full border border-white/80 object-cover">
+                                    {% endif %}
+                                    2.0TF
                                 </span>
                             </div>
                             {% endif %}

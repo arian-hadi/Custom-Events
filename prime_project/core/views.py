@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect
 from django.views.generic import TemplateView
+from shop.models import SiteLogo
 
 
 class HomeView(TemplateView):
@@ -13,6 +14,11 @@ class HomeView(TemplateView):
             else:
                 return redirect('dashboard:user_dashboard')
         return super().dispatch(request, *args, **kwargs)
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['site_logo'] = SiteLogo.get_active_logo()
+        return context
 
 
 class TermOfServiceView(TemplateView):

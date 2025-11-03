@@ -1,9 +1,10 @@
 from django.contrib import admin
-from .models import Product
+from django_summernote.admin import SummernoteModelAdmin  # Uncomment after rebuilding container
+from .models import Product, SiteLogo
 
 
 @admin.register(Product)
-class ProductAdmin(admin.ModelAdmin):
+class ProductAdmin(admin.ModelAdmin):  # Temporarily use ModelAdmin until container is rebuilt
     list_display = (
         'name', 
         'category', 
@@ -25,6 +26,7 @@ class ProductAdmin(admin.ModelAdmin):
     search_fields = ('name', 'description')
     ordering = ('-created_at',)
     date_hierarchy = 'created_at'
+    summernote_fields = ('description',)  # Uncomment after rebuilding container
     
     fieldsets = (
         ('Basic Information', {
@@ -72,3 +74,35 @@ class ProductAdmin(admin.ModelAdmin):
             )
         
         return fieldsets
+
+
+@admin.register(SiteLogo)
+class SiteLogoAdmin(admin.ModelAdmin):
+    list_display = ('name', 'is_active', 'created_at', 'updated_at')
+    list_filter = ('is_active', 'created_at')
+    search_fields = ('name',)
+    ordering = ('-is_active', '-created_at')
+    readonly_fields = ('created_at', 'updated_at')
+    
+    fieldsets = (
+        ('Logo Information', {
+            'fields': ('name', 'image', 'is_active')
+        }),
+        ('Timestamps', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def save_model(self, request, obj, form, change):
+        """
+        Override save to ensure only one active logo exists.
+        This is handled in the model's save method, but we ensure it here too.
+        """
+        if obj.is_active:
+            SiteLogo.objects.filter(is_active=True).exclude(pk=obj.pk).update(is_active=False)
+        super().save_model(request, obj, form, change)
+    
+    def get_queryset(self, request):
+        """Highlight the active logo in the list."""
+        return super().get_queryset(request)
