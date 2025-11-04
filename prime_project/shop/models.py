@@ -1,8 +1,21 @@
 from django.db import models
 from django.core.validators import MinValueValidator
+from django.core.exceptions import ValidationError
 from django.utils import timezone
 from django.conf import settings
 from django.db import models as dj_models  # alias to avoid confusion
+
+MAX_IMAGE_FILE_SIZE_MB = 4
+
+
+def validate_image_file_size(image):
+    if not image:
+        return
+    limit = MAX_IMAGE_FILE_SIZE_MB * 1024 * 1024
+    if image.size > limit:
+        raise ValidationError(
+            f"Image file too large. Max size is {MAX_IMAGE_FILE_SIZE_MB} MB."
+        )
 
 
 class Product(models.Model):
@@ -35,8 +48,11 @@ class Product(models.Model):
     )
     
     # Images
-    thumbnail = models.ImageField(upload_to='shop/thumbnails/')
-    main_image = models.ImageField(upload_to='shop/images/')
+    thumbnail = models.ImageField(upload_to='shop/thumbnails/', validators=[validate_image_file_size])
+    main_image = models.ImageField(upload_to='shop/images/', validators=[validate_image_file_size])
+    image_2 = models.ImageField(upload_to='shop/images/', blank=True, null=True, validators=[validate_image_file_size])
+    image_3 = models.ImageField(upload_to='shop/images/', blank=True, null=True, validators=[validate_image_file_size])
+    image_4 = models.ImageField(upload_to='shop/images/', blank=True, null=True, validators=[validate_image_file_size])
     # Optional video URL (e.g., YouTube/TikTok) for 2.0 Transformers products
     video_url = models.URLField(blank=True, null=True, help_text="Optional video URL (YouTube/TikTok) for media gallery")
     
@@ -162,6 +178,12 @@ class SiteLogo(models.Model):
     image = models.ImageField(
         upload_to='site/logo/',
         help_text="Upload your main site logo/channel image"
+    )
+    favicon = models.ImageField(
+        upload_to='site/favicon/',
+        blank=True,
+        null=True,
+        help_text="Upload your site favicon (recommended: .ico, .png, or .svg format, 32x32 or 16x16 pixels)"
     )
     is_active = models.BooleanField(
         default=True,

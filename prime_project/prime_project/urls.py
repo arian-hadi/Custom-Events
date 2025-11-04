@@ -8,6 +8,7 @@ from django.conf.urls.static import static
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('summernote/', include('django_summernote.urls')),  # Uncomment after rebuilding container
+    path("ckeditor5/", include('django_ckeditor_5.urls')),
     path('contact/', include('contact.urls')),
     path('',include('core.urls')),
     path('events/', include('events.urls')),

@@ -108,12 +108,45 @@ def product_detail(request, product_id):
         category=product.category,
         is_active=True
     ).exclude(id=product.id)[:4]
+
+    # Build media gallery (images + optional video)
+    gallery_items = []
+
+    def add_image(field, label):
+        image_field = getattr(product, field, None)
+        if image_field:
+            try:
+                url = image_field.url
+            except ValueError:
+                return
+            gallery_items.append({
+                'type': 'image',
+                'url': url,
+                'label': label,
+            })
+
+    add_image('thumbnail', 'Thumbnail')
+    add_image('main_image', 'Image 1')
+    add_image('image_2', 'Image 2')
+    add_image('image_3', 'Image 3')
+    add_image('image_4', 'Image 4')
+
+    video_index = None
+    if product.category == 'transformers_2_0' and product.video_url:
+        gallery_items.append({
+            'type': 'video',
+            'url': product.video_url,
+        })
+        video_index = len(gallery_items) - 1
     
     context = {
         'product': product,
         'related_products': related_products,
         'is_favorited': is_favorited,
         'site_logo': SiteLogo.get_active_logo(),
+        'media_gallery': gallery_items,
+        'has_video': video_index is not None,
+        'video_slide_index': video_index,
     }
     
     return render(request, 'shop/product_detail.html', context)
