@@ -31,17 +31,18 @@
                     <div class="relative overflow-hidden rounded-lg border-2 border-gray-200 bg-gray-50" id="media-container">
                         <div id="media-viewport" class="relative w-full h-64 sm:h-80 lg:h-96 overflow-hidden bg-gray-50">
                             <div id="media-track" class="flex w-full h-full transition-transform duration-500 ease-in-out" style="transform: translateX(0);">
-                                <div class="w-full h-full flex-shrink-0 flex items-center justify-center bg-gray-50" data-slide-type="image">
-                                    <img src="{{ product.main_image.url }}" 
-                                         alt="{{ product.name }}"
-                                         id="main-image"
+                                {% for item in media_gallery %}
+                                {% if item.type == 'image' %}
+                                <div class="w-full h-full flex-shrink-0 flex items-center justify-center bg-gray-50" data-slide-type="image" data-slide-index="{{ forloop.counter0 }}">
+                                    <img src="{{ item.url }}" 
+                                         alt="{{ product.name }} {{ item.label|default:'Image' }}"
                                          class="max-h-full w-full object-contain">
                                 </div>
-                                {% if product.category == 'transformers_2_0' and product.video_url %}
-                                <div class="w-full h-full flex-shrink-0 relative bg-black" data-slide-type="video">
+                                {% elif item.type == 'video' %}
+                                <div class="w-full h-full flex-shrink-0 relative bg-black" data-slide-type="video" data-slide-index="{{ forloop.counter0 }}">
                                     <iframe 
                                         class="absolute inset-0 w-full h-full" 
-                                        data-src="{{ product.video_url|youtube_embed }}"
+                                        data-src="{{ item.url|youtube_embed }}"
                                         src=""
                                         title="Product video" 
                                         frameborder="0" 
@@ -50,12 +51,13 @@
                                         allowfullscreen
                                         loading="lazy">
                                     </iframe>
-                                    <a href="{{ product.video_url|youtube_watch }}" target="_blank" rel="noopener" data-watch-link class="absolute right-2 top-1/2 -translate-y-1/2 bg-red-600 text-white px-3 py-2 rounded-full shadow hover:bg-red-700 hidden md:inline-flex items-center gap-1.5" aria-label="Open on YouTube">
+                                    <a href="{{ item.url|youtube_watch }}" target="_blank" rel="noopener" data-watch-link class="absolute right-2 top-1/2 -translate-y-1/2 bg-red-600 text-white px-3 py-2 rounded-full shadow hover:bg-red-700 hidden md:inline-flex items-center gap-1.5" aria-label="Open on YouTube">
                                         <span class="text-xs font-medium">Watch on</span>
                                         <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M23.5 6.2s-.2-1.7-.8-2.4c-.7-.8-1.6-.8-2-0.9C17.2 2.5 12 2.5 12 2.5h0s-5.2 0-8.7.4c-.4 0-1.3.1-2 .9-.6.7-.8 2.4-.8 2.4S0 8.3 0 10.5v1.9c0 2.2.2 4.3.2 4.3s.2 1.7.8 2.4c.7.8 1.7.8 2.1.9 1.6.2 8.6.4 8.6.4s5.2 0 8.7-.4c.4-.1 1.3-.1 2-.9.6-.7.8-2.4.8-2.4s.2-2.1.2-4.3v-1.9c0-2.2-.2-4.3-.2-4.3ZM9.6 14.8V7.9l6.1 3.4-6.1 3.5Z"/></svg>
                                     </a>
                                 </div>
                                 {% endif %}
+                                {% endfor %}
                             </div>
                         </div>
                         <!-- Prev/Next Arrows -->
@@ -68,27 +70,35 @@
                     </div>
                     
                     <!-- Thumbnail (can be clicked to change main image) -->
-                    <div class="flex space-x-2">
-                        <img src="{{ product.main_image.url }}" 
-                             alt="{{ product.name }}"
-                             onclick="changeImage('{{ product.main_image.url }}')"
-                             class="w-20 h-20 object-cover border-2 border-gray-200 rounded cursor-pointer hover:border-blue-500 transition-all">
-                        {% if product.category == 'transformers_2_0' and product.video_url %}
-                        {% with video_thumb=product.video_url|youtube_thumbnail %}
-                        <div class="relative w-20 h-20 rounded border-2 border-gray-200 cursor-pointer hover:border-blue-500 overflow-hidden group" onclick="showVideo('{{ product.video_url|youtube_embed }}','{{ product.video_url|youtube_watch }}')">
-                            {% if video_thumb %}
-                            <img src="{{ video_thumb }}" alt="Video thumbnail" class="w-full h-full object-cover">
+                    <div class="flex space-x-2 overflow-x-auto">
+                        {% for item in media_gallery %}
+                            {% if item.type == 'image' %}
+                            <button type="button"
+                                    onclick="changeMedia({{ forloop.counter0 }})"
+                                    class="w-20 h-20 object-cover border-2 border-gray-200 rounded overflow-hidden cursor-pointer hover:border-blue-500 transition-all flex-shrink-0"
+                                    aria-label="Show {{ item.label|default:'image' }}">
+                                <img src="{{ item.url }}" alt="{{ product.name }} {{ item.label|default:'image' }} thumbnail" class="w-full h-full object-cover">
+                            </button>
                             {% else %}
-                            <div class="w-full h-full bg-black/80 text-white grid place-items-center">
-                                <svg class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
-                            </div>
+                            {% with video_thumb=item.url|youtube_thumbnail %}
+                            <button type="button"
+                                    onclick="changeMedia({{ forloop.counter0 }})"
+                                    class="relative w-20 h-20 border-2 border-gray-200 rounded overflow-hidden cursor-pointer hover:border-blue-500 transition-all flex-shrink-0 group"
+                                    aria-label="Show product video">
+                                {% if video_thumb %}
+                                <img src="{{ video_thumb }}" alt="Video thumbnail" class="w-full h-full object-cover">
+                                {% else %}
+                                <div class="w-full h-full bg-black/80 text-white grid place-items-center">
+                                    <svg class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+                                </div>
+                                {% endif %}
+                                <div class="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                                    <svg class="w-8 h-8 text-white drop-shadow-lg" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                                </div>
+                            </button>
+                            {% endwith %}
                             {% endif %}
-                            <div class="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                                <svg class="w-8 h-8 text-white drop-shadow-lg" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-                            </div>
-                        </div>
-                        {% endwith %}
-                        {% endif %}
+                        {% endfor %}
                     </div>
                 </div>
 
@@ -384,8 +394,9 @@
 </style>
 
 <script>
-const hasVideo = {% if product.category == 'transformers_2_0' and product.video_url %}true{% else %}false{% endif %};
-const totalSlides = hasVideo ? 2 : 1;
+const hasVideo = {% if has_video %}true{% else %}false{% endif %};
+const totalSlides = {{ media_gallery|length }};
+const videoSlideIndex = {% if video_slide_index is not None %}{{ video_slide_index }}{% else %}null{% endif %};
 let currentMediaIndex = 0;
 let mediaTrack = null;
 let mediaViewport = null;
@@ -400,7 +411,7 @@ function initMediaSlider() {
 
     if (!mediaTrack) return;
 
-    if (hasVideo) {
+    if (hasVideo && videoSlideIndex !== null) {
         const videoSlide = document.querySelector('[data-slide-type="video"]');
         if (videoSlide) {
             videoIframe = videoSlide.querySelector('iframe');
@@ -472,8 +483,8 @@ function goToSlide(index) {
     mediaTrack.style.transform = `translateX(-${index * 100}%)`;
     updateArrowState();
 
-    if (!videoIframe) return;
-    if (index === 1) {
+    if (!videoIframe || videoSlideIndex === null) return;
+    if (index === videoSlideIndex) {
         const src = videoIframe.dataset.src;
         if (src && videoIframe.src !== src) {
             videoIframe.src = src;
@@ -500,12 +511,12 @@ function updateArrowState() {
     nextBtn.classList.toggle('opacity-50', nextBtn.disabled);
 }
 
-function changeImage(imageUrl) {
-    goToSlide(0);
+function changeMedia(index) {
+    goToSlide(index);
 }
 
 function showVideo(embedUrl, watchUrl) {
-    if (!hasVideo) return;
+    if (!hasVideo || videoSlideIndex === null) return;
     if (!embedUrl) embedUrl = '{{ product.video_url|youtube_embed }}';
     if (!watchUrl) watchUrl = '{{ product.video_url|youtube_watch }}';
     const valid = embedUrl.includes('youtube.com/embed/') || embedUrl.includes('youtube-nocookie.com/embed/') || embedUrl.includes('youtu.be');
@@ -516,14 +527,14 @@ function showVideo(embedUrl, watchUrl) {
     }
     if (videoIframe) {
         videoIframe.dataset.src = embedUrl;
-        if (currentMediaIndex === 1 && videoIframe.src !== embedUrl) {
+        if (currentMediaIndex === videoSlideIndex && videoIframe.src !== embedUrl) {
             videoIframe.src = embedUrl;
         }
     }
     if (videoWatchLink) {
         videoWatchLink.href = watchUrl || embedUrl;
     }
-    goToSlide(1);
+    goToSlide(videoSlideIndex);
 }
 
 document.addEventListener('DOMContentLoaded', initMediaSlider);

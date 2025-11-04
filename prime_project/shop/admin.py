@@ -2,7 +2,7 @@ from django.contrib import admin
 from django_summernote.admin import SummernoteModelAdmin  # Uncomment after rebuilding container
 from django_ckeditor_5.widgets import CKEditor5Widget
 from django.db import models
-from .models import Product, SiteLogo
+from .models import Product, SiteLogo, MAX_IMAGE_FILE_SIZE_MB
 
 
 @admin.register(Product)
@@ -39,7 +39,8 @@ class ProductAdmin(admin.ModelAdmin):  # Temporarily use ModelAdmin until contai
             'fields': ('name', 'description', 'category', 'is_active')
         }),
         ('Images', {
-            'fields': ('thumbnail', 'main_image', 'video_url')
+            'fields': ('thumbnail', 'main_image', 'image_2', 'image_3', 'image_4', 'video_url'),
+            'description': f"Maximum upload size for each image is {MAX_IMAGE_FILE_SIZE_MB} MB."
         }),
         ('Pricing', {
             'fields': (
