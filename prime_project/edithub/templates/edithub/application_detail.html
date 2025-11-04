@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+
+{% block title %}Application Details - EditingHub{% endblock %}
+
+{% block content %}
+<main class="pt-16 bg-gradient-to-b from-white via-gray-50 to-gray-100 min-h-screen py-12">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="bg-white rounded-lg shadow-lg p-8">
+            <div class="mb-6">
+                <h1 class="text-3xl font-bold text-gray-900 mb-2">Application Details</h1>
+                <div class="flex items-center gap-4">
+                    <span class="px-4 py-2 rounded-full text-sm font-semibold
+                        {% if application.status == 'accepted' %}bg-green-100 text-green-800
+                        {% elif application.status == 'rejected' %}bg-red-100 text-red-800
+                        {% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                        {{ application.get_status_display }}
+                    </span>
+                    {% if application.rank_position %}
+                    <span class="px-4 py-2 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold">
+                        Rank #{{ application.rank_position }}
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <!-- Channel Information -->
+                <div class="bg-gray-50 p-6 rounded-lg">
+                    <h2 class="text-lg font-semibold text-gray-900 mb-4">Channel Information</h2>
+                    <div class="space-y-3">
+                        <div>
+                            <p class="text-sm text-gray-600">Channel Name:</p>
+                            <p class="font-medium text-gray-900">{{ application.channel_name|default:"Not available" }}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-600">Channel Link:</p>
+                            <a href="{{ application.channel_link }}" 
+                               target="_blank" 
+                               rel="noopener noreferrer"
+                               class="text-blue-600 hover:underline">
+                                {{ application.channel_link }}
+                            </a>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-600">Platform:</p>
+                            <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                {% if application.channel_type == 'youtube' %}bg-red-100 text-red-800
+                                {% else %}bg-black text-white{% endif %}">
+                                {{ application.get_channel_type_display }}
+                            </span>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-600">Followers:</p>
+                            <p class="font-medium text-gray-900">{{ application.follower_count|floatformat:0|default:"0" }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Application Details -->
+                <div class="bg-gray-50 p-6 rounded-lg">
+                    <h2 class="text-lg font-semibold text-gray-900 mb-4">Application Details</h2>
+                    <div class="space-y-3">
+                        <div>
+                            <p class="text-sm text-gray-600">Editor:</p>
+                            <p class="font-medium text-gray-900">{{ application.user.username }}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-600">Editing Area:</p>
+                            <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                                {{ application.get_editing_area_display }}
+                                {% if application.editing_area == 'others' and application.editing_area_other %}
+                                - {{ application.editing_area_other }}
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-600">Applied Date:</p>
+                            <p class="font-medium text-gray-900">{{ application.applied_date|date:"F d, Y H:i" }}</p>
+                        </div>
+                        {% if application.reviewed_date %}
+                        <div>
+                            <p class="text-sm text-gray-600">Reviewed Date:</p>
+                            <p class="font-medium text-gray-900">{{ application.reviewed_date|date:"F d, Y H:i" }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="border-t pt-6">
+                <div class="flex flex-wrap gap-4">
+                    {% if can_edit %}
+                    <a href="{% url 'edithub:ranking_table' %}" 
+                       class="px-6 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors">
+                        Back to Rankings
+                    </a>
+                    {% endif %}
+                    
+                    {% if can_remove %}
+                    <a href="{% url 'edithub:request_removal' pk=application.pk %}" 
+                       class="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+                        Request Removal
+                    </a>
+                    {% endif %}
+                    
+                    <a href="{% url 'edithub:ranking_table' %}" 
+                       class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                        View Rankings
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+{% endblock %}
+

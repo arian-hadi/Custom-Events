@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+
+{% block title %}Apply to EditingHub - 2.0Transformers{% endblock %}
+
+{% block content %}
+<main class="pt-16 bg-gradient-to-b from-white via-gray-50 to-gray-100 min-h-screen py-12">
+    <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="bg-white rounded-lg shadow-lg p-8">
+            <div class="text-center mb-8">
+                <h1 class="text-3xl font-bold text-gray-900 mb-2">Apply to EditingHub</h1>
+                <p class="text-gray-600">Join the ultimate editor ranking table</p>
+            </div>
+
+            <form method="POST" id="applicationForm" enctype="multipart/form-data" class="space-y-6">
+                {% csrf_token %}
+                
+                <!-- Channel Link -->
+                <div>
+                    <label for="{{ form.channel_link.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                        Channel Link *
+                    </label>
+                    {% render_field form.channel_link class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" %}
+                    {% if form.channel_link.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.channel_link.errors.0 }}</p>
+                    {% endif %}
+                    <p class="mt-1 text-sm text-gray-500">
+                        Enter your YouTube channel URL (e.g., https://www.youtube.com/@channelname) or TikTok profile URL (e.g., https://www.tiktok.com/@username)
+                    </p>
+                </div>
+                
+                <!-- Channel Screenshot -->
+                <div>
+                    <label for="{{ form.channel_screenshot.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                        Channel Screenshot *
+                    </label>
+                    {% render_field form.channel_screenshot %}
+                    {% if form.channel_screenshot.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.channel_screenshot.errors.0 }}</p>
+                    {% endif %}
+                    <p class="mt-1 text-sm text-gray-500">
+                        {{ form.channel_screenshot.help_text }}
+                    </p>
+                </div>
+
+                <!-- Editing Area -->
+                <div>
+                    <label for="{{ form.editing_area.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                        Editing Area *
+                    </label>
+                    {% render_field form.editing_area class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" %}
+                    {% if form.editing_area.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.editing_area.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Editing Area Other -->
+                <div id="editingAreaOtherDiv" class="hidden">
+                    <label for="{{ form.editing_area_other.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                        Specify Your Editing Area *
+                    </label>
+                    {% render_field form.editing_area_other class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" %}
+                    {% if form.editing_area_other.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.editing_area_other.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
+
+                <!-- Data Consent -->
+                <div class="flex items-start">
+                    <div class="flex items-center h-5">
+                        {% render_field form.data_consent class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" %}
+                    </div>
+                    <div class="ml-3 text-sm">
+                        <label for="{{ form.data_consent.id_for_label }}" class="font-medium text-gray-700">
+                            I consent to my data being displayed on this website and confirm it will not be used for any misuse *
+                        </label>
+                        {% if form.data_consent.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.data_consent.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Hidden channel_type field -->
+                {{ form.channel_type }}
+
+                <!-- Submit Button -->
+                <div class="pt-4">
+                    <button type="submit" 
+                            class="w-full px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transform hover:scale-105 transition-all duration-300 shadow-lg">
+                        Continue to Confirmation
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</main>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const editingAreaSelect = document.getElementById('{{ form.editing_area.id_for_label }}');
+    const editingAreaOtherDiv = document.getElementById('editingAreaOtherDiv');
+
+    // Show/hide editing_area_other field
+    editingAreaSelect.addEventListener('change', function() {
+        if (this.value === 'others') {
+            editingAreaOtherDiv.classList.remove('hidden');
+            document.getElementById('{{ form.editing_area_other.id_for_label }}').required = true;
+        } else {
+            editingAreaOtherDiv.classList.add('hidden');
+            document.getElementById('{{ form.editing_area_other.id_for_label }}').required = false;
+        }
+    });
+
+    // Check initial value
+    if (editingAreaSelect.value === 'others') {
+        editingAreaOtherDiv.classList.remove('hidden');
+    }
+});
+</script>
+{% endblock %}
+

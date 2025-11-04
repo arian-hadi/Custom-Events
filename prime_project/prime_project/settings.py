@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'events',
     'announcements',
     'shop',
+    'edithub',
     'tailwind',
     'theme',
     'ratelimit',
@@ -359,3 +360,8 @@ SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 RECAPTCHA_SITE_KEY = env("RECAPTCHA_SITE_KEY", default="")
 RECAPTCHA_SECRET_KEY = env("RECAPTCHA_SECRET_KEY", default="")
 RECAPTCHA_VERIFY_URL = "https://www.google.com/recaptcha/api/siteverify"
+
+# YouTube Data API v3 Settings (for EditingHub channel data fetching)
+# Get your API key from: https://console.cloud.google.com/apis/credentials
+# Note: TikTok channel data is fetched via web scraping (no API key required)
+YOUTUBE_API_KEY = env("YOUTUBE_API_KEY", default="")

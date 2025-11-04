@@ -36,46 +36,56 @@
     
     {% if user.is_authenticated %}
     <script>
-        const warningTime = 12 * 60 * 1000; // 12 minutes
-        const logoutTime = 15 * 60 * 1000;   // 15 minutes
+        document.addEventListener('DOMContentLoaded', function() {
+            const warningTime = 12 * 60 * 1000; // 12 minutes
+            const logoutTime = 15 * 60 * 1000;   // 15 minutes
 
-        let warningTimer, logoutTimer;
-        const modal = document.getElementById('idleModal');
-        const stayLoggedInBtn = document.getElementById('stayLoggedIn');
+            let warningTimer, logoutTimer;
+            const modal = document.getElementById('idleModal');
+            const stayLoggedInBtn = document.getElementById('stayLoggedIn');
 
-        function startTimers() {
-            warningTimer = setTimeout(showWarning, warningTime);
-            logoutTimer = setTimeout(forceLogout, logoutTime);
-        }
+            if (!modal || !stayLoggedInBtn) {
+                return; // Exit if elements don't exist
+            }
 
-        function resetTimers() {
-            clearTimeout(warningTimer);
-            clearTimeout(logoutTimer);
-            hideModal();
+            function startTimers() {
+                warningTimer = setTimeout(showWarning, warningTime);
+                logoutTimer = setTimeout(forceLogout, logoutTime);
+            }
+
+            function resetTimers() {
+                clearTimeout(warningTimer);
+                clearTimeout(logoutTimer);
+                hideModal();
+                startTimers();
+            }
+
+            function showWarning() {
+                if (modal) {
+                    modal.classList.remove('hidden');
+                }
+            }
+
+            function hideModal() {
+                if (modal) {
+                    modal.classList.add('hidden');
+                }
+            }
+
+            function forceLogout() {
+                window.location.href = "{% url 'logout' %}";
+            }
+
+            // Button click = reset timers
+            stayLoggedInBtn.addEventListener('click', () => {
+                hideModal();
+                resetTimers();
+            });
+
             startTimers();
-        }
-
-        function showWarning() {
-            modal.classList.remove('hidden');
-        }
-
-        function hideModal() {
-            modal.classList.add('hidden');
-        }
-
-        function forceLogout() {
-            window.location.href = "{% url 'logout' %}";
-        }
-
-        // Button click = reset timers
-        stayLoggedInBtn.addEventListener('click', () => {
-            hideModal();
-            resetTimers();
+            document.onmousemove = resetTimers;
+            document.onkeypress = resetTimers;
         });
-
-        window.onload = startTimers;
-        document.onmousemove = resetTimers;
-        document.onkeypress = resetTimers;
     </script>
     {% endif %}
 
