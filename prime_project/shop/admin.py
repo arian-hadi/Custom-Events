@@ -88,6 +88,10 @@ class SiteLogoAdmin(admin.ModelAdmin):
         ('Logo Information', {
             'fields': ('name', 'image', 'is_active')
         }),
+        ('Favicon', {
+            'fields': ('favicon',),
+            'description': 'Upload a favicon image for your site. Recommended: .ico, .png, or .svg format (32x32 or 16x16 pixels). This will appear in browser tabs.'
+        }),
         ('Timestamps', {
             'fields': ('created_at', 'updated_at'),
             'classes': ('collapse',)

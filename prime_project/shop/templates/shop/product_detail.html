@@ -234,34 +234,34 @@
 
     <!-- Related Products Section -->
     {% if related_products %}
-    <section class="bg-gray-50 py-12">
+    <section class="bg-gray-50 py-12" id="related-products">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <h2 class="text-3xl font-bold text-gray-900 mb-8">Related Products</h2>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div class="flex gap-3 sm:gap-4 lg:gap-6 overflow-x-auto snap-x snap-mandatory pb-4 -mx-4 px-4 sm:-mx-6 sm:px-6 lg:px-0 lg:mx-0 lg:grid lg:grid-cols-4 lg:overflow-visible lg:snap-none scrollbar-hide">
                 {% for related_product in related_products %}
-                <div class="bg-white rounded-lg border border-gray-200 hover:border-blue-300 shadow-sm hover:shadow-xl transform hover:-translate-y-2 transition-all duration-300 overflow-hidden group cursor-pointer">
+                <div class="bg-white rounded-lg border border-gray-200 hover:border-blue-300 shadow-sm hover:shadow-xl transform hover:-translate-y-2 transition-all duration-300 overflow-hidden group cursor-pointer flex-shrink-0 snap-start related-card" data-slide-index="{{ forloop.counter0 }}">
                     <a href="{% url 'shop:product_detail' related_product.id %}">
                         <div class="relative overflow-hidden bg-gray-100">
                             <img src="{{ related_product.thumbnail.url }}" 
                                  alt="{{ related_product.name }}"
-                                 class="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-300">
+                                 class="w-full h-32 sm:h-40 lg:h-48 object-cover group-hover:scale-110 transition-transform duration-300">
                             
                             {% if related_product.category == 'transformers_2_0' %}
-                            <div class="absolute top-2 left-2 flex items-center gap-1.5">
-                                {% if site_logo %}
-                                <img src="{{ site_logo.image.url }}" 
-                                     alt="{{ site_logo.name }}" 
-                                     class="w-5 h-5 rounded-full border-2 border-white shadow-lg object-cover">
-                                {% endif %}
-                                <span class="px-3 py-1 bg-blue-600 text-white text-xs font-semibold rounded-full shadow-lg">
-                                    2.0 Transformers
+                            <div class="absolute top-1 left-1 sm:top-2 sm:left-2">
+                                <span class="flex items-center gap-1.5 sm:gap-2 px-2 py-0.5 sm:px-3 sm:py-1 bg-blue-600 text-white text-[10px] sm:text-xs font-semibold rounded-full shadow-lg">
+                                    {% if site_logo %}
+                                    <img src="{{ site_logo.image.url }}" 
+                                         alt="{{ site_logo.name }}" 
+                                         class="w-4 h-4 sm:w-5 sm:h-5 rounded-full border border-white/80 object-cover">
+                                    {% endif %}
+                                    2.0TF
                                 </span>
                             </div>
                             {% elif related_product.category == 'merges_1_0' and related_product.show_ecommerce_badge %}
-                            <div class="absolute top-2 left-2">
-                                <span class="flex items-center px-3 py-1 bg-white text-gray-900 text-xs font-semibold rounded-full shadow-lg capitalize border border-gray-200">
+                            <div class="absolute top-1 left-1 sm:top-2 sm:left-2">
+                                <span class="flex items-center px-1.5 py-0.5 sm:px-3 sm:py-1 bg-white text-gray-900 text-[10px] sm:text-xs font-semibold rounded-full shadow-lg capitalize border border-gray-200">
                                     {% if related_product.ecommerce_platform == 'amazon' %}
-                                    <svg class="w-4 h-4 mr-1.5" viewBox="2.167 .438 251.038 259.969" fill="currentColor">
+                                    <svg class="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-1.5" viewBox="2.167 .438 251.038 259.969" fill="currentColor">
                                         <g fill-rule="evenodd">
                                             <path d="m221.503 210.324c-105.235 50.083-170.545 8.18-212.352-17.271-2.587-1.604-6.984.375-3.169 4.757 13.928 16.888 59.573 57.593 119.153 57.593 59.621 0 95.09-32.532 99.527-38.207 4.407-5.627 1.294-8.731-3.16-6.872zm29.555-16.322c-2.826-3.68-17.184-4.366-26.22-3.256-9.05 1.078-22.634 6.609-21.453 9.93.606 1.244 1.843.686 8.06.127 6.234-.622 23.698-2.826 27.337 1.931 3.656 4.79-5.57 27.608-7.255 31.288-1.628 3.68.622 4.629 3.68 2.178 3.016-2.45 8.476-8.795 12.14-17.774 3.639-9.028 5.858-21.622 3.71-24.424z" fill="#f90"/>
                                             <path d="m150.744 108.13c0 13.141.332 24.1-6.31 35.77-5.361 9.489-13.853 15.324-23.341 15.324-12.952 0-20.495-9.868-20.495-24.432 0-28.75 25.76-33.968 50.146-33.968zm34.015 82.216c-2.23 1.992-5.456 2.135-7.97.806-11.196-9.298-13.189-13.615-19.356-22.487-18.502 18.882-31.596 24.527-55.601 24.527-28.37 0-50.478-17.506-50.478-52.565 0-27.373 14.85-46.018 35.96-55.126 18.313-8.066 43.884-9.489 63.43-11.718v-4.365c0-8.018.616-17.506-4.08-24.432-4.128-6.215-12.003-8.777-18.93-8.777-12.856 0-24.337 6.594-27.136 20.257-.57 3.037-2.799 6.026-5.835 6.168l-32.735-3.51c-2.751-.618-5.787-2.847-5.028-7.07 7.543-39.66 43.36-51.616 75.43-51.616 16.415 0 37.858 4.365 50.81 16.795 16.415 15.323 14.849 35.77 14.849 58.02v52.565c0 15.798 6.547 22.724 12.714 31.264 2.182 3.036 2.657 6.69-.095 8.966-6.879 5.74-19.119 16.415-25.855 22.393l-.095-.095" fill="#000"/>
@@ -269,18 +269,33 @@
                                     </svg>
                                     Amazon
                                     {% elif related_product.ecommerce_platform == 'aliexpress' %}
-                                    <svg class="w-4 h-4 mr-1.5" fill="currentColor" viewBox="0 0 24 24">
-                                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
+                                    <svg class="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-1.5" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" fill-rule="evenodd" clip-rule="evenodd" stroke-linejoin="round" stroke-miterlimit="2">
+                                        <path d="M6 118.468C6 56.356 56.356 6 118.468 6H393.53C455.643 6 506 56.356 506 118.468V393.53C505.999 455.643 455.643 506 393.53 506H118.468C56.356 505.999 6 455.643 6 393.53V118.468z" fill="#f90" fill-rule="nonzero"/>
+                                        <path d="M6 159.843c0-50.206 40.7-90.906 90.912-90.906h318.18c50.207 0 90.907 40.7 90.907 90.906V393.53C505.999 455.643 455.643 506 393.53 506H118.468C56.356 505.999 6 455.643 6 393.53V159.843z" fill="#e43225" fill-rule="nonzero"/>
+                                        <path d="M145.28 149.78c1.888 7.7.826 16.013 2.676 23.838 6.469-4.731 10.775-12.543 9.894-20.68-.132-14.563-16.513-25.976-30.22-21.076-8.618 2.463-14.993 10.2-16.437 18.938-1.725 10.006 4.282 20.237 13.22 24.812-.882-8.619-2.957-17.706-.638-26.137 3.537-9.194 18.23-9.007 21.506.306zm255.056 10.438c3.144-11.3-3.693-24.4-14.9-28.018-10.774-4.232-24.112 1.156-28.862 11.656-5.294 9.719-2.094 23.55 7.588 29.244 1.912-7.8.5-16.163 2.768-23.744 3.619-9.056 18.131-8.794 21.431.387 2.1 8.207.2 16.825-.593 25.106 6.575-2.03 10.675-8.312 12.562-14.606l.006-.025z" fill="#b32100" fill-rule="nonzero"/>
+                                        <path d="M366.962 149.35c-2.282 7.662-.87 15.95-2.77 23.75-5.637 33.862-28.312 64.13-59.012 79.3a109.319 109.319 0 01-98.506-.126c-30.418-15.13-52.912-45.143-58.693-78.643-1.85-7.838-.8-16.063-2.681-23.838-3.263-9.237-17.963-9.506-21.507-.312-2.306 8.512-.23 17.531.644 26.137 6.463 41.875 34.481 79.475 72.437 98.138a133.42 133.42 0 0056.032 13.8 133.357 133.357 0 0056.612-11.138c41.05-17.725 71.737-57.312 78.3-101.6.793-8.281 2.693-16.906.587-25.106-3.312-9.181-17.812-9.431-21.437-.381l-.006.019zM164.893 391.061v-56.324h33.294v7.062h-26.4v17.319h23.712v7.062h-23.712v17.656h28.25v7.063h-35.144v.162zM235.018 391.061L223.587 376.1l-11.438 14.962h-8.068l15.637-20.006-16.481-20.68h9.081l11.269 15.468 11.431-15.469h8.913l-15.638 20.681 14.794 20.006h-8.069zM254.18 385.011v27.744h-6.893v-41.531c0-10.594 8.069-21.862 20.681-21.862 12.781 0 22.362 8.075 22.362 21.356 0 12.95-9.75 21.856-20.85 21.856-5.38 0-12.612-2.35-15.3-7.563zm28.92-14.293c0-9.081-5.882-14.463-16.307-13.956-5.044.168-12.781 3.868-12.106 16.812.169 4.206 4.537 12.106 14.125 12.106 8.237 0 14.287-4.706 14.287-14.962zM296.218 350.374h6.894v4.369c3.362-3.869 8.575-5.213 14.125-5.213v7.4c-.838-.168-9.082-1.175-14.125 9.582v24.718h-6.894v-40.856zM319.087 370.718c0-11.769 8.406-21.356 20.012-21.356 14.456 0 19.838 9.587 19.838 21.862v3.363h-32.282c.507 7.73 7.4 11.768 13.788 11.6 4.706-.17 7.9-1.513 11.262-4.876l4.544 4.707c-4.206 4.037-9.587 6.725-16.144 6.725-12.275-.169-21.018-9.244-21.018-22.025zm19.506-14.463c-6.556 0-11.6 5.719-11.938 11.938h25.05c0-6.05-4.368-11.938-13.112-11.938zM362.468 385.349l5.05-4.544c-.169 0 2.519 2.694 2.856 2.863 1.175 1.006 2.35 1.681 3.869 2.018 4.368 1.175 12.275.838 12.943-5.212.338-3.363-2.18-5.213-5.043-6.394-3.7-1.343-7.731-1.85-11.431-3.531-4.207-1.85-6.894-5.044-6.894-9.75 0-12.275 17.487-14.294 25.387-8.575.338.338 4.206 3.869 4.038 3.869l-5.044 4.031c-2.525-3.025-4.881-4.537-10.263-4.537-2.687 0-6.387 1.175-7.056 4.037-1.012 4.031 3.532 5.544 6.556 6.388 4.038 1.006 8.407 1.68 11.938 3.868 4.875 3.025 6.056 9.581 4.206 14.625-2.019 5.55-8.075 7.738-13.456 7.906-6.387.332-11.937-1.68-16.475-6.225-.337 0-1.181-.837-1.181-.837z"/>
                                     </svg>
                                     AliExpress
                                     {% elif related_product.ecommerce_platform == 'ebay' %}
-                                    <svg class="w-4 h-4 mr-1.5" fill="currentColor" viewBox="0 0 24 24">
-                                        <path d="M20.5 7.44V7.3c0-.64-.06-1.25-.18-1.82-.12-.57-.3-1.08-.54-1.52-.24-.44-.54-.8-.9-1.08-.36-.28-.78-.42-1.26-.42-.26 0-.5.05-.72.14-.22.09-.41.22-.57.38-.16.16-.29.35-.38.57-.09.22-.14.46-.14.72 0 .24.04.46.12.66.08.2.2.37.36.51.16.14.35.25.57.33.22.08.46.12.72.12.18 0 .35-.02.51-.06.16-.04.31-.1.45-.18.14-.08.27-.17.39-.28.12-.11.23-.24.33-.39.1-.15.18-.32.24-.51.06-.19.09-.4.09-.63 0-.23-.03-.44-.09-.63-.06-.19-.14-.36-.24-.51-.1-.15-.21-.28-.33-.39-.12-.11-.25-.2-.39-.28-.14-.08-.29-.14-.45-.18-.16-.04-.33-.06-.51-.06-.26 0-.5.04-.72.12-.22.08-.41.19-.57.33-.16.14-.28.31-.36.51-.08.2-.12.42-.12.66 0 .26.05.5.14.72.09.22.22.41.38.57.16.16.35.29.57.38.22.09.46.14.72.14.48 0 .9-.14 1.26-.42.36-.28.66-.64.9-1.08.24-.44.42-.95.54-1.52.12-.57.18-1.18.18-1.82v-.14h-5.5v7.5h1.5v-6h4v.5z"/>
+                                    <svg class="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-1.5" viewBox="0 0 1000 400.75098" xmlns="http://www.w3.org/2000/svg">
+                                        <style>
+                                            .ebay-cls-1 { fill: #0968f6; }
+                                            .ebay-cls-1, .ebay-cls-2, .ebay-cls-3, .ebay-cls-4 { stroke-width: 0px; }
+                                            .ebay-cls-2 { fill: #92c821; }
+                                            .ebay-cls-3 { fill: #f02d2d; }
+                                            .ebay-cls-4 { fill: #ffbd14; }
+                                        </style>
+                                        <g>
+                                            <path class="ebay-cls-4" d="m 633.07803,212.53323 c -45.43873,1.48929 -73.6715,9.689 -73.6715,39.61897 0,19.37591 15.44713,40.38162 54.66334,40.38162 52.57698,0 80.64259,-28.65902 80.64259,-75.66331 l 0.003,-5.16994 c -18.43302,0 -41.16414,0.16089 -61.63704,0.83266 z m 111.75103,62.10248 c 0,14.58313 0.42155,28.9782 1.69406,41.94092 h -46.61408 c -1.24325,-10.67368 -1.6972,-21.27945 -1.6972,-31.56656 -25.20195,30.97941 -55.17735,39.88537 -96.76149,39.88537 -61.67674,0 -94.70072,-32.59982 -94.70072,-70.30689 0,-54.61215 44.91583,-73.86739 122.89013,-75.65391 21.32332,-0.48686 45.27419,-0.55894 65.07531,-0.55894 l -0.003,-5.33606 c 0,-36.56098 -23.44364,-51.59335 -64.06765,-51.59335 -30.15876,0 -52.38579,12.48057 -54.6764,34.0468 h -52.65168 c 5.57217,-53.77165 62.06643,-67.37115 111.74005,-67.37115 59.50837,0 109.77228,21.17288 109.77228,84.11481 z"/>
+                                            <path class="ebay-cls-3" d="m 199.63633,185.86602 c -1.94427,-46.87735 -35.77951,-64.41973 -71.94139,-64.41973 -38.99421,0 -70.12667,19.7327 -75.58026,64.41973 z M 51.034408,219.1909 c 2.704332,45.48365 34.069782,72.38437 77.197532,72.38437 29.88033,0 56.45979,-12.17498 65.35948,-38.66041 h 51.68424 c -10.05205,53.73979 -67.15384,71.98058 -116.303,71.98058 C 39.606424,324.89544 0,275.67889 0,209.30653 0,136.24203 40.965642,88.12194 129.78809,88.12194 c 70.69867,0 122.49992,36.99926 122.49992,117.75572 v 13.31324 z"/>
+                                            <path class="ebay-cls-1" d="m 380.83181,290.6235 c 46.57228,0 78.44078,-33.52181 78.44078,-84.10854 0,-50.58203 -31.8685,-84.10854 -78.44078,-84.10854 -46.31058,0 -78.44392,33.52651 -78.44392,84.10854 0,50.58673 32.13334,84.10854 78.44392,84.10854 z M 252.2854,0 h 50.10249 l -0.005,125.87707 c 24.55682,-29.25975 58.38892,-37.75513 91.68976,-37.75513 55.83503,0 117.85132,37.6773 117.85132,119.02875 0,68.12232 -49.32155,117.74475 -118.78114,117.74475 -36.35726,0 -70.58062,-13.04265 -91.68663,-38.88294 0,10.32107 -0.57618,20.72364 -1.70503,30.56413 h -49.17162 c 0.85513,-15.90944 1.70555,-35.7184 1.70555,-51.74693 z"/>
+                                            <path class="ebay-cls-2" d="M 1000,96.45747 845.05541,400.75099 H 788.94926 L 833.49578,316.25589 716.89033,96.45747 h 58.6266 l 85.80469,171.73057 85.56283,-171.73057 z"/>
+                                        </g>
                                     </svg>
                                     eBay
                                     {% else %}
-                                    <i class="fas fa-shopping-cart mr-1.5"></i>
-                                    {{ related_product.get_ecommerce_platform_display }}
+                                    <i class="fas fa-shopping-cart text-xs sm:text-sm mr-1 sm:mr-1.5"></i>
+                                    <span class="hidden sm:inline">{{ related_product.get_ecommerce_platform_display }}</span>
                                     {% endif %}
                                 </span>
                             </div>
@@ -289,27 +304,30 @@
                             {% if related_product.is_free %}
                             <div class="absolute bottom-2 left-2 right-2">
                                 <span class="block px-3 py-1 bg-green-600 text-white text-xs font-bold rounded-full shadow-lg text-center">
-                                    FREE
+                                    FREE NOW
                                 </span>
                             </div>
                             {% endif %}
                         </div>
                         
-                        <div class="p-4">
-                            <h3 class="text-lg font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors line-clamp-2">
+                        <div class="p-2 sm:p-4">
+                            <h3 class="text-sm sm:text-base lg:text-lg font-semibold text-gray-900 mb-1 sm:mb-2 group-hover:text-blue-600 transition-colors line-clamp-2 leading-tight">
                                 {{ related_product.name }}
                             </h3>
                             
-                            <div class="flex items-center justify-between">
+                            <div class="flex items-center justify-between mb-2 sm:mb-4">
                                 {% if related_product.is_free %}
-                                <span class="text-xl font-bold text-green-600">FREE</span>
+                                <span class="text-lg sm:text-xl lg:text-2xl font-bold text-green-600">FREE</span>
                                 {% elif related_product.discount_active and related_product.discounted_price %}
-                                <div>
-                                    <span class="text-lg font-bold text-gray-900">${{ related_product.discounted_price }}</span>
-                                    <span class="text-sm text-gray-500 line-through ml-2">${{ related_product.original_price }}</span>
+                                <div class="flex items-baseline gap-1 sm:gap-2 flex-wrap">
+                                    <span class="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">${{ related_product.discounted_price }}</span>
+                                    <span class="px-1.5 sm:px-2 py-0.5 bg-red-600 text-white text-[10px] sm:text-xs font-bold rounded">
+                                        -{{ related_product.get_discount_percentage }}%
+                                    </span>
+                                    <span class="text-xs sm:text-sm text-gray-500 line-through">${{ related_product.original_price }}</span>
                                 </div>
                                 {% else %}
-                                <span class="text-lg font-bold text-gray-900">${{ related_product.original_price }}</span>
+                                <span class="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">${{ related_product.original_price }}</span>
                                 {% endif %}
                             </div>
                         </div>
@@ -321,6 +339,49 @@
     </section>
     {% endif %}
 </main>
+
+<style>
+/* Hide scrollbar but keep functionality */
+.scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
+}
+
+/* Mobile: 2 cards per row with proper spacing */
+@media (max-width: 639.98px) {
+    #related-products .related-card {
+        min-width: calc((100% - 0.75rem) / 2);
+        max-width: calc((100% - 0.75rem) / 2);
+    }
+}
+
+/* Small tablets: 2 cards */
+@media (min-width: 640px) and (max-width: 767.98px) {
+    #related-products .related-card {
+        min-width: calc((100% - 1rem) / 2);
+        max-width: calc((100% - 1rem) / 2);
+    }
+}
+
+/* Tablets: 3 cards */
+@media (min-width: 768px) and (max-width: 1023.98px) {
+    #related-products .related-card {
+        min-width: calc((100% - 2rem) / 3);
+        max-width: calc((100% - 2rem) / 3);
+    }
+}
+
+/* Desktop: grid layout (no min-width needed) */
+@media (min-width: 1024px) {
+    #related-products .related-card {
+        min-width: 0;
+        max-width: none;
+    }
+}
+</style>
 
 <script>
 const hasVideo = {% if product.category == 'transformers_2_0' and product.video_url %}true{% else %}false{% endif %};

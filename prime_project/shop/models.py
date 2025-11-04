@@ -163,6 +163,12 @@ class SiteLogo(models.Model):
         upload_to='site/logo/',
         help_text="Upload your main site logo/channel image"
     )
+    favicon = models.ImageField(
+        upload_to='site/favicon/',
+        blank=True,
+        null=True,
+        help_text="Upload your site favicon (recommended: .ico, .png, or .svg format, 32x32 or 16x16 pixels)"
+    )
     is_active = models.BooleanField(
         default=True,
         help_text="Only one logo can be active at a time. Setting this to active will deactivate others."
