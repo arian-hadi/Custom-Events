@@ -1,5 +1,7 @@
 from django.contrib import admin
 from django_summernote.admin import SummernoteModelAdmin  # Uncomment after rebuilding container
+from django_ckeditor_5.widgets import CKEditor5Widget
+from django.db import models
 from .models import Product, SiteLogo
 
 
@@ -26,7 +28,11 @@ class ProductAdmin(admin.ModelAdmin):  # Temporarily use ModelAdmin until contai
     search_fields = ('name', 'description')
     ordering = ('-created_at',)
     date_hierarchy = 'created_at'
-    summernote_fields = ('description',)  # Uncomment after rebuilding container
+    
+    def formfield_for_dbfield(self, db_field, **kwargs):
+        if db_field.name == 'description':
+            kwargs['widget'] = CKEditor5Widget(config_name='extends')
+        return super().formfield_for_dbfield(db_field, **kwargs)
     
     fieldsets = (
         ('Basic Information', {
