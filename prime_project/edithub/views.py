@@ -60,6 +60,7 @@ class RankingTableView(ListView):
             queryset = base_queryset
 
         self.channel_filter = channel_filter
+        self.full_queryset = queryset
         return queryset
     
     def get_context_data(self, **kwargs):
@@ -73,21 +74,64 @@ class RankingTableView(ListView):
             'tiktok': 0,
         })
         channel_filter = context['channel_filter']
+        show_all = self.request.GET.get('all') == '1'
+        context['show_all'] = show_all
+        context['search_query'] = getattr(self, 'search_query', '') if hasattr(self, 'search_query') else self.request.GET.get('q', '')
 
         if channel_filter == 'mix':
             mix_entries = self._build_mix_entries()
-            paginator = Paginator(mix_entries, self.paginate_by)
-            page_number = self.request.GET.get('page')
-            page_obj = paginator.get_page(page_number)
-            context['rankings'] = page_obj.object_list
-            context['object_list'] = page_obj.object_list
-            context['page_obj'] = page_obj
-            context['is_paginated'] = page_obj.has_other_pages()
-            context['paginator'] = paginator
+
+            # current user rank (mix)
+            current_user_rank = None
+            if self.request.user.is_authenticated:
+                for entry in mix_entries:
+                    if entry.get('user') == self.request.user:
+                        current_user_rank = entry.get('rank')
+                        break
+            context['current_user_rank'] = current_user_rank
+
+            if show_all:
+                paginator = Paginator(mix_entries, self.paginate_by)
+                page_number = self.request.GET.get('page')
+                page_obj = paginator.get_page(page_number)
+                context['rankings'] = page_obj.object_list
+                context['object_list'] = page_obj.object_list
+                context['page_obj'] = page_obj
+                context['is_paginated'] = page_obj.has_other_pages()
+                context['paginator'] = paginator
+            else:
+                context['rankings'] = mix_entries[:5]
+                context['object_list'] = mix_entries[:5]
+                context['is_paginated'] = False
             context['total_editors'] = len(mix_entries)
         else:
-            channel_counts = context['channel_counts']
-            context['total_editors'] = channel_counts.get(channel_filter, 0)
+            queryset = getattr(self, 'full_queryset', super().get_queryset())
+            # current user rank (platform)
+            current_user_rank = None
+            if self.request.user.is_authenticated:
+                ids = list(queryset.values_list('user_id', flat=True))
+                try:
+                    idx = ids.index(self.request.user.id)
+                    current_user_rank = idx + 1
+                except ValueError:
+                    current_user_rank = None
+            context['current_user_rank'] = current_user_rank
+
+            if show_all:
+                paginator = Paginator(queryset, self.paginate_by)
+                page_number = self.request.GET.get('page')
+                page_obj = paginator.get_page(page_number)
+                context['rankings'] = page_obj.object_list
+                context['object_list'] = page_obj.object_list
+                context['page_obj'] = page_obj
+                context['is_paginated'] = page_obj.has_other_pages()
+                context['paginator'] = paginator
+            else:
+                top5 = list(queryset[:5])
+                context['rankings'] = top5
+                context['object_list'] = top5
+                context['is_paginated'] = False
+            context['total_editors'] = queryset.count()
         
         return context
 

@@ -23,8 +23,36 @@
         </div>
     </section>
 
-    <!-- Filter Section -->
-    <section class="py-8 bg-white border-b">
+    {% if not show_all %}
+    <!-- Platform Tabs (visible in summary/highlight view) -->
+    <section class="py-4 bg-white border-b">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="inline-flex flex-wrap rounded-lg border border-gray-200 overflow-hidden shadow-sm">
+                <a href="?channel_filter=mix{% if selected_area %}&editing_area={{ selected_area }}{% endif %}"
+                   class="flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors {% if channel_filter == 'mix' %}bg-blue-600 text-white{% else %}bg-white text-gray-700 hover:bg-gray-50{% endif %}">
+                    <span class="flex items-center gap-2">
+                        <i class="fab fa-youtube {% if channel_filter == 'mix' %}text-white{% else %}text-red-600{% endif %}"></i>
+                        <i class="fab fa-tiktok {% if channel_filter == 'mix' %}text-white{% else %}text-gray-900{% endif %}"></i>
+                    </span>
+                    <span>Mix ({{ channel_counts.mix }})</span>
+                </a>
+                <a href="?channel_filter=youtube{% if selected_area %}&editing_area={{ selected_area }}{% endif %}"
+                   class="flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors {% if channel_filter == 'youtube' %}bg-red-600 text-white{% else %}bg-white text-gray-700 hover:bg-gray-50{% endif %}">
+                    <i class="fab fa-youtube {% if channel_filter == 'youtube' %}text-white{% else %}text-red-600{% endif %}"></i>
+                    <span>YouTube ({{ channel_counts.youtube }})</span>
+                </a>
+                <a href="?channel_filter=tiktok{% if selected_area %}&editing_area={{ selected_area }}{% endif %}"
+                   class="flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors {% if channel_filter == 'tiktok' %}bg-black text-white{% else %}bg-white text-gray-700 hover:bg-gray-50{% endif %}">
+                    <i class="fab fa-tiktok {% if channel_filter == 'tiktok' %}text-white{% else %}text-gray-900{% endif %}"></i>
+                    <span>TikTok ({{ channel_counts.tiktok }})</span>
+                </a>
+            </div>
+        </div>
+    </section>
+    {% endif %}
+
+    <!-- Filter/Search Section (hidden in highlight mode) -->
+    <section class="py-8 bg-white border-b {% if not show_all %}hidden{% endif %}">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <form method="GET" class="flex flex-wrap gap-4 items-center">
                 <label class="text-gray-700 font-medium">Filter by Area:</label>
@@ -38,6 +66,9 @@
                     {% endfor %}
                 </select>
                 <input type="hidden" name="channel_filter" value="{{ channel_filter }}">
+                {% if show_all %}
+                <input type="text" name="q" value="{{ search_query }}" placeholder="Search name or username" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+                {% endif %}
                 <button type="submit" 
                         class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
                     Filter
@@ -117,7 +148,16 @@
                                         </div>
                                         {% endif %}
                                         <div>
-                                            <div class="text-sm font-semibold text-gray-900">
+                                            <button type="button"
+                                                    class="text-sm font-semibold text-gray-900 hover:underline open-profile"
+                                                    data-profile-type="mix"
+                                                    data-display-name="{% if ranking.youtube and ranking.youtube.channel_name %}{{ ranking.youtube.channel_name }}{% elif ranking.tiktok and ranking.tiktok.channel_name %}{{ ranking.tiktok.channel_name }}{% else %}{{ ranking.display_user_name }}{% endif %}"
+                                                    data-youtube-link="{% if ranking.youtube %}{{ ranking.youtube.channel_link }}{% endif %}"
+                                                    data-youtube-name="{% if ranking.youtube %}{{ ranking.youtube.channel_name }}{% endif %}"
+                                                    data-youtube-followers="{% if ranking.youtube %}{{ ranking.youtube.follower_count|default:0 }}{% endif %}"
+                                                    data-tiktok-link="{% if ranking.tiktok %}{{ ranking.tiktok.channel_link }}{% endif %}"
+                                                    data-tiktok-name="{% if ranking.tiktok %}{{ ranking.tiktok.channel_name }}{% endif %}"
+                                                    data-tiktok-followers="{% if ranking.tiktok %}{{ ranking.tiktok.follower_count|default:0 }}{% endif %}">
                                                 {% if ranking.youtube and ranking.youtube.channel_name %}
                                                     {{ ranking.youtube.channel_name }}
                                                 {% elif ranking.tiktok and ranking.tiktok.channel_name %}
@@ -125,7 +165,7 @@
                                                 {% else %}
                                                     {{ ranking.display_user_name }}
                                                 {% endif %}
-                                            </div>
+                                            </button>
                                         </div>
                                     </div>
                                 </td>
@@ -159,14 +199,16 @@
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="flex flex-wrap gap-2">
                                         {% if ranking.youtube %}
-                                        <span class="px-3 py-1 inline-flex items-center gap-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
+                                        <a href="{{ ranking.youtube.channel_link }}" target="_blank" rel="noopener noreferrer"
+                                           class="px-3 py-1 inline-flex items-center gap-1 text-xs font-semibold rounded-full bg-red-100 text-red-800 hover:bg-red-200">
                                             <i class="fab fa-youtube"></i> YouTube
-                                        </span>
+                                        </a>
                                         {% endif %}
                                         {% if ranking.tiktok %}
-                                        <span class="px-3 py-1 inline-flex items-center gap-1 text-xs font-semibold rounded-full bg-black text-white">
+                                        <a href="{{ ranking.tiktok.channel_link }}" target="_blank" rel="noopener noreferrer"
+                                           class="px-3 py-1 inline-flex items-center gap-1 text-xs font-semibold rounded-full bg-black text-white hover:opacity-90">
                                             <i class="fab fa-tiktok"></i> TikTok
-                                        </span>
+                                        </a>
                                         {% endif %}
                                     </div>
                                 </td>
@@ -197,13 +239,15 @@
                                              class="h-10 w-10 rounded-full mr-3">
                                         {% endif %}
                                         <div>
-                                            <div class="text-sm font-medium text-gray-900">{{ ranking.channel_name|default:"Unknown" }}</div>
-                                            <a href="{{ ranking.channel_link }}" 
-                                               target="_blank" 
-                                               rel="noopener noreferrer"
-                                               class="text-xs text-blue-600 hover:underline">
-                                                View Channel →
-                                            </a>
+                                            <button type="button"
+                                                    class="text-sm font-medium text-gray-900 hover:underline open-profile"
+                                                    data-profile-type="single"
+                                                    data-display-name="{{ ranking.channel_name|default:'Unknown' }}"
+                                                    data-platform="{{ ranking.channel_type }}"
+                                                    data-link="{{ ranking.channel_link }}"
+                                                    data-followers="{{ ranking.follower_count|default:0 }}">
+                                                {{ ranking.channel_name|default:"Unknown" }}
+                                            </button>
                                         </div>
                                     </div>
                                 </td>
@@ -230,9 +274,10 @@
                                     </span>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="px-3 py-1 inline-flex items-center gap-2 text-xs leading-5 font-semibold rounded-full 
-                                        {% if ranking.channel_type == 'youtube' %}bg-red-100 text-red-800
-                                        {% else %}bg-black text-white{% endif %}">
+                                    <a href="{{ ranking.channel_link }}" target="_blank" rel="noopener noreferrer"
+                                       class="px-3 py-1 inline-flex items-center gap-2 text-xs leading-5 font-semibold rounded-full 
+                                        {% if ranking.channel_type == 'youtube' %}bg-red-100 text-red-800 hover:bg-red-200
+                                        {% else %}bg-black text-white hover:opacity-90{% endif %}">
                                         {% if ranking.channel_type == 'youtube' %}
                                         <i class="fab fa-youtube"></i>
                                         YouTube
@@ -240,7 +285,7 @@
                                         <i class="fab fa-tiktok"></i>
                                         TikTok
                                         {% endif %}
-                                    </span>
+                                    </a>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="text-sm font-semibold text-gray-900">
@@ -254,6 +299,13 @@
                     </table>
                 </div>
             </div>
+
+            {% if not show_all %}
+            <div class="mt-6 flex justify-center">
+                <a href="?all=1{% if channel_filter %}&channel_filter={{ channel_filter }}{% endif %}{% if selected_area %}&editing_area={{ selected_area }}{% endif %}"
+                   class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700">View All</a>
+            </div>
+            {% endif %}
 
             <!-- Pagination -->
             {% if is_paginated %}
@@ -289,6 +341,106 @@
             {% endif %}
         </div>
     </section>
+
+    <!-- Profile Modal -->
+    <div id="profileModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-lg p-6 relative">
+            <button type="button" id="closeProfileModal" class="absolute top-3 right-3 text-gray-500 hover:text-gray-700">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+
+            <div class="mb-4">
+                <h3 id="modalDisplayName" class="text-xl font-semibold text-gray-900">Profile</h3>
+                <p class="text-xs text-gray-500">More details will be added here later.</p>
+            </div>
+
+            <div id="modalPlatforms" class="space-y-3">
+                <!-- Filled by JS: platform rows with link and followers -->
+            </div>
+
+            <div class="mt-6 text-right">
+                <button type="button" id="closeProfileModal2" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const modal = document.getElementById('profileModal');
+        const closeBtns = [document.getElementById('closeProfileModal'), document.getElementById('closeProfileModal2')];
+        const nameEl = document.getElementById('modalDisplayName');
+        const platformsEl = document.getElementById('modalPlatforms');
+
+        function openModal() {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+        function closeModal() {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+        closeBtns.forEach(btn => btn && btn.addEventListener('click', closeModal));
+        modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+
+        function platformRow(iconHtml, label, link, followers) {
+            if (!link) return '';
+            const safeFollowers = followers ? String(followers) : '0';
+            return `
+                <a href="${link}" target="_blank" rel="noopener noreferrer"
+                   class="flex items-center justify-between gap-3 px-4 py-3 border rounded-md hover:bg-gray-50">
+                    <span class="inline-flex items-center gap-2 text-sm font-medium text-gray-800">
+                        ${iconHtml}
+                        ${label}
+                    </span>
+                    <span class="text-xs text-gray-500">Followers: ${safeFollowers}</span>
+                </a>`;
+        }
+
+        document.querySelectorAll('.open-profile').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const type = btn.getAttribute('data-profile-type');
+                const displayName = btn.getAttribute('data-display-name') || 'Profile';
+                nameEl.textContent = displayName;
+                platformsEl.innerHTML = '';
+
+                if (type === 'mix') {
+                    const ytLink = btn.getAttribute('data-youtube-link');
+                    const ytFollowers = btn.getAttribute('data-youtube-followers');
+                    const tkLink = btn.getAttribute('data-tiktok-link');
+                    const tkFollowers = btn.getAttribute('data-tiktok-followers');
+                    platformsEl.innerHTML += platformRow('<i class="fab fa-youtube text-red-600"></i>', 'YouTube', ytLink, ytFollowers);
+                    platformsEl.innerHTML += platformRow('<i class="fab fa-tiktok"></i>', 'TikTok', tkLink, tkFollowers);
+                } else {
+                    const platform = btn.getAttribute('data-platform');
+                    const link = btn.getAttribute('data-link');
+                    const followers = btn.getAttribute('data-followers');
+                    if (platform === 'youtube') {
+                        platformsEl.innerHTML = platformRow('<i class="fab fa-youtube text-red-600"></i>', 'YouTube', link, followers);
+                    } else {
+                        platformsEl.innerHTML = platformRow('<i class="fab fa-tiktok"></i>', 'TikTok', link, followers);
+                    }
+                }
+
+                openModal();
+            });
+        });
+    });
+    </script>
+
+    {% if current_user_rank %}
+    <div class="fixed bottom-0 left-0 right-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="mb-4">
+                <div class="bg-white border border-gray-200 shadow-lg rounded-t-lg px-4 py-3 flex items-center justify-between">
+                    <div class="text-sm text-gray-700">Your current rank ({{ channel_filter|title }})</div>
+                    <div class="text-lg font-semibold text-gray-900">#{{ current_user_rank }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
 </main>
 {% endblock %}
 
