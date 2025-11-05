@@ -75,7 +75,7 @@ class EditorApplicationForm(forms.ModelForm):
         
         if not self.data:
             self.initial.setdefault('channel_type', 'youtube')
-            self.initial.setdefault('editing_tool', 'premiere')
+            self.initial.setdefault('editing_tool', 'after_effects')
 
         # Make editing_area_other required if editing_area is 'others'
         if self.data and 'editing_area' in self.data:

@@ -37,11 +37,36 @@
                     </option>
                     {% endfor %}
                 </select>
+                <input type="hidden" name="channel_filter" value="{{ channel_filter }}">
                 <button type="submit" 
                         class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
                     Filter
                 </button>
             </form>
+
+            <div class="mt-6">
+                <span class="block text-gray-700 font-medium mb-3">Filter by Platform:</span>
+                <div class="inline-flex flex-wrap rounded-lg border border-gray-200 overflow-hidden shadow-sm">
+                    <a href="?channel_filter=mix{% if selected_area %}&editing_area={{ selected_area }}{% endif %}"
+                       class="flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors {% if channel_filter == 'mix' %}bg-blue-600 text-white{% else %}bg-white text-gray-700 hover:bg-gray-50{% endif %}">
+                        <span class="flex items-center gap-2">
+                            <i class="fab fa-youtube {% if channel_filter == 'mix' %}text-white{% else %}text-red-600{% endif %}"></i>
+                            <i class="fab fa-tiktok {% if channel_filter == 'mix' %}text-white{% else %}text-gray-900{% endif %}"></i>
+                        </span>
+                        <span>Mix ({{ channel_counts.mix }})</span>
+                    </a>
+                    <a href="?channel_filter=youtube{% if selected_area %}&editing_area={{ selected_area }}{% endif %}"
+                       class="flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors {% if channel_filter == 'youtube' %}bg-red-600 text-white{% else %}bg-white text-gray-700 hover:bg-gray-50{% endif %}">
+                        <i class="fab fa-youtube {% if channel_filter == 'youtube' %}text-white{% else %}text-red-600{% endif %}"></i>
+                        <span>YouTube ({{ channel_counts.youtube }})</span>
+                    </a>
+                    <a href="?channel_filter=tiktok{% if selected_area %}&editing_area={{ selected_area }}{% endif %}"
+                       class="flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors {% if channel_filter == 'tiktok' %}bg-black text-white{% else %}bg-white text-gray-700 hover:bg-gray-50{% endif %}">
+                        <i class="fab fa-tiktok {% if channel_filter == 'tiktok' %}text-white{% else %}text-gray-900{% endif %}"></i>
+                        <span>TikTok ({{ channel_counts.tiktok }})</span>
+                    </a>
+                </div>
+            </div>
         </div>
     </section>
 
@@ -59,21 +84,115 @@
                                 <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Editing Tool</th>
                                 <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Area</th>
                                 <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Platform</th>
-                                <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Followers</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">
+                                    {% if channel_filter == 'mix' %}
+                                    Followers (YouTube + TikTok)
+                                    {% else %}
+                                    Followers
+                                    {% endif %}
+                                </th>
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
                             {% for ranking in rankings %}
                             <tr class="hover:bg-gray-50 transition-colors">
+                                {% if channel_filter == 'mix' %}
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="flex items-center">
-                                        {% if ranking.rank_position <= 3 %}
-                                        <span class="text-2xl font-bold {% if ranking.rank_position == 1 %}text-yellow-500{% elif ranking.rank_position == 2 %}text-gray-400{% else %}text-orange-600{% endif %}">
-                                            {% if ranking.rank_position == 1 %}🥇{% elif ranking.rank_position == 2 %}🥈{% else %}🥉{% endif %}
+                                        {% if ranking.rank <= 3 %}
+                                        <span class="text-2xl font-bold {% if ranking.rank == 1 %}text-yellow-500{% elif ranking.rank == 2 %}text-gray-400{% else %}text-orange-600{% endif %}">
+                                            {% if ranking.rank == 1 %}🥇{% elif ranking.rank == 2 %}🥈{% else %}🥉{% endif %}
                                         </span>
                                         {% endif %}
-                                        <span class="ml-2 text-lg font-semibold text-gray-900">#{{ ranking.rank_position|default:forloop.counter }}</span>
+                                        <span class="ml-2 text-lg font-semibold text-gray-900">#{{ ranking.rank }}</span>
                                     </div>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center gap-3">
+                                        {% if ranking.display_thumbnail %}
+                                        <img src="{{ ranking.display_thumbnail }}" alt="{{ ranking.display_user_name }}" class="h-12 w-12 rounded-full object-cover shadow-sm">
+                                        {% else %}
+                                        <div class="h-12 w-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-semibold shadow-sm">
+                                            {{ ranking.display_user_name|first|upper }}
+                                        </div>
+                                        {% endif %}
+                                        <div>
+                                            <div class="text-sm font-semibold text-gray-900">{{ ranking.display_user_name }}</div>
+                                            <div class="flex flex-wrap gap-2 text-xs text-gray-500 mt-1">
+                                                {% if ranking.youtube %}
+                                                <span class="inline-flex items-center gap-1">
+                                                    <i class="fab fa-youtube text-red-600"></i>
+                                                    {{ ranking.youtube.get_status_display }}
+                                                </span>
+                                                {% endif %}
+                                                {% if ranking.tiktok %}
+                                                <span class="inline-flex items-center gap-1">
+                                                    <i class="fab fa-tiktok text-gray-900"></i>
+                                                    {{ ranking.tiktok.get_status_display }}
+                                                </span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center gap-3" title="Editing Tools">
+                                        {% for app in ranking.apps %}
+                                        <span class="inline-flex items-center justify-center" aria-hidden="true" title="{{ app.get_editing_tool_display }}">
+                                            {{ app.editing_tool_icon|safe }}
+                                        </span>
+                                        {% endfor %}
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex flex-wrap gap-2">
+                                        {% for area in ranking.areas %}
+                                        <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                            {% if area.key == 'transformers' %}bg-blue-100 text-blue-800
+                                            {% elif area.key == 'dc' %}bg-red-100 text-red-800
+                                            {% elif area.key == 'marvel' %}bg-yellow-100 text-yellow-800
+                                            {% elif area.key == 'anime' %}bg-pink-100 text-pink-800
+                                            {% elif area.key == 'all' %}bg-purple-100 text-purple-800
+                                            {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                            {{ area.label }}
+                                            {% if area.extra %}
+                                            - {{ area.extra }}
+                                            {% endif %}
+                                        </span>
+                                        {% endfor %}
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex flex-wrap gap-2">
+                                        {% if ranking.youtube %}
+                                        <span class="px-3 py-1 inline-flex items-center gap-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
+                                            <i class="fab fa-youtube"></i> YouTube
+                                        </span>
+                                        {% endif %}
+                                        {% if ranking.tiktok %}
+                                        <span class="px-3 py-1 inline-flex items-center gap-1 text-xs font-semibold rounded-full bg-black text-white">
+                                            <i class="fab fa-tiktok"></i> TikTok
+                                        </span>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm font-semibold text-gray-900">
+                                        {{ ranking.total_followers|floatformat:0|default:"0" }}
+                                    </div>
+                                </td>
+                                {% else %}
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    {% with position=forloop.counter0|add:page_obj.start_index %}
+                                    <div class="flex items-center">
+                                        {% if position <= 3 %}
+                                        <span class="text-2xl font-bold {% if position == 1 %}text-yellow-500{% elif position == 2 %}text-gray-400{% else %}text-orange-600{% endif %}">
+                                            {% if position == 1 %}🥇{% elif position == 2 %}🥈{% elif position == 3 %}🥉{% endif %}
+                                        </span>
+                                        {% endif %}
+                                        <span class="ml-2 text-lg font-semibold text-gray-900">#{{ position }}</span>
+                                    </div>
+                                    {% endwith %}
                                 </td>
                                 <td class="px-6 py-4">
                                     <div class="flex items-center">
@@ -94,9 +213,9 @@
                                     </div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="flex items-center">
-                                        <span class="text-2xl" title="{{ ranking.get_editing_tool_display }}">
-                                            <i class="{{ ranking.editing_tool_icon }}"></i>
+                                    <div class="flex items-center" title="{{ ranking.get_editing_tool_display }}">
+                                        <span class="inline-flex items-center justify-center" aria-hidden="true">
+                                            {{ ranking.editing_tool_icon|safe }}
                                         </span>
                                         <span class="sr-only">{{ ranking.get_editing_tool_display }}</span>
                                     </div>
@@ -116,10 +235,16 @@
                                     </span>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                    <span class="px-3 py-1 inline-flex items-center gap-2 text-xs leading-5 font-semibold rounded-full 
                                         {% if ranking.channel_type == 'youtube' %}bg-red-100 text-red-800
                                         {% else %}bg-black text-white{% endif %}">
-                                        {% if ranking.channel_type == 'youtube' %}YouTube{% else %}TikTok{% endif %}
+                                        {% if ranking.channel_type == 'youtube' %}
+                                        <i class="fab fa-youtube"></i>
+                                        YouTube
+                                        {% else %}
+                                        <i class="fab fa-tiktok"></i>
+                                        TikTok
+                                        {% endif %}
                                     </span>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
@@ -127,6 +252,7 @@
                                         {{ ranking.follower_count|floatformat:0|default:"0" }}
                                     </div>
                                 </td>
+                                {% endif %}
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -139,7 +265,7 @@
             <div class="mt-8 flex justify-center">
                 <nav class="flex space-x-2">
                     {% if page_obj.has_previous %}
-                    <a href="?page={{ page_obj.previous_page_number }}{% if selected_area %}&editing_area={{ selected_area }}{% endif %}" 
+                    <a href="?page={{ page_obj.previous_page_number }}{% if selected_area %}&editing_area={{ selected_area }}{% endif %}{% if channel_filter %}&channel_filter={{ channel_filter }}{% endif %}" 
                        class="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">Previous</a>
                     {% endif %}
                     
@@ -148,7 +274,7 @@
                     </span>
                     
                     {% if page_obj.has_next %}
-                    <a href="?page={{ page_obj.next_page_number }}{% if selected_area %}&editing_area={{ selected_area }}{% endif %}" 
+                    <a href="?page={{ page_obj.next_page_number }}{% if selected_area %}&editing_area={{ selected_area }}{% endif %}{% if channel_filter %}&channel_filter={{ channel_filter }}{% endif %}" 
                        class="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">Next</a>
                     {% endif %}
                 </nav>

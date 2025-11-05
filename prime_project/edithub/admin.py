@@ -1,4 +1,6 @@
 from django.contrib import admin
+from django.utils.html import mark_safe
+
 from .models import EditorApplication
 
 
@@ -10,13 +12,16 @@ class EditorApplicationAdmin(admin.ModelAdmin):
     ]
     list_filter = ['status', 'channel_type', 'editing_area', 'editing_tool', 'applied_date', 'removal_requested']
     search_fields = ['user__username', 'user__email', 'channel_name', 'channel_link', 'editing_tool']
-    readonly_fields = ['applied_date', 'updated_date', 'reviewed_date', 'rank_position']
+    readonly_fields = ['applied_date', 'updated_date', 'reviewed_date', 'rank_position', 'channel_screenshot_preview']
     fieldsets = (
         ('User Information', {
             'fields': ('user',)
         }),
         ('Channel Information', {
-            'fields': ('channel_link', 'channel_type', 'channel_name', 'channel_thumbnail', 'follower_count')
+            'fields': (
+                'channel_link', 'channel_type', 'channel_name', 'channel_thumbnail',
+                'channel_screenshot', 'channel_screenshot_preview', 'follower_count'
+            )
         }),
         ('Application Details', {
             'fields': ('editing_area', 'editing_area_other', 'editing_tool')
@@ -37,6 +42,13 @@ class EditorApplicationAdmin(admin.ModelAdmin):
     )
     
     actions = ['accept_applications', 'reject_applications']
+
+    def channel_screenshot_preview(self, obj):
+        if obj and obj.channel_screenshot:
+            return mark_safe(f'<img src="{obj.channel_screenshot.url}" style="max-width: 400px; height: auto;" />')
+        return "No screenshot uploaded"
+
+    channel_screenshot_preview.short_description = "Channel Screenshot"
     
     def accept_applications(self, request, queryset):
         """Bulk accept applications"""
