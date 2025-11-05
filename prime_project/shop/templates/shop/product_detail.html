@@ -42,13 +42,13 @@
                                 <div class="w-full h-full flex-shrink-0 relative bg-black" data-slide-type="video" data-slide-index="{{ forloop.counter0 }}">
                                     <iframe 
                                         class="absolute inset-0 w-full h-full" 
-                                        data-src="{{ item.url|youtube_embed }}"
-                                        src=""
+                                        src="{{ item.url|youtube_embed_standard }}"
                                         title="Product video" 
                                         frameborder="0" 
                                         referrerpolicy="strict-origin-when-cross-origin"
                                         allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
                                         allowfullscreen
+                                        playsinline
                                         loading="lazy">
                                     </iframe>
                                     <a href="{{ item.url|youtube_watch }}" target="_blank" rel="noopener" data-watch-link class="absolute right-2 top-1/2 -translate-y-1/2 bg-red-600 text-white px-3 py-2 rounded-full shadow hover:bg-red-700 hidden md:inline-flex items-center gap-1.5" aria-label="Open on YouTube">
@@ -403,6 +403,8 @@ let mediaViewport = null;
 let videoIframe = null;
 let videoWatchLink = null;
 
+// no-op: src set server-side
+
 function initMediaSlider() {
     mediaTrack = document.getElementById('media-track');
     mediaViewport = document.getElementById('media-viewport') || document.getElementById('media-container');
@@ -416,13 +418,6 @@ function initMediaSlider() {
         if (videoSlide) {
             videoIframe = videoSlide.querySelector('iframe');
             videoWatchLink = videoSlide.querySelector('[data-watch-link]');
-            if (videoIframe) {
-                const presetSrc = videoIframe.dataset.src || videoIframe.getAttribute('src');
-                if (presetSrc) {
-                    videoIframe.dataset.src = presetSrc;
-                }
-                videoIframe.removeAttribute('src');
-            }
         }
     }
 
@@ -483,15 +478,8 @@ function goToSlide(index) {
     mediaTrack.style.transform = `translateX(-${index * 100}%)`;
     updateArrowState();
 
+    // Do not change iframe src on slide switch to avoid player config errors
     if (!videoIframe || videoSlideIndex === null) return;
-    if (index === videoSlideIndex) {
-        const src = videoIframe.dataset.src;
-        if (src && videoIframe.src !== src) {
-            videoIframe.src = src;
-        }
-    } else if (videoIframe.src) {
-        videoIframe.src = '';
-    }
 }
 
 function updateArrowState() {
@@ -525,12 +513,7 @@ function showVideo(embedUrl, watchUrl) {
         alert('Invalid video URL. Please check the video link.');
         return;
     }
-    if (videoIframe) {
-        videoIframe.dataset.src = embedUrl;
-        if (currentMediaIndex === videoSlideIndex && videoIframe.src !== embedUrl) {
-            videoIframe.src = embedUrl;
-        }
-    }
+    // no-op: src already set
     if (videoWatchLink) {
         videoWatchLink.href = watchUrl || embedUrl;
     }

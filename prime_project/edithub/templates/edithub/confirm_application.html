@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+
+{% block title %}Confirm Application - EditingHub{% endblock %}
+
+{% block content %}
+<main class="pt-16 bg-gradient-to-b from-white via-gray-50 to-gray-100 min-h-screen py-12">
+    <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="bg-white rounded-lg shadow-lg p-8">
+            <div class="text-center mb-8">
+                <h1 class="text-3xl font-bold text-gray-900 mb-2">Confirm Your Channel</h1>
+                <p class="text-gray-600">Please verify that we fetched the correct channel information</p>
+            </div>
+
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
+                <div class="flex items-start">
+                    <div class="flex-shrink-0">
+                        <svg class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <h3 class="text-lg font-medium text-blue-900">Channel Information</h3>
+                        <div class="mt-4">
+                            <div class="flex items-center mb-4">
+                                {% if application_data.channel_thumbnail %}
+                                <img src="{{ application_data.channel_thumbnail }}" 
+                                     alt="{{ application_data.channel_name }}" 
+                                     class="h-16 w-16 rounded-full mr-4">
+                                {% endif %}
+                                <div>
+                                    <p class="text-lg font-semibold text-gray-900">{{ application_data.channel_name|default:"Unknown" }}</p>
+                                    <p class="text-sm text-gray-600">Followers: {{ application_data.follower_count|floatformat:0|default:"0" }}</p>
+                                    <p class="text-sm text-blue-600 mt-1">
+                                        <a href="{{ application_data.channel_link }}" target="_blank" rel="noopener noreferrer" class="hover:underline">
+                                            {{ application_data.channel_link }}
+                                        </a>
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="mt-4 space-y-2">
+                                <p class="text-sm text-gray-700">
+                                    <span class="font-medium">Platform:</span> 
+                                    <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                        {% if application_data.channel_type == 'youtube' %}bg-red-100 text-red-800
+                                        {% else %}bg-black text-white{% endif %}">
+                                        {% if application_data.channel_type == 'youtube' %}YouTube{% else %}TikTok{% endif %}
+                                    </span>
+                                </p>
+                                <p class="text-sm text-gray-700 flex items-center gap-2">
+                                    <span class="font-medium">Editing Tool:</span>
+                                    <span class="text-xl" title="{{ application.get_editing_tool_display }}">
+                                        <i class="{{ application.editing_tool_icon }}"></i>
+                                    </span>
+                                    <span class="text-xs text-gray-500">({{ application.get_editing_tool_display }})</span>
+                                </p>
+                                <p class="text-sm text-gray-700">
+                                    <span class="font-medium">Editing Area:</span> 
+                                    {{ application.get_editing_area_display }}
+                                    {% if application.editing_area == 'others' and application.editing_area_other %}
+                                    - {{ application.editing_area_other }}
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+                <p class="text-yellow-800 text-sm">
+                    <strong>Is this your channel?</strong> If yes, click "Yes, This is My Channel" to submit your application. 
+                    If no, click "No, Go Back" to modify your information.
+                </p>
+            </div>
+
+            <form method="POST" class="flex gap-4">
+                {% csrf_token %}
+                <button type="submit" 
+                        name="action" 
+                        value="confirm"
+                        class="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-colors">
+                    Yes, This is My Channel
+                </button>
+                <button type="submit" 
+                        name="action" 
+                        value="cancel"
+                        class="flex-1 px-6 py-3 bg-gray-200 text-gray-800 rounded-lg font-semibold hover:bg-gray-300 transition-colors">
+                    No, Go Back
+                </button>
+            </form>
+        </div>
+    </div>
+</main>
+{% endblock %}
+

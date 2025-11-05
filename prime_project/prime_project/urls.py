@@ -16,6 +16,7 @@ urlpatterns = [
     path('accounts/', include('accounts.urls')),
     path('announcements/', include('announcements.urls')),
     path('shop/', include('shop.urls', namespace='shop')),
+    path('editinghub/', include('edithub.urls', namespace='edithub')),
   
 ]
 

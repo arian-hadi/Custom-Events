@@ -51,12 +51,19 @@ def user_dashboard(request):
         return redirect('home')
 
     applications = EventApplication.objects.filter(applicant=request.user).order_by('-applied_date')
+    
+    # Get EditingHub application status
+    from edithub.models import EditorApplication
+    editor_applications = EditorApplication.objects.filter(user=request.user).order_by('-applied_date')
+    editor_application = editor_applications.first() if editor_applications.exists() else None
 
     context = {
         'applications': applications,
         'total_applications': applications.count(),
         'pending_applications': applications.filter(status='pending').count(),
         'accepted_applications': applications.filter(status='accepted').count(),
+        'editor_application': editor_application,
+        'has_editor_application': editor_applications.exists(),
     }
     return render(request, 'dashboard/user_dashboard.html', context)
 

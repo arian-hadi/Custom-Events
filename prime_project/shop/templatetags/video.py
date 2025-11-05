@@ -45,6 +45,41 @@ def youtube_embed(url: str) -> str:
     return url
 
 
+@register.filter(name="youtube_embed_standard")
+def youtube_embed_standard(url: str) -> str:
+    """Convert a YouTube/Shorts URL to a standard www.youtube.com embed URL.
+    This avoids the nocookie domain which can trigger player config issues on some devices.
+    """
+    if not url:
+        return ""
+
+    video_id = None
+    try:
+        m = re.search(r"youtube\.com/shorts/([\w-]{11})", url)
+        if m:
+            video_id = m.group(1)
+        else:
+            m = re.search(r"[?&]v=([\w-]{11})", url)
+            if m:
+                video_id = m.group(1)
+            else:
+                m = re.search(r"youtu\.be/([\w-]{11})", url)
+                if m:
+                    video_id = m.group(1)
+                else:
+                    m = re.search(r"youtube\.com/embed/([\w-]{11})", url)
+                    if m:
+                        video_id = m.group(1)
+
+        if video_id:
+            # Use standard domain and conservative params
+            return f"https://www.youtube.com/embed/{video_id}?modestbranding=1&rel=0&playsinline=1"
+    except Exception:
+        pass
+
+    return url
+
+
 @register.filter(name="youtube_thumbnail")
 def youtube_thumbnail(url: str) -> str:
     """Extract YouTube video ID and return thumbnail URL."""
