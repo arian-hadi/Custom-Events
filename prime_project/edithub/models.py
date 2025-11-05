@@ -112,6 +112,8 @@ class EditorApplication(models.Model):
     
     # Ranking position (calculated based on follower count)
     rank_position = models.IntegerField(null=True, blank=True, help_text="Position in ranking table")
+    rank_position_last_week = models.IntegerField(null=True, blank=True, help_text="Last week's position for trend arrows")
+    rank_snapshot_at = models.DateTimeField(null=True, blank=True, help_text="When last weekly rank snapshot was taken")
     
     # User can request removal
     removal_requested = models.BooleanField(default=False)
@@ -133,9 +135,27 @@ class EditorApplication(models.Model):
             removal_requested=False
         ).order_by('-follower_count', 'applied_date')
         
+        from django.utils import timezone
+        now = timezone.now()
         for index, app in enumerate(accepted_apps, start=1):
+            # Roll last week's snapshot if a week has passed or snapshot missing
+            take_snapshot = False
+            if app.rank_snapshot_at is None:
+                take_snapshot = True
+            else:
+                try:
+                    delta_days = (now - app.rank_snapshot_at).days
+                    if delta_days >= 7:
+                        take_snapshot = True
+                except Exception:
+                    take_snapshot = True
+
+            if take_snapshot and app.rank_position is not None:
+                app.rank_position_last_week = app.rank_position
+                app.rank_snapshot_at = now
+
             app.rank_position = index
-            app.save(update_fields=['rank_position'])
+            app.save(update_fields=['rank_position', 'rank_position_last_week', 'rank_snapshot_at'])
     
     def update_rank_position(self):
         """Update rank position based on follower count - instance method for backward compatibility"""
@@ -177,3 +197,22 @@ class EditorApplication(models.Model):
         if not svg:
             svg = self.EDITING_TOOL_SVG_MAP['other']
         return mark_safe(svg)
+
+    def rank_delta(self):
+        """Positive if moved up, negative if moved down, 0 if unchanged/unknown"""
+        try:
+            if self.rank_position is None or self.rank_position_last_week is None:
+                return 0
+            return self.rank_position_last_week - self.rank_position
+        except Exception:
+            return 0
+
+    def rank_trend_icon(self):
+        """HTML snippet for trend arrow: up (green), down (red), dash (gray)"""
+        delta = self.rank_delta()
+        if delta > 0:
+            # Up arrow with delta value
+            return mark_safe(f'<span title="+{delta}" class="ml-2 text-green-600" aria-label="rank up">▲</span>')
+        if delta < 0:
+            return mark_safe(f'<span title="{delta}" class="ml-2 text-red-600" aria-label="rank down">▼</span>')
+        return mark_safe('<span class="ml-2 text-gray-400" aria-label="no change">–</span>')

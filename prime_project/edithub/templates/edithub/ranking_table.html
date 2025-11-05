@@ -117,19 +117,13 @@
                                         </div>
                                         {% endif %}
                                         <div>
-                                            <div class="text-sm font-semibold text-gray-900">{{ ranking.display_user_name }}</div>
-                                            <div class="flex flex-wrap gap-2 text-xs text-gray-500 mt-1">
-                                                {% if ranking.youtube %}
-                                                <span class="inline-flex items-center gap-1">
-                                                    <i class="fab fa-youtube text-red-600"></i>
-                                                    {{ ranking.youtube.get_status_display }}
-                                                </span>
-                                                {% endif %}
-                                                {% if ranking.tiktok %}
-                                                <span class="inline-flex items-center gap-1">
-                                                    <i class="fab fa-tiktok text-gray-900"></i>
-                                                    {{ ranking.tiktok.get_status_display }}
-                                                </span>
+                                            <div class="text-sm font-semibold text-gray-900">
+                                                {% if ranking.youtube and ranking.youtube.channel_name %}
+                                                    {{ ranking.youtube.channel_name }}
+                                                {% elif ranking.tiktok and ranking.tiktok.channel_name %}
+                                                    {{ ranking.tiktok.channel_name }}
+                                                {% else %}
+                                                    {{ ranking.display_user_name }}
                                                 {% endif %}
                                             </div>
                                         </div>
@@ -191,6 +185,7 @@
                                         </span>
                                         {% endif %}
                                         <span class="ml-2 text-lg font-semibold text-gray-900">#{{ position }}</span>
+                                        {% if ranking.rank_trend_icon %}{{ ranking.rank_trend_icon|safe }}{% endif %}
                                     </div>
                                     {% endwith %}
                                 </td>
