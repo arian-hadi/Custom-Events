@@ -50,10 +50,10 @@
                 </a>
                 {% endif %}
 
-                {% if not user.is_authenticated %}
+                {% comment %}
+                EditingHub (temporarily hidden for production)
                 <a href="{% url 'edithub:ranking_table' %}" 
                    class="relative flex items-center text-gray-600 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-colors duration-300 group">
-                    <!-- EditingHub icon -->
                     <svg class="w-5 h-5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
                               d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
@@ -61,6 +61,7 @@
                     EditingHub
                     <span class="absolute bottom-0 left-0 w-full h-0.5 bg-blue-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></span>
                 </a>
+                {% endcomment %}
                 <a href="{% url 'shop:product_list' %}" 
                    class="relative flex items-center px-3 py-2 text-sm font-medium transition-colors duration-300 group {% if request.resolver_match and request.resolver_match.namespace == 'shop' %}text-blue-600 font-semibold{% else %}text-gray-600 hover:text-blue-600{% endif %}">
                     <!-- Shop icon -->
@@ -71,7 +72,7 @@
                     Shop
                     <span class="absolute bottom-0 left-0 w-full h-0.5 bg-blue-600 transform {% if request.resolver_match and request.resolver_match.namespace == 'shop' %}scale-x-100{% else %}scale-x-0 group-hover:scale-x-100{% endif %} transition-transform duration-300"></span>
                 </a>
-                {% endif %}
+                
 
                 {% if user.is_authenticated %}
                 {% endif %}
@@ -156,7 +157,8 @@
                         <span class="absolute bottom-0 left-0 w-full h-0.5 bg-blue-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></span>
                     </a>
 
-                    <!-- EditingHub -->
+                    {% comment %}
+                    EditingHub (temporarily hidden for production)
                     <a href="{% url 'edithub:ranking_table' %}" 
                        class="relative flex items-center text-gray-600 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-colors duration-300 group">
                         <svg class="w-5 h-5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -166,6 +168,7 @@
                         EditingHub
                         <span class="absolute bottom-0 left-0 w-full h-0.5 bg-blue-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></span>
                     </a>
+                    {% endcomment %}
                     
                     <!-- Support Button (for normal users) -->
                     <a href="{% url 'contact' %}" 

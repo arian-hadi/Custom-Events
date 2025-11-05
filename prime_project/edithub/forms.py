@@ -5,7 +5,23 @@ from .utils import validate_channel_url
 
 class EditorApplicationForm(forms.ModelForm):
     """Form for submitting editor applications"""
-    
+
+    channel_type = forms.ChoiceField(
+        choices=EditorApplication.CHANNEL_TYPE_CHOICES,
+        widget=forms.RadioSelect(attrs={'class': 'flex flex-col sm:flex-row gap-3'}),
+        required=True,
+        label="Select Platform"
+    )
+
+    editing_tool = forms.ChoiceField(
+        choices=EditorApplication.EDITING_TOOL_CHOICES,
+        widget=forms.Select(attrs={
+            'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500'
+        }),
+        required=True,
+        label="Primary Editing Software"
+    )
+
     editing_area_other = forms.CharField(
         required=False,
         max_length=200,
@@ -40,14 +56,13 @@ class EditorApplicationForm(forms.ModelForm):
     
     class Meta:
         model = EditorApplication
-        fields = ['channel_link', 'channel_type', 'editing_area', 'editing_area_other', 
-                  'channel_screenshot', 'channel_verified', 'data_consent']
+        fields = ['channel_link', 'channel_type', 'editing_area', 'editing_area_other',
+                  'editing_tool', 'channel_screenshot', 'channel_verified', 'data_consent']
         widgets = {
             'channel_link': forms.URLInput(attrs={
                 'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500',
                 'placeholder': 'https://www.youtube.com/@channelname or https://www.tiktok.com/@username'
             }),
-            'channel_type': forms.HiddenInput(attrs={'value': ''}),  # Will be set automatically
             'editing_area': forms.Select(attrs={
                 'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500'
             }),
@@ -57,9 +72,11 @@ class EditorApplicationForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields['channel_link'].required = True
         self.fields['editing_area'].required = True
-        # channel_type is set automatically from channel_link, so it's not required in the form
-        self.fields['channel_type'].required = False
         
+        if not self.data:
+            self.initial.setdefault('channel_type', 'youtube')
+            self.initial.setdefault('editing_tool', 'premiere')
+
         # Make editing_area_other required if editing_area is 'others'
         if self.data and 'editing_area' in self.data:
             editing_area = self.data.get('editing_area')
@@ -76,25 +93,20 @@ class EditorApplicationForm(forms.ModelForm):
         if not is_valid:
             raise forms.ValidationError(error_message or 'Invalid channel URL')
         
-        # Set channel_type in cleaned_data - this will be used by clean()
-        self.cleaned_data['channel_type'] = channel_type
+        # Ensure provided platform matches URL
+        selected_channel_type = self.cleaned_data.get('channel_type') or self.data.get('channel_type')
+        if selected_channel_type and selected_channel_type != channel_type:
+            raise forms.ValidationError(
+                f"The provided URL appears to be for {channel_type.title()} but you selected {selected_channel_type.title()}."
+            )
         
-        # Check if user already has an application with this channel
-        # Note: We need to check this in the view since we don't have user in form context
-        # This check is moved to the view to avoid issues
+        # Set channel_type in cleaned_data for view usage
+        self.cleaned_data['channel_type'] = channel_type
         
         return channel_link
     
     def clean(self):
         cleaned_data = super().clean()
-        
-        # Ensure channel_type is set from channel_link validation
-        if 'channel_link' in cleaned_data and 'channel_type' not in cleaned_data:
-            channel_link = cleaned_data['channel_link']
-            is_valid, channel_type, _ = validate_channel_url(channel_link)
-            if is_valid:
-                cleaned_data['channel_type'] = channel_type
-        
         editing_area = cleaned_data.get('editing_area')
         editing_area_other = cleaned_data.get('editing_area_other')
         

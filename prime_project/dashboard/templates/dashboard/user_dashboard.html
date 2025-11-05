@@ -91,21 +91,27 @@
                 </div>
             </div>
 
-            <!-- EditingHub Application Status -->
+            {% comment %}
+            <!-- EditingHub Application Status (temporarily hidden for production) -->
             <div class="bg-white rounded-lg border border-gray-200 p-6">
                 <h2 class="text-lg font-semibold text-gray-900 mb-4">EditingHub Application</h2>
                 {% if has_editor_application %}
                 <div class="space-y-4">
                     {% if editor_application %}
                     <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                        <div class="flex items-center">
+                        <div class="flex items-center gap-4">
                             {% if editor_application.channel_thumbnail %}
                             <img src="{{ editor_application.channel_thumbnail }}" 
                                  alt="{{ editor_application.channel_name }}" 
                                  class="h-12 w-12 rounded-full mr-3">
                             {% endif %}
                             <div>
-                                <p class="font-medium text-gray-900">{{ editor_application.channel_name|default:"Unknown" }}</p>
+                                <p class="font-medium text-gray-900 flex items-center gap-2">
+                                    {{ editor_application.channel_name|default:"Unknown" }}
+                                    <span class="text-xl" title="{{ editor_application.get_editing_tool_display }}">
+                                        <i class="{{ editor_application.editing_tool_icon }}"></i>
+                                    </span>
+                                </p>
                                 <p class="text-sm text-gray-500">{{ editor_application.get_status_display }}</p>
                             </div>
                         </div>
@@ -141,6 +147,7 @@
                 </div>
                 {% endif %}
             </div>
+            {% endcomment %}
         </div>
 
         <!-- Applications moved to dedicated page -->

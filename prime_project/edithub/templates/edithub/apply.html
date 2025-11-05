@@ -15,6 +15,29 @@
             <form method="POST" id="applicationForm" enctype="multipart/form-data" class="space-y-6">
                 {% csrf_token %}
                 
+                <!-- Platform Selection -->
+                <div>
+                    <span class="block text-sm font-medium text-gray-700 mb-2">Select Platform *</span>
+                    <div class="flex flex-col sm:flex-row gap-4" id="platformOptions">
+                        {% for value, label in form.channel_type.field.choices %}
+                        <label data-platform-option="{{ value }}" class="flex items-center gap-3 px-4 py-3 border rounded-lg cursor-pointer hover:border-blue-500 transition-colors {% if form.channel_type.value == value %}border-blue-500 bg-blue-50{% else %}border-gray-200 bg-white{% endif %}">
+                            <input type="radio" name="{{ form.channel_type.name }}" value="{{ value }}" class="sr-only" {% if form.channel_type.value == value %}checked{% endif %}>
+                            <span class="text-2xl">
+                                {% if value == 'youtube' %}
+                                    <i class="fab fa-youtube text-red-600"></i>
+                                {% elif value == 'tiktok' %}
+                                    <i class="fab fa-tiktok text-gray-800"></i>
+                                {% endif %}
+                            </span>
+                            <span class="font-medium text-gray-800">{{ label }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                    {% if form.channel_type.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.channel_type.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
                 <!-- Channel Link -->
                 <div>
                     <label for="{{ form.channel_link.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
@@ -65,6 +88,17 @@
                     {% endif %}
                 </div>
 
+                <!-- Editing Tool -->
+                <div>
+                    <label for="{{ form.editing_tool.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                        Editing Software *
+                    </label>
+                    {% render_field form.editing_tool %}
+                    {% if form.editing_tool.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.editing_tool.errors.0 }}</p>
+                    {% endif %}
+                </div>
+
 
                 <!-- Data Consent -->
                 <div class="flex items-start">
@@ -80,9 +114,6 @@
                         {% endif %}
                     </div>
                 </div>
-
-                <!-- Hidden channel_type field -->
-                {{ form.channel_type }}
 
                 <!-- Submit Button -->
                 <div class="pt-4">
@@ -100,6 +131,8 @@
 document.addEventListener('DOMContentLoaded', function() {
     const editingAreaSelect = document.getElementById('{{ form.editing_area.id_for_label }}');
     const editingAreaOtherDiv = document.getElementById('editingAreaOtherDiv');
+    const platformOptions = document.querySelectorAll('#platformOptions input[type="radio"]');
+    const platformLabels = document.querySelectorAll('#platformOptions [data-platform-option]');
 
     // Show/hide editing_area_other field
     editingAreaSelect.addEventListener('change', function() {
@@ -116,6 +149,28 @@ document.addEventListener('DOMContentLoaded', function() {
     if (editingAreaSelect.value === 'others') {
         editingAreaOtherDiv.classList.remove('hidden');
     }
+
+    function updatePlatformStyles() {
+        platformLabels.forEach(label => {
+            label.classList.remove('border-blue-500', 'bg-blue-50');
+            label.classList.add('border-gray-200', 'bg-white');
+        });
+
+        const selected = document.querySelector('#platformOptions input[type="radio"]:checked');
+        if (selected) {
+            const label = selected.closest('[data-platform-option]');
+            if (label) {
+                label.classList.add('border-blue-500', 'bg-blue-50');
+                label.classList.remove('border-gray-200', 'bg-white');
+            }
+        }
+    }
+
+    platformOptions.forEach(option => {
+        option.addEventListener('change', updatePlatformStyles);
+    });
+
+    updatePlatformStyles();
 });
 </script>
 {% endblock %}

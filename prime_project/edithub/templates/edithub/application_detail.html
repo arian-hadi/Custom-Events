@@ -61,8 +61,13 @@
                     <h2 class="text-lg font-semibold text-gray-900 mb-4">Application Details</h2>
                     <div class="space-y-3">
                         <div>
-                            <p class="text-sm text-gray-600">Editor:</p>
-                            <p class="font-medium text-gray-900">{{ application.user.username }}</p>
+                            <p class="text-sm text-gray-600">Editing Tool:</p>
+                            <div class="flex items-center gap-2">
+                                <span class="text-2xl" title="{{ application.get_editing_tool_display }}">
+                                    <i class="{{ application.editing_tool_icon }}"></i>
+                                </span>
+                                <span class="text-xs text-gray-500">({{ application.get_editing_tool_display }})</span>
+                            </div>
                         </div>
                         <div>
                             <p class="text-sm text-gray-600">Editing Area:</p>

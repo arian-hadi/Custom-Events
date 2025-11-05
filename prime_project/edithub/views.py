@@ -43,7 +43,6 @@ class RankingTableView(ListView):
         context = super().get_context_data(**kwargs)
         context['editing_areas'] = EditorApplication.EDITING_AREA_CHOICES
         context['selected_area'] = self.request.GET.get('editing_area', '')
-        
         # Calculate statistics
         total_editors = self.get_queryset().count()
         context['total_editors'] = total_editors
@@ -126,6 +125,7 @@ def apply_view(request):
                     channel_type=channel_type,
                     editing_area=form.cleaned_data['editing_area'],
                     editing_area_other=form.cleaned_data.get('editing_area_other', ''),
+                    editing_tool=form.cleaned_data['editing_tool'],
                     channel_name=channel_data.get('channel_name', ''),
                     follower_count=channel_data.get('subscriber_count') or channel_data.get('follower_count', 0),
                     channel_thumbnail=channel_data.get('thumbnail', ''),
@@ -251,6 +251,7 @@ def confirm_application(request):
         'channel_type': application.channel_type,
         'editing_area': application.editing_area,
         'editing_area_other': application.editing_area_other,
+        'editing_tool': application.editing_tool,
         'channel_name': application.channel_name,
         'follower_count': application.follower_count,
         'channel_thumbnail': application.channel_thumbnail,

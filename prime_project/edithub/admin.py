@@ -5,11 +5,11 @@ from .models import EditorApplication
 @admin.register(EditorApplication)
 class EditorApplicationAdmin(admin.ModelAdmin):
     list_display = [
-        'user', 'channel_name', 'channel_type', 'editing_area', 
+        'user', 'channel_name', 'channel_type', 'editing_tool', 'editing_area',
         'follower_count', 'status', 'rank_position', 'applied_date'
     ]
-    list_filter = ['status', 'channel_type', 'editing_area', 'applied_date', 'removal_requested']
-    search_fields = ['user__username', 'user__email', 'channel_name', 'channel_link']
+    list_filter = ['status', 'channel_type', 'editing_area', 'editing_tool', 'applied_date', 'removal_requested']
+    search_fields = ['user__username', 'user__email', 'channel_name', 'channel_link', 'editing_tool']
     readonly_fields = ['applied_date', 'updated_date', 'reviewed_date', 'rank_position']
     fieldsets = (
         ('User Information', {
@@ -19,7 +19,7 @@ class EditorApplicationAdmin(admin.ModelAdmin):
             'fields': ('channel_link', 'channel_type', 'channel_name', 'channel_thumbnail', 'follower_count')
         }),
         ('Application Details', {
-            'fields': ('editing_area', 'editing_area_other')
+            'fields': ('editing_area', 'editing_area_other', 'editing_tool')
         }),
         ('Verification & Consent', {
             'fields': ('channel_verified', 'data_consent')

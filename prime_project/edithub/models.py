@@ -11,6 +11,16 @@ class EditorApplication(models.Model):
         ('tiktok', 'TikTok'),
     ]
     
+    EDITING_TOOL_CHOICES = [
+        ('premiere', 'Adobe Premiere Pro'),
+        ('after_effects', 'Adobe After Effects'),
+        ('davinci', 'DaVinci Resolve'),
+        ('final_cut', 'Final Cut Pro'),
+        ('capcut', 'CapCut'),
+        ('sony_vegas', 'Sony Vegas Pro'),
+        ('other', 'Other')
+    ]
+
     EDITING_AREA_CHOICES = [
         ('transformers', 'Transformers'),
         ('dc', 'DC'),
@@ -43,6 +53,7 @@ class EditorApplication(models.Model):
     # Application details
     editing_area = models.CharField(max_length=50, choices=EDITING_AREA_CHOICES)
     editing_area_other = models.CharField(max_length=200, blank=True, help_text="If 'others' is selected")
+    editing_tool = models.CharField(max_length=50, choices=EDITING_TOOL_CHOICES, default='other')
     
     # Verification and consent
     channel_verified = models.BooleanField(default=False, help_text="User confirmed this is their channel")
@@ -118,3 +129,15 @@ class EditorApplication(models.Model):
         elif old_status == 'accepted' and self.status != 'accepted':
             # Recalculate all rankings if an accepted application changed status
             EditorApplication.update_rank_positions()
+
+    def editing_tool_icon(self):
+        icon_map = {
+            'premiere': 'fab fa-adobe text-indigo-600',
+            'after_effects': 'fas fa-magic text-purple-600',
+            'davinci': 'fas fa-circle-notch text-gray-800',
+            'final_cut': 'fas fa-film text-pink-500',
+            'capcut': 'fas fa-mobile-alt text-black',
+            'sony_vegas': 'fas fa-wave-square text-blue-500',
+            'other': 'fas fa-tools text-gray-500',
+        }
+        return icon_map.get(self.editing_tool, 'fas fa-video text-gray-500')

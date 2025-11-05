@@ -56,7 +56,7 @@
                             <tr>
                                 <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Rank</th>
                                 <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Channel</th>
-                                <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Editor</th>
+                                <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Editing Tool</th>
                                 <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Area</th>
                                 <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Platform</th>
                                 <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Followers</th>
@@ -94,7 +94,12 @@
                                     </div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="text-sm font-medium text-gray-900">{{ ranking.user.username }}</div>
+                                    <div class="flex items-center">
+                                        <span class="text-2xl" title="{{ ranking.get_editing_tool_display }}">
+                                            <i class="{{ ranking.editing_tool_icon }}"></i>
+                                        </span>
+                                        <span class="sr-only">{{ ranking.get_editing_tool_display }}</span>
+                                    </div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
