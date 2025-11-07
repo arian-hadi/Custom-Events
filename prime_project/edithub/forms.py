@@ -1,5 +1,5 @@
 from django import forms
-from .models import EditorApplication
+from .models import EditorApplication, EditSubmission, EditReport
 from .utils import validate_channel_url
 
 
@@ -124,5 +124,72 @@ class EditorApplicationForm(forms.ModelForm):
         
         # channel_verified will be set on confirmation page, not here
         return cleaned_data
+
+
+class EditSubmissionForm(forms.ModelForm):
+    """Form for submitting edits for Edit of the Week"""
+    
+    class Meta:
+        model = EditSubmission
+        fields = ['video_url', 'title', 'description']
+        widgets = {
+            'video_url': forms.URLInput(attrs={
+                'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500',
+                'placeholder': 'https://www.youtube.com/shorts/... or https://www.tiktok.com/@username/video/...'
+            }),
+            'title': forms.TextInput(attrs={
+                'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500',
+                'placeholder': 'Edit title (optional)'
+            }),
+            'description': forms.Textarea(attrs={
+                'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500',
+                'rows': 3,
+                'placeholder': 'Description (optional)'
+            }),
+        }
+    
+    def __init__(self, *args, **kwargs):
+        self.approved_application = kwargs.pop('approved_application', None)
+        super().__init__(*args, **kwargs)
+        self.fields['video_url'].required = True
+    
+    def clean_video_url(self):
+        video_url = self.cleaned_data.get('video_url')
+        if not video_url:
+            raise forms.ValidationError('Video URL is required')
+        
+        if not self.approved_application:
+            raise forms.ValidationError('No approved application found. Please apply and get approved first.')
+        
+        # Verify video belongs to the approved channel
+        from .utils import verify_video_belongs_to_channel
+        is_valid, error_message = verify_video_belongs_to_channel(
+            video_url,
+            self.approved_application.channel_link,
+            self.approved_application.channel_type
+        )
+        
+        if not is_valid:
+            raise forms.ValidationError(error_message or 'Video does not belong to your approved channel')
+        
+        return video_url
+
+
+class EditReportForm(forms.ModelForm):
+    """Form for reporting edits"""
+    
+    class Meta:
+        model = EditReport
+        fields = ['reason', 'description']
+        widgets = {
+            'reason': forms.Select(attrs={
+                'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500'
+            }),
+            'description': forms.Textarea(attrs={
+                'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500',
+                'rows': 3,
+                'placeholder': 'Additional details (optional)'
+            }),
+        }
     
 

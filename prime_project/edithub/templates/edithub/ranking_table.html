@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load video %}
 
 {% block title %}EditingHub Ranking Table - 2.0Transformers{% endblock %}
 
@@ -11,14 +12,27 @@
             <div class="text-center">
                 <h1 class="text-4xl md:text-5xl font-bold mb-4">EditingHub Rankings</h1>
                 <p class="text-xl text-blue-100">The Ultimate Editor Leaderboard</p>
-                {% if user.is_authenticated and user.role == 'user' %}
-                <div class="mt-6">
+                <div class="mt-6 flex flex-wrap justify-center gap-4">
+                    {% if user.is_authenticated and user.role == 'user' %}
                     <a href="{% url 'edithub:apply' %}" 
                        class="inline-block px-6 py-3 bg-white text-blue-600 rounded-lg font-semibold hover:bg-blue-50 transform hover:scale-105 transition-all duration-300 shadow-lg">
                         Apply to Join Rankings
                     </a>
+                    <a href="{% url 'edithub:submit_edit' %}" 
+                       class="inline-block px-6 py-3 bg-purple-500 text-white rounded-lg font-semibold hover:bg-purple-600 transform hover:scale-105 transition-all duration-300 shadow-lg">
+                        Submit Edit for Edit of the Week
+                    </a>
+                    {% elif not user.is_authenticated %}
+                    <a href="{% url 'edithub:apply' %}" 
+                       class="inline-block px-6 py-3 bg-white text-blue-600 rounded-lg font-semibold hover:bg-blue-50 transform hover:scale-105 transition-all duration-300 shadow-lg">
+                        Apply to Join Rankings
+                    </a>
+                    <a href="{% url 'edithub:submit_edit' %}" 
+                       class="inline-block px-6 py-3 bg-purple-500 text-white rounded-lg font-semibold hover:bg-purple-600 transform hover:scale-105 transition-all duration-300 shadow-lg">
+                        Submit Edit for Edit of the Week
+                    </a>
+                    {% endif %}
                 </div>
-                {% endif %}
             </div>
         </div>
     </section>
@@ -335,6 +349,158 @@
                 <a href="{% url 'edithub:apply' %}" 
                    class="mt-4 inline-block px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
                     Be the First to Apply!
+                </a>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </section>
+
+    <!-- Edit of the Week Section -->
+    <section class="py-12 bg-gradient-to-b from-gray-50 to-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-8">
+                <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-2">Edit of the Week</h2>
+                <p class="text-gray-600">Top 3 most upvoted edits this week</p>
+                
+                <!-- Platform Tabs for Edit of the Week -->
+                <div class="flex items-center justify-center gap-2 md:gap-4 mt-6 mb-4">
+                    <a href="?edit_platform=youtube{% if channel_filter %}&channel_filter={{ channel_filter }}{% endif %}{% if selected_area %}&editing_area={{ selected_area }}{% endif %}" 
+                       class="px-4 md:px-6 py-2 md:py-3 rounded-lg font-semibold text-sm md:text-base transition-all duration-300 flex items-center gap-1 md:gap-2 {% if edit_platform == 'youtube' %}bg-gradient-to-r from-red-500/20 to-red-600/20 border-2 border-red-500/50 text-gray-900 shadow-lg shadow-red-500/20{% else %}bg-white border-2 border-gray-300 text-gray-600 hover:bg-gray-50 hover:border-gray-400{% endif %}">
+                        <svg class="w-4 h-4 md:w-5 md:h-5" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                        </svg>
+                        <span class="hidden sm:inline">YouTube</span>
+                        <span class="sm:hidden">YT</span>
+                    </a>
+                    <a href="?edit_platform=tiktok{% if channel_filter %}&channel_filter={{ channel_filter }}{% endif %}{% if selected_area %}&editing_area={{ selected_area }}{% endif %}" 
+                       class="px-4 md:px-6 py-2 md:py-3 rounded-lg font-semibold text-sm md:text-base transition-all duration-300 flex items-center gap-1 md:gap-2 {% if edit_platform == 'tiktok' %}bg-gradient-to-r from-purple-500/20 to-pink-500/20 border-2 border-purple-500/50 text-gray-900 shadow-lg shadow-purple-500/20{% else %}bg-white border-2 border-gray-300 text-gray-600 hover:bg-gray-50 hover:border-gray-400{% endif %}">
+                        <svg class="w-4 h-4 md:w-5 md:h-5" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
+                        </svg>
+                        <span class="hidden sm:inline">TikTok</span>
+                        <span class="sm:hidden">TT</span>
+                    </a>
+                </div>
+                
+                <div class="mt-4">
+                    {% if user.is_authenticated and user.role == 'user' %}
+                    <a href="{% url 'edithub:submit_edit' %}" 
+                       class="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transform hover:scale-105 transition-all duration-300 shadow-lg">
+                        Submit Your Edit
+                    </a>
+                    {% elif not user.is_authenticated %}
+                    <a href="{% url 'edithub:submit_edit' %}" 
+                       class="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transform hover:scale-105 transition-all duration-300 shadow-lg">
+                        Submit Your Edit (Login Required)
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if top_edits %}
+            <div class="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-6 mb-8">
+                {% for edit in top_edits %}
+                <div class="relative {% if forloop.counter == 1 %}w-full md:w-2/5 order-2 md:order-2{% else %}w-full md:w-1/4 {% if forloop.counter == 2 %}order-1 md:order-1{% else %}order-3 md:order-3{% endif %}{% endif %}">
+                    <div class="bg-white rounded-lg shadow-xl overflow-hidden {% if edit.week_rank == 1 %}transform hover:scale-105 transition-transform{% endif %}">
+                        <!-- Medal Ranking -->
+                        <div class="absolute top-2 left-2 z-10">
+                            {% if forloop.counter == 1 %}
+                            <span class="text-4xl font-bold text-yellow-500">🥇</span>
+                            {% elif forloop.counter == 2 %}
+                            <span class="text-3xl font-bold text-gray-400">🥈</span>
+                            {% else %}
+                            <span class="text-3xl font-bold text-orange-600">🥉</span>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Video Embed -->
+                        <div class="relative aspect-[4/5] bg-gray-900 overflow-hidden">
+                            {% if edit.channel_type == 'youtube' %}
+                                <iframe 
+                                    class="w-full h-full"
+                                    src="{{ edit.video_url|youtube_embed_standard }}"
+                                    title="YouTube video player"
+                                    frameborder="0"
+                                    referrerpolicy="strict-origin-when-cross-origin"
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                    allowfullscreen
+                                    playsinline
+                                    loading="lazy">
+                                </iframe>
+                            {% else %}
+                                <style>
+                                  .tiktok-custom-embed { position: relative; height: 100%; overflow: hidden; background: #000; }
+                                  .tiktok-custom-embed .tiktok-embed { all: unset; position: absolute; inset: 0; margin: 0; padding: 0; }
+                                  .tiktok-custom-embed iframe { width: 100% !important; height: 135% !important; transform: translateY(-12%) !important; border: 0 !important; margin: 0 !important; padding: 0 !important; object-fit: cover; }
+                                  /* Hide TikTok header/caption/CTA with overlays */
+                                  .tiktok-custom-embed::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 50px; z-index: 10; pointer-events: none; background: linear-gradient(180deg, rgba(0,0,0,0.98) 0%, rgba(0,0,0,0) 100%); }
+                                  .tiktok-custom-embed::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 160px; z-index: 10; pointer-events: none; background: linear-gradient(0deg, rgba(0,0,0,0.98) 0%, rgba(0,0,0,0.5) 40%, rgba(0,0,0,0) 100%); }
+                                </style>
+                                <div class="tiktok-custom-embed">
+                                    <blockquote class="tiktok-embed" cite="{{ edit.video_url }}" data-video-id="{{ edit.video_url|tiktok_video_id }}">
+                                        <section style="all:unset;height:100%;"></section>
+                                    </blockquote>
+                                </div>
+                                <script>
+                                (function ensureTikTokEmbed(){
+                                  if (!document.getElementById('tiktok-embed-js')) {
+                                    var s=document.createElement('script');
+                                    s.src='https://www.tiktok.com/embed.js';
+                                    s.async=true; s.id='tiktok-embed-js';
+                                    document.body.appendChild(s);
+                                  }
+                                })();
+                                </script>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Edit Info -->
+                        <div class="p-4">
+                            {% if edit.title %}
+                            <h3 class="font-semibold text-gray-900 mb-1 {% if edit.week_rank == 1 %}text-lg{% else %}text-sm{% endif %}">{{ edit.title }}</h3>
+                            {% endif %}
+                            <div class="flex items-center justify-between mt-2">
+                                <div class="flex items-center gap-2">
+                                    {% if edit.channel_thumbnail %}
+                                    <img src="{{ edit.channel_thumbnail }}" alt="{{ edit.channel_name }}" 
+                                         class="h-8 w-8 rounded-full object-cover">
+                                    {% endif %}
+                                    <span class="text-sm text-gray-600">{{ edit.channel_name }}</span>
+                                </div>
+                                <div class="flex items-center gap-2 text-sm">
+                                    <div class="flex items-center gap-1 text-gray-600">
+                                        <i class="fas fa-star text-yellow-500"></i>
+                                        <span class="font-semibold text-gray-900">{{ edit.calculated_points|floatformat:1 }}</span>
+                                        <span class="text-gray-500 text-xs">pts</span>
+                                    </div>
+                                    <div class="flex items-center gap-1 text-gray-400">
+                                        <i class="fas fa-arrow-up"></i>
+                                        <span>{{ edit.upvote_count }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="text-center mt-8">
+                <a href="{% url 'edithub:view_all_edits' %}?platform={{ edit_platform }}" 
+                   class="inline-block px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-semibold hover:from-blue-700 hover:to-purple-700 transform hover:scale-105 transition-all duration-300 shadow-lg">
+                    View All Edits
+                </a>
+            </div>
+            {% else %}
+            <div class="text-center py-12 bg-white rounded-lg shadow-lg">
+                <p class="text-gray-500 text-lg mb-4">
+                    No {% if edit_platform == 'youtube' %}YouTube{% else %}TikTok{% endif %} edits submitted yet.
+                </p>
+                {% if user.is_authenticated and user.role == 'user' %}
+                <a href="{% url 'edithub:submit_edit' %}" 
+                   class="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                    Be the First to Submit!
                 </a>
                 {% endif %}
             </div>

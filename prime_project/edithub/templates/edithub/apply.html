@@ -56,32 +56,25 @@
                 {% csrf_token %}
 
                 <section class="bg-white border border-gray-200 rounded-lg p-6">
-                    <h2 class="text-lg font-semibold text-gray-900 mb-4">Select Platforms</h2>
+                    <h2 class="text-lg font-semibold text-gray-900 mb-4">Select Platform</h2>
+                    <p class="text-sm text-gray-600 mb-4">You can only apply for one platform at a time. Choose either YouTube or TikTok.</p>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <label class="flex items-center justify-between gap-4 px-4 py-3 border rounded-lg transition-colors {% if apply_youtube %}border-blue-500 bg-blue-50{% else %}border-gray-200 bg-white{% endif %}">
+                        <label class="flex items-center gap-4 px-4 py-3 border rounded-lg transition-colors cursor-pointer {% if apply_youtube %}border-blue-500 bg-blue-50{% else %}border-gray-200 bg-white hover:border-gray-300{% endif %}">
+                            <input type="radio" name="platform" value="youtube" id="platformYoutube" class="h-4 w-4 text-blue-600 focus:ring-blue-500" {% if apply_youtube %}checked{% endif %}>
                             <span class="flex items-center gap-2 text-sm font-medium text-gray-800">
                                 <span class="text-2xl text-red-600"><i class="fab fa-youtube"></i></span>
-                                Have a YouTube Channel
-                            </span>
-                            <span class="relative inline-flex items-center">
-                                <input type="checkbox" name="apply_youtube" id="toggleYoutube" class="sr-only" {% if apply_youtube %}checked{% endif %}>
-                                <span class="toggle-track w-11 h-6 rounded-full transition-colors bg-gray-200"></span>
-                                <span class="toggle-thumb absolute left-0.5 top-0.5 w-5 h-5 rounded-full bg-white shadow transform transition-transform translate-x-0"></span>
+                                YouTube Channel
                             </span>
                         </label>
-                        <label class="flex items-center justify-between gap-4 px-4 py-3 border rounded-lg transition-colors {% if apply_tiktok %}border-blue-500 bg-blue-50{% else %}border-gray-200 bg-white{% endif %}">
+                        <label class="flex items-center gap-4 px-4 py-3 border rounded-lg transition-colors cursor-pointer {% if apply_tiktok %}border-blue-500 bg-blue-50{% else %}border-gray-200 bg-white hover:border-gray-300{% endif %}">
+                            <input type="radio" name="platform" value="tiktok" id="platformTiktok" class="h-4 w-4 text-blue-600 focus:ring-blue-500" {% if apply_tiktok %}checked{% endif %}>
                             <span class="flex items-center gap-2 text-sm font-medium text-gray-800">
                                 <span class="text-2xl text-gray-900"><i class="fab fa-tiktok"></i></span>
-                                Have a TikTok Channel
-                            </span>
-                            <span class="relative inline-flex items-center">
-                                <input type="checkbox" name="apply_tiktok" id="toggleTiktok" class="sr-only" {% if apply_tiktok %}checked{% endif %}>
-                                <span class="toggle-track w-11 h-6 rounded-full transition-colors bg-gray-200"></span>
-                                <span class="toggle-thumb absolute left-0.5 top-0.5 w-5 h-5 rounded-full bg-white shadow transform transition-transform translate-x-0"></span>
+                                TikTok Channel
                             </span>
                         </label>
                     </div>
-                    <p class="text-xs text-gray-500 mt-3">Select at least one platform. You can submit both at once.</p>
+                    <p class="text-xs text-gray-500 mt-3">Select one platform to apply for.</p>
                 </section>
 
                 <section id="youtubeSection" class="platform-section {% if not apply_youtube %}hidden{% endif %} bg-white border border-gray-200 rounded-lg p-6 space-y-6">
@@ -209,58 +202,38 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    const platformRadios = document.querySelectorAll('input[name="platform"]');
+    const youtubeSection = document.getElementById('youtubeSection');
+    const tiktokSection = document.getElementById('tiktokSection');
+    
     const config = {
         youtube: {
-            toggle: document.getElementById('toggleYoutube'),
-            section: document.getElementById('youtubeSection'),
+            section: youtubeSection,
             editingArea: document.getElementById('id_youtube-editing_area'),
             editingAreaOther: document.getElementById('youtubeEditingAreaOther')
         },
         tiktok: {
-            toggle: document.getElementById('toggleTiktok'),
-            section: document.getElementById('tiktokSection'),
+            section: tiktokSection,
             editingArea: document.getElementById('id_tiktok-editing_area'),
             editingAreaOther: document.getElementById('tiktokEditingAreaOther')
         }
     };
 
-    function updateSection(platform) {
-        const target = config[platform];
-        const requiredFields = target.section.querySelectorAll('[data-required-field="true"]');
-        const toggleWrapper = target.toggle.parentElement;
-        const track = toggleWrapper ? toggleWrapper.querySelector('.toggle-track') : null;
-        const thumb = toggleWrapper ? toggleWrapper.querySelector('.toggle-thumb') : null;
-
-        if (target.toggle.checked) {
-            target.section.classList.remove('hidden');
-            requiredFields.forEach(field => field.required = true);
-            if (track && thumb) {
-                track.classList.remove('bg-gray-200');
-                track.classList.add('bg-blue-600');
-                thumb.classList.remove('translate-x-0');
-                thumb.classList.add('translate-x-5');
-            }
-        } else {
-            target.section.classList.add('hidden');
-            requiredFields.forEach(field => field.required = false);
-            if (track && thumb) {
-                track.classList.add('bg-gray-200');
-                track.classList.remove('bg-blue-600');
-                thumb.classList.add('translate-x-0');
-                thumb.classList.remove('translate-x-5');
-            }
-        }
-    }
-
-    function ensurePlatformSelection(changedPlatform) {
-        const otherPlatform = changedPlatform === 'youtube' ? 'tiktok' : 'youtube';
-        const changedToggle = config[changedPlatform].toggle;
-        const otherToggle = config[otherPlatform].toggle;
-
-        if (!changedToggle.checked && !otherToggle.checked) {
-            changedToggle.checked = true;
-            updateSection(changedPlatform);
-            alert('At least one platform must remain enabled.');
+    function updateSections() {
+        const selectedPlatform = document.querySelector('input[name="platform"]:checked')?.value;
+        
+        if (selectedPlatform === 'youtube') {
+            youtubeSection.classList.remove('hidden');
+            tiktokSection.classList.add('hidden');
+            // Set required fields
+            youtubeSection.querySelectorAll('[data-required-field="true"]').forEach(field => field.required = true);
+            tiktokSection.querySelectorAll('[data-required-field="true"]').forEach(field => field.required = false);
+        } else if (selectedPlatform === 'tiktok') {
+            youtubeSection.classList.add('hidden');
+            tiktokSection.classList.remove('hidden');
+            // Set required fields
+            youtubeSection.querySelectorAll('[data-required-field="true"]').forEach(field => field.required = false);
+            tiktokSection.querySelectorAll('[data-required-field="true"]').forEach(field => field.required = true);
         }
     }
 
@@ -274,7 +247,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (target.editingArea.value === 'others') {
             target.editingAreaOther.classList.remove('hidden');
             if (otherField) {
-                otherField.required = target.toggle.checked;
+                otherField.required = true;
             }
         } else {
             target.editingAreaOther.classList.add('hidden');
@@ -284,25 +257,24 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    platformRadios.forEach(radio => {
+        radio.addEventListener('change', () => {
+            updateSections();
+        });
+    });
+
+    // Update editing area fields
     Object.keys(config).forEach(platform => {
         const target = config[platform];
-        if (!target.toggle) {
-            return;
-        }
-
-        target.toggle.addEventListener('change', () => {
-            ensurePlatformSelection(platform);
-            updateSection(platform);
-            updateEditingArea(platform);
-        });
-
         if (target.editingArea) {
             target.editingArea.addEventListener('change', () => updateEditingArea(platform));
         }
-
-        updateSection(platform);
-        updateEditingArea(platform);
     });
+
+    // Initial setup
+    updateSections();
+    updateEditingArea('youtube');
+    updateEditingArea('tiktok');
 });
 </script>
 {% endblock %}

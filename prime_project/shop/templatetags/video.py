@@ -132,3 +132,37 @@ def youtube_watch(url: str) -> str:
     return f"https://www.youtube.com/watch?v={vid}" if vid else url
 
 
+@register.filter(name="tiktok_embed_url")
+def tiktok_embed_url(url: str) -> str:
+    """
+    Convert a TikTok video URL to an embeddable URL.
+    Expected formats:
+      - https://www.tiktok.com/@username/video/1234567890123456789
+    Returns:
+      - https://www.tiktok.com/embed/v2/video/<video_id>
+      - or original URL if parsing fails.
+    """
+    if not url:
+        return ""
+    m = re.search(r"tiktok\.com/@[^/]+/video/(\d+)", url)
+    if m:
+        return f"https://www.tiktok.com/embed/v2/video/{m.group(1)}"
+    m = re.search(r"tiktok\.com/(?:v|embed)/?(\d+)", url)
+    if m:
+        return f"https://www.tiktok.com/embed/v2/video/{m.group(1)}"
+    return url
+
+
+@register.filter(name="tiktok_video_id")
+def tiktok_video_id(url: str) -> str:
+    """Extract the TikTok numeric video ID from a URL."""
+    if not url:
+        return ""
+    m = re.search(r"tiktok\.com/@[^/]+/video/(\d+)", url)
+    if m:
+        return m.group(1)
+    m = re.search(r"tiktok\.com/(?:v|embed)/?(\d+)", url)
+    if m:
+        return m.group(1)
+    return ""
+

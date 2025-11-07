@@ -216,3 +216,220 @@ class EditorApplication(models.Model):
         if delta < 0:
             return mark_safe(f'<span title="{delta}" class="ml-2 text-red-600" aria-label="rank down">▼</span>')
         return mark_safe('<span class="ml-2 text-gray-400" aria-label="no change">–</span>')
+
+
+class EditSubmission(models.Model):
+    """Model for Edit of the Week submissions"""
+    
+    CHANNEL_TYPE_CHOICES = [
+        ('youtube', 'YouTube'),
+        ('tiktok', 'TikTok'),
+    ]
+    
+    STATUS_CHOICES = [
+        ('pending', 'Pending Verification'),
+        ('verified', 'Verified'),
+        ('rejected', 'Rejected'),
+    ]
+    
+    # User information
+    user = models.ForeignKey(
+        CustomUser,
+        on_delete=models.CASCADE,
+        related_name='edit_submissions'
+    )
+    
+    # Link to approved EditorApplication (channel verification)
+    approved_application = models.ForeignKey(
+        EditorApplication,
+        on_delete=models.CASCADE,
+        related_name='edit_submissions',
+        help_text="The approved EditorApplication that verifies this user's channel",
+        null=True,
+        blank=True  # Temporarily nullable for migration, will be made required after data migration
+    )
+    
+    # Channel info (from approved application)
+    channel_link = models.URLField(max_length=500, help_text="YouTube or TikTok channel URL (from approved application)")
+    channel_type = models.CharField(max_length=20, choices=CHANNEL_TYPE_CHOICES)
+    channel_name = models.CharField(max_length=200, blank=True)
+    channel_thumbnail = models.URLField(max_length=500, blank=True)
+    
+    # Edit information
+    video_url = models.URLField(max_length=500, help_text="YouTube Shorts or TikTok video URL")
+    title = models.CharField(max_length=200, blank=True)
+    description = models.TextField(blank=True)
+    
+    # Status and dates
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    submitted_date = models.DateTimeField(auto_now_add=True)
+    updated_date = models.DateTimeField(auto_now=True)
+    verified_date = models.DateTimeField(null=True, blank=True)
+    
+    # Metadata
+    upvote_count = models.IntegerField(default=0)
+    report_count = models.IntegerField(default=0)
+    is_featured = models.BooleanField(default=False, help_text="Featured in top 3 of the week")
+    week_rank = models.IntegerField(null=True, blank=True, help_text="Rank in Edit of the Week (1-3)")
+    
+    # Video statistics (from platform APIs)
+    views = models.BigIntegerField(default=0, help_text="Video views from platform")
+    likes = models.BigIntegerField(default=0, help_text="Video likes from platform")
+    comments = models.BigIntegerField(default=0, help_text="Video comments from platform")
+    subscriber_count = models.BigIntegerField(default=0, help_text="Subscriber/follower count for normalization")
+    
+    # Points calculation
+    calculated_points = models.DecimalField(
+        max_digits=10, 
+        decimal_places=2, 
+        default=0.00,
+        help_text="Total calculated points for ranking"
+    )
+    last_points_calculation = models.DateTimeField(
+        null=True, 
+        blank=True,
+        help_text="Last time points were calculated"
+    )
+    weeks_participated = models.IntegerField(
+        default=1,
+        help_text="Number of consecutive weeks user has submitted edits"
+    )
+    
+    class Meta:
+        ordering = ['-calculated_points', '-submitted_date']
+        
+    def __str__(self):
+        return f"{self.user.username} - {self.title or self.video_url} ({self.get_status_display()})"
+    
+    def update_upvote_count(self):
+        """Update upvote count from related upvotes and recalculate points"""
+        self.upvote_count = self.upvotes.filter(is_active=True).count()
+        # Recalculate points when upvotes change (upvotes contribute to points)
+        self.calculated_points = self.calculate_points()
+        self.save(update_fields=['upvote_count', 'calculated_points'])
+    
+    def update_report_count(self):
+        """Update report count from related reports"""
+        self.report_count = self.reports.filter(is_active=True).count()
+        self.save(update_fields=['report_count'])
+    
+    def calculate_points(self):
+        """
+        Calculate total points based on platform performance and community feedback.
+        Returns the calculated points value.
+        """
+        from .utils import calculate_youtube_points, calculate_tiktok_points
+        
+        # Base platform points
+        if self.channel_type == 'youtube':
+            platform_points = calculate_youtube_points(
+                self.views, self.likes, self.comments, self.subscriber_count
+            )
+        elif self.channel_type == 'tiktok':
+            platform_points = calculate_tiktok_points(
+                self.views, self.likes, self.comments, self.subscriber_count
+            )
+        else:
+            platform_points = 0.0
+        
+        # Upvote points (max 50)
+        upvote_points = min(self.upvote_count * 2, 50)
+        
+        # Continuous participation bonus (15 pts per week)
+        participation_points = (self.weeks_participated - 1) * 15
+        
+        # Total points
+        total_points = platform_points + upvote_points + participation_points
+        
+        return float(total_points)
+
+
+class EditUpvote(models.Model):
+    """Model for tracking user upvotes on edits (max 3 per user)"""
+    
+    user = models.ForeignKey(
+        CustomUser,
+        on_delete=models.CASCADE,
+        related_name='edit_upvotes'
+    )
+    
+    edit_submission = models.ForeignKey(
+        EditSubmission,
+        on_delete=models.CASCADE,
+        related_name='upvotes'
+    )
+    
+    is_active = models.BooleanField(default=True)
+    created_date = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        unique_together = ('user', 'edit_submission')
+        ordering = ['-created_date']
+    
+    def __str__(self):
+        return f"{self.user.username} upvoted {self.edit_submission}"
+    
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        if self.is_active:
+            self.edit_submission.update_upvote_count()
+    
+    def delete(self, *args, **kwargs):
+        edit_submission = self.edit_submission
+        super().delete(*args, **kwargs)
+        edit_submission.update_upvote_count()
+
+
+class EditReport(models.Model):
+    """Model for reporting explicit or inappropriate edits"""
+    
+    REPORT_REASON_CHOICES = [
+        ('explicit', 'Explicit Content'),
+        ('spam', 'Spam'),
+        ('copyright', 'Copyright Violation'),
+        ('other', 'Other'),
+    ]
+    
+    user = models.ForeignKey(
+        CustomUser,
+        on_delete=models.CASCADE,
+        related_name='edit_reports'
+    )
+    
+    edit_submission = models.ForeignKey(
+        EditSubmission,
+        on_delete=models.CASCADE,
+        related_name='reports'
+    )
+    
+    reason = models.CharField(max_length=50, choices=REPORT_REASON_CHOICES)
+    description = models.TextField(blank=True, help_text="Additional details")
+    is_active = models.BooleanField(default=True)
+    is_resolved = models.BooleanField(default=False)
+    resolved_by = models.ForeignKey(
+        CustomUser,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='resolved_reports',
+        limit_choices_to={'role': 'admin'}
+    )
+    resolved_date = models.DateTimeField(null=True, blank=True)
+    created_date = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        unique_together = ('user', 'edit_submission')
+        ordering = ['-created_date']
+    
+    def __str__(self):
+        return f"Report on {self.edit_submission} by {self.user.username} - {self.get_reason_display()}"
+    
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        if self.is_active:
+            self.edit_submission.update_report_count()
+    
+    def delete(self, *args, **kwargs):
+        edit_submission = self.edit_submission
+        super().delete(*args, **kwargs)
+        edit_submission.update_report_count()

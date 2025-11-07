@@ -9,8 +9,8 @@ from django.views.decorators.http import require_http_methods
 from django.views.generic import ListView, DetailView
 from django.db.models import Q
 from django.core.paginator import Paginator
-from .models import EditorApplication
-from .forms import EditorApplicationForm
+from .models import EditorApplication, EditSubmission, EditUpvote, EditReport
+from .forms import EditorApplicationForm, EditSubmissionForm, EditReportForm
 from .utils import fetch_youtube_channel_data, fetch_tiktok_channel_data, validate_channel_url
 from accounts.models import CustomUser
 import json
@@ -133,6 +133,43 @@ class RankingTableView(ListView):
                 context['is_paginated'] = False
             context['total_editors'] = queryset.count()
         
+        # Edit of the Week: always compute top 3 by calculated points (fresh every request)
+        # This avoids stale featured flags showing fewer than 3.
+        # Filter by platform for Edit of the Week (separate from table filter)
+        edit_platform = self.request.GET.get('edit_platform', 'youtube')
+        if edit_platform not in ['youtube', 'tiktok']:
+            edit_platform = 'youtube'
+        top_edits_qs = EditSubmission.objects.filter(
+            status='verified',
+            channel_type=edit_platform
+        ).order_by('-calculated_points', '-submitted_date')
+        top_three = list(top_edits_qs[:3])
+        # Attach thumbnails via oEmbed/ID extraction for custom cards
+        from .utils import fetch_tiktok_oembed, youtube_thumbnail_from_url
+        enriched = []
+        for edit in top_three:
+            thumb = None
+            if edit.channel_type == 'youtube':
+                thumb = youtube_thumbnail_from_url(edit.video_url)
+            else:
+                meta = fetch_tiktok_oembed(edit.video_url)
+                thumb = meta.get('thumbnail_url')
+            enriched.append({
+                'instance': edit,
+                'id': edit.id,
+                'video_url': edit.video_url,
+                'channel_type': edit.channel_type,
+                'channel_name': edit.channel_name,
+                'channel_thumbnail': edit.channel_thumbnail,
+                'title': getattr(edit, 'title', ''),
+                'upvote_count': edit.upvote_count,
+                'calculated_points': float(edit.calculated_points),
+                'week_rank': getattr(edit, 'week_rank', None),
+                'thumbnail_url': thumb,
+            })
+        context['top_edits'] = enriched
+        context['edit_platform'] = edit_platform  # Current platform for Edit of the Week section
+        
         return context
 
     def _build_mix_entries(self):
@@ -228,42 +265,50 @@ def apply_view(request):
         })
 
     if request.method == 'POST':
-        apply_youtube = request.POST.get('apply_youtube') == 'on'
-        apply_tiktok = request.POST.get('apply_tiktok') == 'on'
+        selected_platform = request.POST.get('platform')
         data_consent = request.POST.get('data_consent') == 'on'
 
-        if not (apply_youtube or apply_tiktok):
-            messages.error(request, "Select at least one platform to apply for.")
+        if not selected_platform or selected_platform not in ['youtube', 'tiktok']:
+            messages.error(request, "Please select a platform to apply for.")
             youtube_form = build_form('youtube', 'youtube')
             tiktok_form = build_form('tiktok', 'tiktok')
+            apply_youtube = selected_platform == 'youtube' if selected_platform else True
+            apply_tiktok = selected_platform == 'tiktok' if selected_platform else False
             return render_apply_form(youtube_form, tiktok_form, apply_youtube, apply_tiktok, data_consent)
 
         if not data_consent:
             messages.error(request, "You must consent to data usage to proceed.")
             youtube_form = build_form('youtube', 'youtube')
             tiktok_form = build_form('tiktok', 'tiktok')
+            apply_youtube = selected_platform == 'youtube'
+            apply_tiktok = selected_platform == 'tiktok'
             return render_apply_form(youtube_form, tiktok_form, apply_youtube, apply_tiktok, data_consent)
 
-        def prepare_form(prefix, channel_type, enabled):
-            if not enabled:
-                return build_form(prefix, channel_type)
-            post_data = request.POST.copy()
-            post_data[f'{prefix}-channel_type'] = channel_type
-            post_data[f'{prefix}-data_consent'] = 'on'
-            return build_form(prefix, channel_type, data=post_data, files=request.FILES)
-
-        youtube_form = prepare_form('youtube', 'youtube', apply_youtube)
-        tiktok_form = prepare_form('tiktok', 'tiktok', apply_tiktok)
+        # Prepare form for selected platform only
+        prefix = selected_platform
+        post_data = request.POST.copy()
+        post_data[f'{prefix}-channel_type'] = selected_platform
+        post_data[f'{prefix}-data_consent'] = 'on'
+        
+        if selected_platform == 'youtube':
+            youtube_form = build_form('youtube', 'youtube', data=post_data, files=request.FILES)
+            tiktok_form = build_form('tiktok', 'tiktok')
+            apply_youtube = True
+            apply_tiktok = False
+        else:
+            youtube_form = build_form('youtube', 'youtube')
+            tiktok_form = build_form('tiktok', 'tiktok', data=post_data, files=request.FILES)
+            apply_youtube = False
+            apply_tiktok = True
 
         forms_to_process = []
-        if apply_youtube:
+        if selected_platform == 'youtube':
             if youtube_form.is_valid():
                 forms_to_process.append(('youtube', youtube_form))
             else:
                 logger.warning("YouTube form validation failed: %s", youtube_form.errors)
                 return render_apply_form(youtube_form, tiktok_form, apply_youtube, apply_tiktok, data_consent)
-
-        if apply_tiktok:
+        else:
             if tiktok_form.is_valid():
                 forms_to_process.append(('tiktok', tiktok_form))
             else:
@@ -624,3 +669,367 @@ def admin_update_status(request, pk):
         return JsonResponse({'success': True, 'status': new_status})
     
     return redirect('edithub:admin_applications')
+
+
+# Edit of the Week Views
+
+def submit_edit(request):
+    """View for submitting edits for Edit of the Week"""
+    if not request.user.is_authenticated:
+        messages.info(request, "Please login to submit your edit for Edit of the Week.")
+        from django.urls import reverse
+        login_url = reverse('login') + '?next=' + reverse('edithub:submit_edit')
+        return redirect(login_url)
+    
+    if request.user.role != 'user':
+        messages.error(request, "Only regular users can submit edits.")
+        return redirect('edithub:ranking_table')
+    
+    # Check if user has an approved EditorApplication
+    approved_app = EditorApplication.objects.filter(
+        user=request.user,
+        status='accepted',
+        removal_requested=False
+    ).first()
+    
+    if not approved_app:
+        messages.error(request, "You must have an approved channel application before submitting edits. Please apply first.")
+        return redirect('edithub:apply')
+    
+    if request.method == 'POST':
+        form = EditSubmissionForm(data=request.POST, files=request.FILES, approved_application=approved_app)
+        
+        if form.is_valid():
+            try:
+                # Create submission using approved application data
+                if not approved_app:
+                    messages.error(request, "No approved application found.")
+                    return render(request, 'edithub/submit_edit.html', {
+                        'form': form,
+                        'approved_application': approved_app
+                    })
+                
+                submission = EditSubmission(
+                    user=request.user,
+                    approved_application=approved_app,
+                    channel_link=approved_app.channel_link,
+                    channel_type=approved_app.channel_type,
+                    channel_name=approved_app.channel_name,
+                    channel_thumbnail=approved_app.channel_thumbnail,
+                    video_url=form.cleaned_data['video_url'],
+                    title=form.cleaned_data.get('title', ''),
+                    description=form.cleaned_data.get('description', ''),
+                    status='verified'  # Auto-verified since channel is already approved
+                )
+                submission.save()
+                
+                from django.utils import timezone
+                submission.verified_date = timezone.now()
+                submission.save()
+                
+                messages.success(request, "Edit submitted successfully! It will be visible in the Edit of the Week section.")
+                return redirect('edithub:view_all_edits')
+            
+            except Exception as error:
+                logger.error("Error creating edit submission", exc_info=True)
+                messages.error(request, f"An error occurred: {error}")
+                return render(request, 'edithub/submit_edit.html', {
+                    'form': form,
+                    'approved_application': approved_app
+                })
+    else:
+        form = EditSubmissionForm(approved_application=approved_app)
+    
+    return render(request, 'edithub/submit_edit.html', {
+        'form': form,
+        'approved_application': approved_app
+    })
+
+
+@login_required
+def confirm_edit_submission(request):
+    """Confirmation page after edit submission"""
+    if request.user.role != 'user':
+        messages.error(request, "Only regular users can submit edits.")
+        return redirect('edithub:ranking_table')
+    
+    submission_id = request.session.get('pending_edit_submission_id')
+    
+    if not submission_id:
+        messages.error(request, "No submission data found. Please start over.")
+        return redirect('edithub:submit_edit')
+    
+    try:
+        submission = EditSubmission.objects.get(pk=submission_id, user=request.user)
+    except EditSubmission.DoesNotExist:
+        messages.error(request, "Submission not found. Please start over.")
+        request.session.pop('pending_edit_submission_id', None)
+        return redirect('edithub:submit_edit')
+    
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        
+        if action == 'confirm':
+            submission.channel_verified = True
+            submission.status = 'verified'
+            from django.utils import timezone
+            submission.verified_date = timezone.now()
+            submission.save()
+            
+            request.session.pop('pending_edit_submission_id', None)
+            messages.success(request, "Edit submitted successfully! It will be visible in the Edit of the Week section.")
+            return redirect('edithub:view_all_edits')
+        
+        # Cancel action
+        submission.delete()
+        request.session.pop('pending_edit_submission_id', None)
+        messages.info(request, "Submission cancelled.")
+        return redirect('edithub:submit_edit')
+    
+    context = {
+        'submission': submission,
+    }
+    return render(request, 'edithub/confirm_edit_submission.html', context)
+
+
+def view_all_edits(request):
+    """View all edits (YouTube Shorts-like interface)"""
+    # Get platform filter from query parameter (default to 'youtube')
+    platform = request.GET.get('platform', 'youtube')
+    if platform not in ['youtube', 'tiktok']:
+        platform = 'youtube'
+    
+    # Get verified edits filtered by platform and ordered by calculated points
+    edits_qs = EditSubmission.objects.filter(
+        status='verified',
+        channel_type=platform
+    ).order_by('-calculated_points', '-submitted_date')
+    
+    # Pagination
+    paginator = Paginator(edits_qs, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    # Get user's upvoted edits if authenticated
+    user_upvoted_ids = set()
+    user_upvote_count = 0
+    if request.user.is_authenticated:
+        user_upvotes = EditUpvote.objects.filter(
+            user=request.user,
+            is_active=True
+        ).select_related('edit_submission')
+        user_upvoted_ids = {upvote.edit_submission_id for upvote in user_upvotes}
+        user_upvote_count = len(user_upvoted_ids)
+    
+    # Enrich current page with thumbnails
+    from .utils import fetch_tiktok_oembed, youtube_thumbnail_from_url
+    enriched_page = []
+    for e in page_obj.object_list:
+        thumb = youtube_thumbnail_from_url(e.video_url) if e.channel_type == 'youtube' else fetch_tiktok_oembed(e.video_url).get('thumbnail_url')
+        enriched_page.append({
+            'instance': e,
+            'id': e.id,
+            'video_url': e.video_url,
+            'channel_type': e.channel_type,
+            'channel_name': e.channel_name,
+            'channel_thumbnail': e.channel_thumbnail,
+            'title': getattr(e, 'title', ''),
+            'upvote_count': e.upvote_count,
+            'calculated_points': float(e.calculated_points),
+            'thumbnail_url': thumb,
+        })
+
+    # Get all edits for ranking panel filtered by platform (simplified, no thumbnails needed)
+    all_edits_ranking = list(EditSubmission.objects.filter(
+        status='verified',
+        channel_type=platform
+    ).order_by('-calculated_points', '-submitted_date').values('id', 'title', 'channel_name', 'calculated_points', 'upvote_count', 'channel_type')[:50])  # Limit to top 50 for performance
+    
+    context = {
+        'edits': enriched_page,
+        'page_obj': page_obj,
+        'is_paginated': page_obj.has_other_pages(),
+        'user_upvoted_ids': user_upvoted_ids,
+        'user_upvote_count': user_upvote_count,
+        'max_upvotes': 3,
+        'all_edits_ranking': all_edits_ranking,  # For side panel
+        'current_platform': platform,  # Current selected platform
+    }
+    
+    return render(request, 'edithub/view_all_edits.html', context)
+
+
+@login_required
+@require_http_methods(["POST"])
+def upvote_edit(request, pk):
+    """AJAX endpoint to upvote an edit"""
+    if request.user.role != 'user':
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+    
+    try:
+        submission = EditSubmission.objects.get(pk=pk, status='verified')
+    except EditSubmission.DoesNotExist:
+        return JsonResponse({'error': 'Edit not found'}, status=404)
+    
+    # Check if user has reached max upvotes (3)
+    user_upvote_count = EditUpvote.objects.filter(user=request.user, is_active=True).count()
+    if user_upvote_count >= 3:
+        # Check if this edit is already upvoted
+        existing_upvote = EditUpvote.objects.filter(
+            user=request.user,
+            edit_submission=submission,
+            is_active=True
+        ).first()
+        
+        if not existing_upvote:
+            return JsonResponse({
+                'error': 'You have reached the maximum of 3 upvotes. Please remove an upvote first.',
+                'max_reached': True
+            }, status=400)
+    
+    # Toggle upvote
+    upvote, created = EditUpvote.objects.get_or_create(
+        user=request.user,
+        edit_submission=submission,
+        defaults={'is_active': True}
+    )
+    
+    if not created:
+        # Toggle existing upvote
+        upvote.is_active = not upvote.is_active
+        upvote.save()
+    
+    submission.update_upvote_count()
+    # Refresh from DB to get updated calculated_points
+    submission.refresh_from_db()
+    
+    return JsonResponse({
+        'success': True,
+        'upvoted': upvote.is_active,
+        'upvote_count': submission.upvote_count,
+        'calculated_points': float(submission.calculated_points),
+        'user_upvote_count': EditUpvote.objects.filter(user=request.user, is_active=True).count()
+    })
+
+
+@login_required
+@require_http_methods(["POST"])
+def report_edit(request, pk):
+    """AJAX endpoint to report an edit"""
+    if request.user.role != 'user':
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+    
+    try:
+        submission = EditSubmission.objects.get(pk=pk, status='verified')
+    except EditSubmission.DoesNotExist:
+        return JsonResponse({'error': 'Edit not found'}, status=404)
+    
+    # Check if user already reported this edit
+    existing_report = EditReport.objects.filter(
+        user=request.user,
+        edit_submission=submission,
+        is_active=True
+    ).first()
+    
+    if existing_report:
+        return JsonResponse({'error': 'You have already reported this edit.'}, status=400)
+    
+    form = EditReportForm(request.POST)
+    if form.is_valid():
+        report = EditReport(
+            user=request.user,
+            edit_submission=submission,
+            reason=form.cleaned_data['reason'],
+            description=form.cleaned_data.get('description', ''),
+            is_active=True
+        )
+        report.save()
+        
+        submission.update_report_count()
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Edit reported successfully. Thank you for helping keep the community safe.'
+        })
+    
+    return JsonResponse({'error': 'Invalid form data', 'errors': form.errors}, status=400)
+
+
+@login_required
+def admin_reported_edits(request):
+    """Admin view to see and manage reported edits"""
+    if request.user.role != 'admin':
+        messages.error(request, "Access denied. Admin account required.")
+        return redirect('home')
+    
+    # Get all active reports
+    reports = EditReport.objects.filter(
+        is_active=True,
+        is_resolved=False
+    ).select_related('user', 'edit_submission').order_by('-created_date')
+    
+    # Filter by reason if provided
+    reason_filter = request.GET.get('reason', 'all')
+    if reason_filter != 'all':
+        reports = reports.filter(reason=reason_filter)
+    
+    # Pagination
+    paginator = Paginator(reports, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'reports': page_obj.object_list,
+        'page_obj': page_obj,
+        'is_paginated': page_obj.has_other_pages(),
+        'reason_filter': reason_filter,
+        'reason_choices': EditReport.REPORT_REASON_CHOICES,
+        'total_reports': EditReport.objects.filter(is_active=True, is_resolved=False).count(),
+    }
+    
+    return render(request, 'edithub/admin_reported_edits.html', context)
+
+
+@login_required
+@require_http_methods(["POST"])
+def admin_resolve_report(request, pk):
+    """Admin endpoint to resolve/remove reported edits"""
+    if request.user.role != 'admin':
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+    
+    try:
+        report = EditReport.objects.get(pk=pk)
+    except EditReport.DoesNotExist:
+        return JsonResponse({'error': 'Report not found'}, status=404)
+    
+    action = request.POST.get('action')
+    
+    if action == 'remove_edit':
+        # Remove the edit submission
+        report.edit_submission.status = 'rejected'
+        report.edit_submission.save()
+        report.is_resolved = True
+        report.resolved_by = request.user
+        from django.utils import timezone
+        report.resolved_date = timezone.now()
+        report.save()
+        
+        messages.success(request, "Edit removed successfully.")
+    
+    elif action == 'dismiss_report':
+        # Dismiss the report (mark as resolved but keep edit)
+        report.is_resolved = True
+        report.resolved_by = request.user
+        from django.utils import timezone
+        report.resolved_date = timezone.now()
+        report.save()
+        
+        messages.success(request, "Report dismissed.")
+    
+    else:
+        return JsonResponse({'error': 'Invalid action'}, status=400)
+    
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse({'success': True})
+    
+    return redirect('edithub:admin_reported_edits')
