@@ -6,20 +6,105 @@
 
 {% block content %}
 <style>
-  .shorts-container { height: 100vh; overflow-y: auto; scroll-snap-type: y mandatory; scroll-behavior: smooth; -webkit-overflow-scrolling: touch; }
+  /* Desktop: Fixed position, no scrolling */
+  .shorts-container { 
+    height: 100vh; 
+    overflow: hidden; 
+    position: relative;
+  }
   .shorts-container::-webkit-scrollbar { display: none; }
   .shorts-container { -ms-overflow-style: none; scrollbar-width: none; }
-  .video-item { height: 100vh; scroll-snap-align: start; scroll-snap-stop: always; display: flex; align-items: center; justify-content: center; position: relative; }
+  .video-item { 
+    height: 100vh; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+  }
+  .video-item.active {
+    opacity: 1;
+    visibility: visible;
+    z-index: 1;
+  }
+  /* Mobile: Scrollable with snap */
+  @media (max-width: 768px) {
+    .shorts-container { 
+      overflow-y: auto; 
+      scroll-snap-type: y mandatory; 
+      scroll-behavior: smooth; 
+      -webkit-overflow-scrolling: touch;
+    }
+    .video-item {
+      position: relative;
+      scroll-snap-align: start;
+      scroll-snap-stop: always;
+      opacity: 1;
+      visibility: visible;
+      padding-top: 0;
+      align-items: center;
+    }
+    .video-item.active {
+      position: relative;
+    }
+  }
   .ranking-panel { max-height: calc(100vh - 120px); overflow-y: auto; }
   .ranking-panel::-webkit-scrollbar { width: 6px; }
   .ranking-panel::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.1); border-radius: 3px; }
   .ranking-panel::-webkit-scrollbar-thumb { background: rgba(147, 51, 234, 0.5); border-radius: 3px; }
   .ranking-panel::-webkit-scrollbar-thumb:hover { background: rgba(147, 51, 234, 0.7); }
+  /* Navigation buttons for desktop */
+  .nav-button {
+    position: fixed;
+    right: 2rem;
+    z-index: 50;
+    width: 48px;
+    height: 48px;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    cursor: pointer;
+  }
+  .nav-button:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+  .nav-button-up {
+    top: calc(50% - 40px);
+  }
+  .nav-button-down {
+    top: calc(50% + 8px);
+  }
+  @media (max-width: 768px) {
+    .nav-button {
+      display: none;
+    }
+  }
   /* Mobile menu overlay */
   .sidebar-overlay { display: none; }
   .sidebar-overlay.active { display: block; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); z-index: 40; }
   @media (max-width: 768px) {
     .sidebar-overlay.active { display: block; }
+  }
+  /* Action buttons positioning */
+  .action-buttons-container {
+    right: 0.5rem;
+  }
+  @media (min-width: 768px) {
+    .action-buttons-container {
+      left: calc(50% + 210px + 20px);
+      right: auto;
+    }
   }
 </style>
 <main class="bg-gradient-to-b from-gray-900 to-gray-800 min-h-screen pt-16">
@@ -195,7 +280,7 @@
                 </div>
 
                 <!-- Action Buttons (Outside card, close to right edge) -->
-                <div class="absolute right-2 md:left-1/2 md:translate-x-[220px] top-1/2 -translate-y-1/2 flex flex-col gap-3 md:gap-4 z-20">
+                <div class="absolute action-buttons-container top-1/2 -translate-y-1/2 flex flex-col gap-3 md:gap-4 z-20">
                     <!-- Upvote Button -->
                     <button 
                         type="button"
@@ -294,6 +379,18 @@
             </form>
         </div>
     </div>
+    
+    <!-- Navigation Buttons (Desktop Only) -->
+    <button id="navButtonUp" class="nav-button nav-button-up" aria-label="Previous edit">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+        </svg>
+    </button>
+    <button id="navButtonDown" class="nav-button nav-button-down" aria-label="Next edit">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+        </svg>
+    </button>
 </main>
 
 <script>
@@ -307,16 +404,74 @@ function toggleSidebar() {
     }
 }
 
-// Function to scroll to a specific edit
+let currentEditIndex = 0;
+let allEdits = [];
+
+// Function to switch to a specific edit (Desktop: fixed, Mobile: scroll)
 function scrollToEdit(editId) {
     const container = document.querySelector('.shorts-container');
-    const targetItem = container.querySelector(`[data-edit-id="${editId}"]`);
-    if (targetItem) {
+    const items = Array.from(container.querySelectorAll('.video-item'));
+    const targetItem = items.find(item => parseInt(item.dataset.editId) === parseInt(editId));
+    
+    if (!targetItem) return;
+    
+    const isMobile = window.innerWidth <= 768;
+    
+    if (isMobile) {
+        // Mobile: Scroll to the item
         targetItem.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        // Close sidebar on mobile after selecting
-        if (window.innerWidth <= 768) {
-            toggleSidebar();
+        toggleSidebar();
+    } else {
+        // Desktop: Switch active class
+        const targetIndex = items.indexOf(targetItem);
+        if (targetIndex !== -1) {
+            switchToEdit(targetIndex);
         }
+    }
+}
+
+// Function to switch to edit by index (Desktop only)
+function switchToEdit(index) {
+    const items = Array.from(document.querySelectorAll('.video-item'));
+    if (index < 0 || index >= items.length) return;
+    
+    // Remove active class from all items
+    items.forEach(item => item.classList.remove('active'));
+    
+    // Add active class to target item
+    items[index].classList.add('active');
+    currentEditIndex = index;
+    
+    // Update navigation buttons
+    updateNavButtons();
+}
+
+// Function to update navigation button states
+function updateNavButtons() {
+    const items = Array.from(document.querySelectorAll('.video-item'));
+    const upButton = document.getElementById('navButtonUp');
+    const downButton = document.getElementById('navButtonDown');
+    
+    if (upButton) {
+        upButton.disabled = currentEditIndex === 0;
+    }
+    if (downButton) {
+        downButton.disabled = currentEditIndex === items.length - 1;
+    }
+}
+
+// Function to go to next edit
+function nextEdit() {
+    const items = Array.from(document.querySelectorAll('.video-item'));
+    if (currentEditIndex < items.length - 1) {
+        switchToEdit(currentEditIndex + 1);
+    }
+}
+
+// Function to go to previous edit
+function previousEdit() {
+    if (currentEditIndex > 0) {
+        switchToEdit(currentEditIndex - 1);
     }
 }
 
@@ -327,6 +482,27 @@ document.addEventListener('DOMContentLoaded', function() {
         menuToggle.addEventListener('click', toggleSidebar);
     }
     
+    // Initialize desktop: Set first video as active
+    const isMobile = window.innerWidth <= 768;
+    if (!isMobile) {
+        const items = Array.from(document.querySelectorAll('.video-item'));
+        if (items.length > 0) {
+            items[0].classList.add('active');
+            currentEditIndex = 0;
+            updateNavButtons();
+        }
+    }
+    
+    // Navigation button handlers (Desktop only)
+    const navButtonUp = document.getElementById('navButtonUp');
+    const navButtonDown = document.getElementById('navButtonDown');
+    if (navButtonUp) {
+        navButtonUp.addEventListener('click', previousEdit);
+    }
+    if (navButtonDown) {
+        navButtonDown.addEventListener('click', nextEdit);
+    }
+    
     // Add click handlers for ranking panel items
     document.querySelectorAll('.rank-item-btn').forEach(btn => {
         btn.addEventListener('click', function() {
@@ -335,7 +511,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // Keyboard navigation (arrow keys for TikTok-style scrolling)
+    // Keyboard navigation
     const container = document.querySelector('.shorts-container');
     if (container) {
         let isScrolling = false;
@@ -345,29 +521,43 @@ document.addEventListener('DOMContentLoaded', function() {
                 return; // Don't interfere with form inputs
             }
             
+            const isMobile = window.innerWidth <= 768;
+            
             if (e.key === 'ArrowDown' || e.key === 'PageDown') {
                 e.preventDefault();
-                if (!isScrolling) {
-                    isScrolling = true;
-                    const currentScroll = container.scrollTop;
-                    const itemHeight = container.clientHeight;
-                    container.scrollTo({
-                        top: currentScroll + itemHeight,
-                        behavior: 'smooth'
-                    });
-                    setTimeout(() => { isScrolling = false; }, 500);
+                if (isMobile) {
+                    // Mobile: Scroll
+                    if (!isScrolling) {
+                        isScrolling = true;
+                        const currentScroll = container.scrollTop;
+                        const itemHeight = container.clientHeight;
+                        container.scrollTo({
+                            top: currentScroll + itemHeight,
+                            behavior: 'smooth'
+                        });
+                        setTimeout(() => { isScrolling = false; }, 500);
+                    }
+                } else {
+                    // Desktop: Switch to next
+                    nextEdit();
                 }
             } else if (e.key === 'ArrowUp' || e.key === 'PageUp') {
                 e.preventDefault();
-                if (!isScrolling) {
-                    isScrolling = true;
-                    const currentScroll = container.scrollTop;
-                    const itemHeight = container.clientHeight;
-                    container.scrollTo({
-                        top: currentScroll - itemHeight,
-                        behavior: 'smooth'
-                    });
-                    setTimeout(() => { isScrolling = false; }, 500);
+                if (isMobile) {
+                    // Mobile: Scroll
+                    if (!isScrolling) {
+                        isScrolling = true;
+                        const currentScroll = container.scrollTop;
+                        const itemHeight = container.clientHeight;
+                        container.scrollTo({
+                            top: currentScroll - itemHeight,
+                            behavior: 'smooth'
+                        });
+                        setTimeout(() => { isScrolling = false; }, 500);
+                    }
+                } else {
+                    // Desktop: Switch to previous
+                    previousEdit();
                 }
             }
         });
