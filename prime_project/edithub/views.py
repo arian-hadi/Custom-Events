@@ -349,8 +349,16 @@ def apply_view(request):
                 else:
                     channel_data = fetch_tiktok_channel_data(channel_link)
 
+                # For TikTok, be more lenient - allow application if we at least got the username
+                # The error might be a timeout but we might still have some data
                 if channel_data.get('error'):
-                    raise ValueError(f"Failed to fetch {platform.title()} data: {channel_data['error']}")
+                    if platform == 'tiktok' and channel_data.get('channel_name'):
+                        # We have at least the username, allow it but log the error
+                        logger.warning(f"TikTok fetch had error but got channel_name: {channel_data['error']}")
+                        # Clear the error so application can proceed
+                        channel_data['error'] = None
+                    else:
+                        raise ValueError(f"Failed to fetch {platform.title()} data: {channel_data['error']}")
 
                 application = EditorApplication(
                     user=request.user,
@@ -709,6 +717,28 @@ def submit_edit(request):
                         'approved_application': approved_app
                     })
                 
+                # Extract direct video URL for TikTok videos (for clean HTML5 player)
+                # Also fetch title automatically for TikTok if user didn't provide one
+                direct_video_url = None
+                video_title = form.cleaned_data.get('title', '').strip()
+                
+                if approved_app.channel_type == 'tiktok':
+                    from .utils import extract_tiktok_video_url, fetch_tiktok_video_title
+                    video_data = extract_tiktok_video_url(form.cleaned_data['video_url'])
+                    if video_data.get('video_url') and not video_data.get('error'):
+                        direct_video_url = video_data['video_url']
+                        logger.info(f"Extracted TikTok direct video URL for edit submission")
+                    else:
+                        logger.warning(f"Could not extract TikTok video URL: {video_data.get('error', 'Unknown error')}")
+                        # Continue anyway - will use TikTok embed as fallback
+                    
+                    # Auto-fetch title from TikTok oEmbed if user didn't provide one
+                    if not video_title:
+                        fetched_title = fetch_tiktok_video_title(form.cleaned_data['video_url'])
+                        if fetched_title:
+                            video_title = fetched_title
+                            logger.info(f"Auto-fetched TikTok video title: {video_title}")
+                
                 submission = EditSubmission(
                     user=request.user,
                     approved_application=approved_app,
@@ -717,7 +747,8 @@ def submit_edit(request):
                     channel_name=approved_app.channel_name,
                     channel_thumbnail=approved_app.channel_thumbnail,
                     video_url=form.cleaned_data['video_url'],
-                    title=form.cleaned_data.get('title', ''),
+                    direct_video_url=direct_video_url,
+                    title=video_title,  # Use auto-fetched title for TikTok if available
                     description=form.cleaned_data.get('description', ''),
                     status='verified'  # Auto-verified since channel is already approved
                 )

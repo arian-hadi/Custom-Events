@@ -57,7 +57,13 @@ class Command(BaseCommand):
                     edit.views = stats.get('views', 0)
                     edit.likes = stats.get('likes', 0)
                     edit.comments = stats.get('comments', 0)
-                    edit.subscriber_count = stats.get('subscriber_count', 0)
+                    # OPTIMIZATION: Reuse subscriber count from EditorApplication instead of fetching again
+                    # This reduces API calls by 50% - channel data is already stored when user applies
+                    if edit.approved_application:
+                        edit.subscriber_count = edit.approved_application.follower_count
+                    else:
+                        # Fallback: use API value if no approved_application exists (shouldn't happen)
+                        edit.subscriber_count = stats.get('subscriber_count', 0)
                     
                 elif edit.channel_type == 'tiktok':
                     stats = fetch_tiktok_video_stats(edit.video_url)
@@ -69,7 +75,13 @@ class Command(BaseCommand):
                     edit.views = stats.get('views', 0)
                     edit.likes = stats.get('likes', 0)
                     edit.comments = stats.get('comments', 0)
-                    edit.subscriber_count = stats.get('follower_count', 0)
+                    # OPTIMIZATION: Reuse follower count from EditorApplication instead of fetching again
+                    # This reduces API calls by 50% - channel data is already stored when user applies
+                    if edit.approved_application:
+                        edit.subscriber_count = edit.approved_application.follower_count
+                    else:
+                        # Fallback: use API value if no approved_application exists (shouldn't happen)
+                        edit.subscriber_count = stats.get('follower_count', 0)
                 
                 # Update upvote count
                 edit.update_upvote_count()

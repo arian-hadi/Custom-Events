@@ -257,6 +257,12 @@ class EditSubmission(models.Model):
     
     # Edit information
     video_url = models.URLField(max_length=500, help_text="YouTube Shorts or TikTok video URL")
+    direct_video_url = models.URLField(
+        max_length=1000, 
+        blank=True, 
+        null=True,
+        help_text="Direct video file URL (extracted via web scraping for TikTok, used for clean HTML5 video player)"
+    )
     title = models.CharField(max_length=200, blank=True)
     description = models.TextField(blank=True)
     

@@ -12,8 +12,14 @@ class EdithubConfig(AppConfig):
         """Start the scheduler when Django is ready"""
         import os
         import sys
-        from apscheduler.schedulers.background import BackgroundScheduler
-        from apscheduler.triggers.interval import IntervalTrigger
+        
+        try:
+            from apscheduler.schedulers.background import BackgroundScheduler
+            from apscheduler.triggers.interval import IntervalTrigger
+        except ImportError:
+            logger.warning("apscheduler not installed. Scheduled tasks will not run automatically.")
+            return
+        
         from django.core.management import call_command
         
         # Skip if running management commands (migrate, collectstatic, test, etc.)

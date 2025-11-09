@@ -255,8 +255,8 @@ def fetch_youtube_channel_data(channel_url: str) -> Dict[str, any]:
 
 def fetch_tiktok_channel_data(channel_url: str) -> Dict[str, any]:
     """
-    Fetch TikTok channel data
-    Note: TikTok doesn't have an official public API, so we'll use web scraping
+    Fetch TikTok channel data using Playwright for robust scraping
+    TikTok requires JavaScript execution to load data, so simple HTTP requests don't work
     Returns: {'channel_name': str, 'follower_count': int, 'thumbnail': str, 'error': str}
     """
     result = {
@@ -271,53 +271,373 @@ def fetch_tiktok_channel_data(channel_url: str) -> Dict[str, any]:
         result['error'] = 'Invalid TikTok URL format'
         return result
     
+    # Try simple request first (faster if it works)
+    # TikTok often embeds data in initial HTML, so this might work without Playwright
     try:
-        # TikTok profile URL
         profile_url = f'https://www.tiktok.com/@{username}'
-        
-        # Use a simple request to get the page
         headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'DNT': '1',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1',
+            'Referer': 'https://www.tiktok.com/',
         }
         
-        response = requests.get(profile_url, headers=headers, timeout=10)
+        response = requests.get(profile_url, headers=headers, timeout=20)
         response.raise_for_status()
-        
-        # Parse the page for follower count (this is a simplified approach)
-        # TikTok pages have JSON data embedded in the HTML
         html_content = response.text
         
-        # Try to find follower count in the page
-        # This is a basic implementation - in production, you might want to use
-        # a more robust scraping solution or a third-party API
-        follower_match = re.search(r'"followerCount":(\d+)', html_content)
-        if follower_match:
-            result['follower_count'] = int(follower_match.group(1))
+        # Try to extract JSON from script tags (TikTok embeds data here)
+        json_data = None
+        script_patterns = [
+            r'<script[^>]*id="__UNIVERSAL_DATA_FOR_REHYDRATION__"[^>]*>(.*?)</script>',
+            r'<script[^>]*type="application/json"[^>]*id="__UNIVERSAL_DATA_FOR_REHYDRATION__"[^>]*>(.*?)</script>',
+            r'window\.__UNIVERSAL_DATA_FOR_REHYDRATION__\s*=\s*({.*?});',
+        ]
         
-        # Try to find channel name
-        name_match = re.search(r'"nickname":"([^"]+)"', html_content)
-        if name_match:
-            result['channel_name'] = name_match.group(1)
+        for pattern in script_patterns:
+            script_match = re.search(pattern, html_content, re.DOTALL)
+            if script_match:
+                try:
+                    json_str = script_match.group(1).strip().strip(';').strip()
+                    # Clean up JSON string - remove any trailing semicolons or comments
+                    json_str = re.sub(r';\s*$', '', json_str)
+                    json_data = json.loads(json_str)
+                    logger.info(f"Successfully parsed TikTok JSON data for: {username}")
+                    break
+                except (json.JSONDecodeError, IndexError) as e:
+                    logger.debug(f"JSON parse failed for pattern {pattern[:50]}: {str(e)}")
+                    continue
         
-        # Try to find avatar
-        avatar_match = re.search(r'"avatarMedium":"([^"]+)"', html_content)
-        if avatar_match:
-            result['thumbnail'] = avatar_match.group(1).replace('\\u002F', '/')
+        # Extract from JSON if found
+        if json_data:
+            def find_user_data(obj, depth=0):
+                if depth > 6:
+                    return None
+                if not isinstance(obj, dict):
+                    return None
+                # Check if this looks like user data
+                if 'followerCount' in obj and ('nickname' in obj or 'displayName' in obj or 'name' in obj):
+                    return obj
+                # Search recursively
+                for key, value in obj.items():
+                    if isinstance(value, (dict, list)):
+                        found = find_user_data(value, depth + 1)
+                        if found:
+                            return found
+                return None
+            
+            user_data = find_user_data(json_data)
+            if user_data:
+                result['follower_count'] = int(user_data.get('followerCount', 0) or user_data.get('follower', 0))
+                result['channel_name'] = (user_data.get('nickname') or 
+                                         user_data.get('displayName') or 
+                                         user_data.get('name') or 
+                                         '')
+                avatar = (user_data.get('avatarMedium') or 
+                         user_data.get('avatarLarger') or 
+                         user_data.get('avatar') or 
+                         '')
+                if avatar:
+                    thumb = avatar.replace('\\u002F', '/').replace('\\/', '/')
+                    if thumb.startswith('//'):
+                        thumb = 'https:' + thumb
+                    elif not thumb.startswith('http'):
+                        thumb = 'https://' + thumb.lstrip('/')
+                    result['thumbnail'] = thumb
+                logger.info(f"Extracted from JSON: name={result['channel_name']}, followers={result['follower_count']}, thumb={'yes' if result['thumbnail'] else 'no'}")
         
-        if not result['channel_name'] and not result['follower_count']:
-            result['error'] = 'Could not extract channel data from TikTok page'
-            # As a fallback, set the username as channel name
-            result['channel_name'] = username
+        # Fallback to regex if JSON extraction didn't work or didn't find everything
+        if not result['follower_count']:
+            patterns = [
+                r'"followerCount"\s*:\s*(\d+)',
+                r'"followerCount":\s*(\d+)',
+                r'"followerCount":(\d+)',
+                r'followerCount["\']?\s*:\s*(\d+)',
+            ]
+            for pattern in patterns:
+                match = re.search(pattern, html_content)
+                if match:
+                    try:
+                        result['follower_count'] = int(match.group(1))
+                        logger.info(f"Extracted follower count via regex: {result['follower_count']}")
+                        break
+                    except (ValueError, IndexError):
+                        continue
+        
+        if not result['channel_name']:
+            patterns = [
+                r'"nickname"\s*:\s*"([^"]+)"',
+                r'"nickname":"([^"]+)"',
+                r'"displayName"\s*:\s*"([^"]+)"',
+                r'nickname["\']?\s*:\s*"([^"]+)"',
+            ]
+            for pattern in patterns:
+                match = re.search(pattern, html_content)
+                if match:
+                    result['channel_name'] = match.group(1)
+                    logger.info(f"Extracted channel name via regex: {result['channel_name']}")
+                    break
+        
+        if not result['thumbnail']:
+            patterns = [
+                r'"avatarMedium"\s*:\s*"([^"]+)"',
+                r'"avatarLarger"\s*:\s*"([^"]+)"',
+                r'"avatar"\s*:\s*"([^"]+)"',
+                r'avatarMedium["\']?\s*:\s*"([^"]+)"',
+            ]
+            for pattern in patterns:
+                match = re.search(pattern, html_content)
+                if match:
+                    thumb = match.group(1).replace('\\u002F', '/').replace('\\/', '/')
+                    if thumb.startswith('//'):
+                        thumb = 'https:' + thumb
+                    elif not thumb.startswith('http'):
+                        thumb = 'https://' + thumb.lstrip('/')
+                    result['thumbnail'] = thumb
+                    logger.info(f"Extracted thumbnail via regex")
+                    break
+        
+        # If we got at least channel name and some data, return (don't require all fields)
+        if result['channel_name']:
+            logger.info(f"Simple request extracted data for {username}: name={result['channel_name']}, followers={result['follower_count']}, thumbnail={'yes' if result['thumbnail'] else 'no'}")
+            return result
         
     except requests.exceptions.RequestException as e:
-        logger.error(f"TikTok fetch error: {str(e)}")
-        result['error'] = f'Failed to fetch channel data: {str(e)}'
-        # Fallback: use username as channel name
-        result['channel_name'] = username
+        logger.warning(f"TikTok simple fetch failed: {str(e)}, trying Playwright")
     except Exception as e:
-        logger.error(f"Unexpected error fetching TikTok data: {str(e)}")
-        result['error'] = f'Unexpected error: {str(e)}'
+        logger.warning(f"TikTok simple fetch error: {str(e)}, trying Playwright")
+    
+    # Use Playwright if simple request didn't work (TikTok requires JS execution)
+    try:
+        try:
+            from playwright.sync_api import sync_playwright
+        except ImportError:
+            result['error'] = 'Playwright is not installed. Run: pip install playwright && playwright install chromium'
+            result['channel_name'] = username
+            logger.error("Playwright not installed for TikTok channel data")
+            return result
+        
+        with sync_playwright() as p:
+            browser = p.chromium.launch(
+                headless=True,
+                args=['--no-sandbox', '--disable-setuid-sandbox', '--disable-blink-features=AutomationControlled']
+            )
+            
+            context = browser.new_context(
+                user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                viewport={'width': 1920, 'height': 1080}
+            )
+            
+            context.add_init_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined});")
+            
+            page = context.new_page()
+            
+            try:
+                profile_url = f'https://www.tiktok.com/@{username}'
+                logger.info(f"Loading TikTok profile with Playwright: {profile_url}")
+                
+                # Use 'load' instead of 'networkidle' - TikTok pages have continuous network activity
+                # Also increase timeout and add retry logic
+                try:
+                    page.goto(profile_url, wait_until='load', timeout=45000)
+                except Exception as goto_error:
+                    # If load times out, try domcontentloaded (faster, less strict)
+                    logger.warning(f"Load timeout, trying domcontentloaded: {str(goto_error)}")
+                    try:
+                        page.goto(profile_url, wait_until='domcontentloaded', timeout=20000)
+                    except Exception:
+                        # If that also fails, just continue - page might still have data
+                        logger.warning("Both load and domcontentloaded timed out, continuing anyway")
+                
+                # Wait for dynamic content to load
+                page.wait_for_timeout(3000)
+                
+                # Try to wait for key elements that indicate page loaded
+                try:
+                    page.wait_for_selector('h1, [data-e2e="user-title"], body', timeout=5000)
+                except Exception:
+                    pass  # Continue even if selectors not found
+                
+                # Extract data using JavaScript (safe version that avoids browser objects)
+                js_code = """
+                    () => {
+                        const data = {};
+                        const username = """ + json.dumps(username) + """;
+                        
+                        // Helper to safely check if a value is a plain object
+                        function isPlainObject(obj) {
+                            if (!obj || typeof obj !== 'object') return false;
+                            if (obj.constructor && obj.constructor.name !== 'Object') return false;
+                            // Avoid browser objects like CSSStyleSheet, NodeList, etc.
+                            if (obj.nodeType !== undefined) return false;
+                            if (obj.length !== undefined && typeof obj.length === 'number' && !Array.isArray(obj)) return false;
+                            try {
+                                return Object.getPrototypeOf(obj) === Object.prototype || Object.getPrototypeOf(obj) === null;
+                            } catch(e) {
+                                return false;
+                            }
+                        }
+                        
+                        // Try window.__UNIVERSAL_DATA_FOR_REHYDRATION__
+                        if (window.__UNIVERSAL_DATA_FOR_REHYDRATION__) {
+                            const ud = window.__UNIVERSAL_DATA_FOR_REHYDRATION__;
+                            function findUser(obj, depth=0) {
+                                if (depth > 8) return null;
+                                if (!isPlainObject(obj) && !Array.isArray(obj)) return null;
+                                
+                                // Check if this object has user data
+                                if (isPlainObject(obj)) {
+                                    if (obj.followerCount !== undefined && (obj.nickname || obj.displayName)) {
+                                        return obj;
+                                    }
+                                }
+                                
+                                // Safely iterate
+                                try {
+                                    if (Array.isArray(obj)) {
+                                        for (let i = 0; i < Math.min(obj.length, 100); i++) {
+                                            const found = findUser(obj[i], depth+1);
+                                            if (found) return found;
+                                        }
+                                    } else if (isPlainObject(obj)) {
+                                        const keys = Object.keys(obj);
+                                        for (let i = 0; i < Math.min(keys.length, 200); i++) {
+                                            const key = keys[i];
+                                            try {
+                                                const value = obj[key];
+                                                // Skip functions and browser objects
+                                                if (typeof value === 'function') continue;
+                                                if (value && typeof value === 'object' && value.nodeType !== undefined) continue;
+                                                const found = findUser(value, depth+1);
+                                                if (found) return found;
+                                            } catch(e) {
+                                                continue; // Skip if we can't access this property
+                                            }
+                                        }
+                                    }
+                                } catch(e) {
+                                    // Ignore errors when accessing properties
+                                }
+                                return null;
+                            }
+                            
+                            try {
+                                const user = findUser(ud);
+                                if (user && isPlainObject(user)) {
+                                    data.followerCount = user.followerCount || user.follower;
+                                    data.nickname = user.nickname || user.displayName || user.name;
+                                    data.avatar = user.avatarMedium || user.avatarLarger || user.avatar;
+                                }
+                            } catch(e) {
+                                // Ignore errors
+                            }
+                        }
+                        
+                        // Try DOM elements
+                        try {
+                            if (!data.nickname) {
+                                const h1 = document.querySelector('h1[data-e2e="user-title"], h1');
+                                if (h1) data.nickname = h1.textContent.trim();
+                            }
+                            
+                            if (!data.followerCount) {
+                                const followerEl = document.querySelector('[data-e2e="followers-count"]');
+                                if (followerEl) {
+                                    const text = followerEl.textContent.trim();
+                                    const match = text.match(/([\\d.]+)([KMB]?)/i);
+                                    if (match) {
+                                        let count = parseFloat(match[1]);
+                                        if (match[2] === 'K') count *= 1000;
+                                        else if (match[2] === 'M') count *= 1000000;
+                                        else if (match[2] === 'B') count *= 1000000000;
+                                        data.followerCount = Math.floor(count);
+                                    }
+                                }
+                            }
+                            
+                            if (!data.avatar) {
+                                const img = document.querySelector('[data-e2e="user-avatar"] img, img[src*="avatar"]');
+                                if (img) data.avatar = img.src || img.getAttribute('src');
+                            }
+                        } catch(e) {
+                            // Ignore DOM access errors
+                        }
+                        
+                        return data;
+                    }
+                """
+                user_data = page.evaluate(js_code)
+                
+                if user_data:
+                    if user_data.get('followerCount'):
+                        result['follower_count'] = int(user_data['followerCount'])
+                    if user_data.get('nickname'):
+                        result['channel_name'] = user_data['nickname']
+                    if user_data.get('avatar'):
+                        thumb = user_data['avatar']
+                        if thumb.startswith('//'):
+                            thumb = 'https:' + thumb
+                        elif not thumb.startswith('http'):
+                            thumb = 'https://' + thumb.lstrip('/')
+                        result['thumbnail'] = thumb
+                
+                # Fallback to page content parsing
+                if not result['follower_count'] or not result['thumbnail']:
+                    page_content = page.content()
+                    if not result['follower_count']:
+                        match = re.search(r'"followerCount"\s*:\s*(\d+)', page_content)
+                        if match:
+                            result['follower_count'] = int(match.group(1))
+                    if not result['thumbnail']:
+                        match = re.search(r'"avatarMedium"\s*:\s*"([^"]+)"', page_content)
+                        if match:
+                            result['thumbnail'] = match.group(1).replace('\\u002F', '/')
+                
+            except Exception as e:
+                error_msg = str(e)
+                logger.error(f"Playwright error: {error_msg}", exc_info=True)
+                
+                # Even if page load failed, try to extract data from whatever is available
+                try:
+                    page_content = page.content()
+                    # Try regex extraction as last resort
+                    if not result['follower_count']:
+                        match = re.search(r'"followerCount"\s*:\s*(\d+)', page_content)
+                        if match:
+                            result['follower_count'] = int(match.group(1))
+                    if not result['channel_name']:
+                        match = re.search(r'"nickname"\s*:\s*"([^"]+)"', page_content)
+                        if match:
+                            result['channel_name'] = match.group(1)
+                    if not result['thumbnail']:
+                        match = re.search(r'"avatarMedium"\s*:\s*"([^"]+)"', page_content)
+                        if match:
+                            result['thumbnail'] = match.group(1).replace('\\u002F', '/')
+                except Exception:
+                    pass
+                
+                # Only set error if we got nothing
+                if not result['channel_name'] and not result['follower_count']:
+                    result['error'] = f'Error loading TikTok profile: {error_msg}'
+            finally:
+                try:
+                    browser.close()
+                except Exception:
+                    pass
+                
+    except Exception as e:
+        logger.error(f"Playwright setup error: {str(e)}", exc_info=True)
+        result['error'] = f'Playwright error: {str(e)}'
+    
+    # Ensure we have at least username
+    if not result['channel_name']:
         result['channel_name'] = username
+    
+    logger.info(f"TikTok extraction result for {username}: name={result['channel_name']}, followers={result['follower_count']}, thumbnail={'yes' if result['thumbnail'] else 'no'}")
     
     return result
 
@@ -463,6 +783,247 @@ def extract_tiktok_username_from_video(video_url: str) -> Optional[str]:
     return None
 
 
+def extract_tiktok_video_url(video_url: str) -> Dict[str, Optional[str]]:
+    """
+    Extract direct video file URL from TikTok using Playwright web scraping.
+    This allows us to display TikTok videos as clean HTML5 video players (like YouTube)
+    instead of using TikTok's embed which shows likes/comments/share buttons.
+    
+    Returns: {'video_url': str, 'username': str, 'error': str}
+    """
+    result = {
+        'video_url': None,
+        'username': None,
+        'error': None
+    }
+    
+    if not video_url:
+        result['error'] = 'Video URL is required'
+        return result
+    
+    # Extract username from URL first
+    username = extract_tiktok_username_from_video(video_url)
+    if username:
+        result['username'] = username
+    
+    try:
+        # Import playwright (with fallback if not installed)
+        try:
+            from playwright.sync_api import sync_playwright
+        except ImportError:
+            result['error'] = 'Playwright is not installed. Run: pip install playwright && playwright install chromium'
+            logger.error("Playwright not installed")
+            return result
+        
+        with sync_playwright() as p:
+            # Launch browser in headless mode with stealth settings
+            browser = p.chromium.launch(
+                headless=True,
+                args=[
+                    '--no-sandbox',
+                    '--disable-setuid-sandbox',
+                    '--disable-blink-features=AutomationControlled',  # Hide automation
+                    '--disable-dev-shm-usage',
+                    '--disable-web-security',
+                    '--disable-features=IsolateOrigins,site-per-process',
+                ]
+            )
+            
+            # Create context with realistic settings to avoid detection
+            context = browser.new_context(
+                user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                viewport={'width': 1920, 'height': 1080},
+                locale='en-US',
+                timezone_id='America/New_York',
+                permissions=['geolocation'],
+                geolocation={'latitude': 40.7128, 'longitude': -74.0060},  # New York
+                color_scheme='light',
+                # Add extra headers to look more like a real browser
+                extra_http_headers={
+                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+                    'Accept-Language': 'en-US,en;q=0.9',
+                    'Accept-Encoding': 'gzip, deflate, br',
+                    'DNT': '1',
+                    'Connection': 'keep-alive',
+                    'Upgrade-Insecure-Requests': '1',
+                    'Sec-Fetch-Dest': 'document',
+                    'Sec-Fetch-Mode': 'navigate',
+                    'Sec-Fetch-Site': 'none',
+                    'Sec-Fetch-User': '?1',
+                    'Cache-Control': 'max-age=0',
+                }
+            )
+            
+            # Add JavaScript to hide webdriver property
+            context.add_init_script("""
+                Object.defineProperty(navigator, 'webdriver', {
+                    get: () => undefined
+                });
+                
+                // Override plugins to look more realistic
+                Object.defineProperty(navigator, 'plugins', {
+                    get: () => [1, 2, 3, 4, 5]
+                });
+                
+                // Override languages
+                Object.defineProperty(navigator, 'languages', {
+                    get: () => ['en-US', 'en']
+                });
+                
+                // Mock chrome object
+                window.chrome = {
+                    runtime: {}
+                };
+            """)
+            
+            page = context.new_page()
+            
+            try:
+                # Navigate to TikTok video page with stealth approach
+                logger.info(f"Loading TikTok video page: {video_url}")
+                
+                # First, try to load the page
+                try:
+                    # Use load state instead of networkidle to avoid waiting too long
+                    page.goto(video_url, wait_until='load', timeout=20000)
+                    # Wait a bit for dynamic content
+                    page.wait_for_timeout(3000)
+                except Exception as e:
+                    result['error'] = f'Timeout loading TikTok page: {str(e)}'
+                    logger.warning(f"Timeout loading TikTok page: {video_url}")
+                    return result
+                
+                # Check if we got blocked or redirected
+                current_url = page.url
+                if 'challenge' in current_url.lower() or 'verify' in current_url.lower():
+                    result['error'] = 'TikTok detected automation and blocked access'
+                    logger.warning(f"TikTok blocked access for: {video_url}")
+                    return result
+                
+                # Wait for video element to load with multiple attempts
+                video_found = False
+                for attempt in range(3):
+                    try:
+                        page.wait_for_selector('video', timeout=5000)
+                        video_found = True
+                        break
+                    except Exception:
+                        # Scroll down a bit to trigger lazy loading
+                        page.evaluate('window.scrollBy(0, 300)')
+                        page.wait_for_timeout(1000)
+                
+                if not video_found:
+                    # Final check if video exists
+                    if not page.query_selector('video'):
+                        result['error'] = 'Video element not found on TikTok page (may require login or be blocked)'
+                        logger.warning(f"Video element not found on TikTok page: {video_url}")
+                        return result
+                
+                # Try multiple methods to get video URL
+                video_src = None
+                
+                # Method 1: Direct video element src
+                video_element = page.query_selector('video')
+                if video_element:
+                    video_src = video_element.get_attribute('src')
+                    if not video_src:
+                        # Method 2: Check source tag inside video
+                        source_element = page.query_selector('video source')
+                        if source_element:
+                            video_src = source_element.get_attribute('src')
+                
+                # Method 3: Extract from network requests (if video element doesn't have src)
+                if not video_src:
+                    # Wait for video to start loading
+                    page.wait_for_timeout(1000)
+                    # Try to get video URL from page's video element after it loads
+                    video_src = page.evaluate("""
+                        () => {
+                            const video = document.querySelector('video');
+                            if (video) {
+                                return video.src || video.currentSrc || (video.querySelector('source')?.src);
+                            }
+                            return null;
+                        }
+                    """)
+                
+                # Method 4: Try to extract from page source/JSON data
+                if not video_src:
+                    # TikTok sometimes embeds video URL in JSON data
+                    page_content = page.content()
+                    # Look for video URLs in the page source with more patterns
+                    video_url_patterns = [
+                        r'"downloadAddr":"([^"]+)"',
+                        r'"playAddr":"([^"]+)"',
+                        r'"videoUrl":"([^"]+)"',
+                        r'"playUrl":"([^"]+)"',
+                        r'"video":\s*\{[^}]*"downloadAddr":\s*"([^"]+)"',
+                        r'https://[^"]*\.tiktokcdn\.com/[^"]*\.mp4[^"]*',
+                        r'https://[^"]*\.tiktokcdn\.com/[^"]*\.mp4\?[^"]*',
+                        r'https://[^"]*v\.tiktokcdn\.com/[^"]*',
+                    ]
+                    for pattern in video_url_patterns:
+                        matches = re.finditer(pattern, page_content)
+                        for match in matches:
+                            potential_url = match.group(1) if match.groups() else match.group(0)
+                            # Clean up the URL
+                            potential_url = potential_url.replace('\\u002F', '/').replace('\\/', '/')
+                            # Validate it's a real video URL
+                            if '.mp4' in potential_url or 'tiktokcdn.com' in potential_url:
+                                video_src = potential_url
+                                break
+                        if video_src:
+                            break
+                
+                # Method 5: Try to intercept network requests for video
+                if not video_src:
+                    try:
+                        # Wait for any video network requests
+                        page.wait_for_timeout(2000)
+                        # Try to get video from network response
+                        video_src = page.evaluate("""
+                            () => {
+                                // Try to find video in any script tags with JSON data
+                                const scripts = document.querySelectorAll('script');
+                                for (let script of scripts) {
+                                    const content = script.textContent || '';
+                                    const match = content.match(/https:\\/\\/[^"']*\\.tiktokcdn\\.com[^"']*\\.mp4[^"']*/);
+                                    if (match) {
+                                        return match[0].replace(/\\\\/g, '/');
+                                    }
+                                }
+                                return null;
+                            }
+                        """)
+                    except Exception:
+                        pass
+                
+                if video_src:
+                    # Clean up the URL
+                    if video_src.startswith('//'):
+                        video_src = 'https:' + video_src
+                    elif not video_src.startswith('http'):
+                        video_src = 'https://' + video_src.lstrip('/')
+                    
+                    result['video_url'] = video_src
+                    logger.info(f"Successfully extracted TikTok video URL")
+                else:
+                    result['error'] = 'Could not extract video URL from TikTok page'
+                    logger.warning(f"Could not find video URL in TikTok page: {video_url}")
+                
+            except Exception as e:
+                result['error'] = f'Error loading TikTok page: {str(e)}'
+                logger.error(f"Error extracting TikTok video URL: {str(e)}")
+            finally:
+                browser.close()
+                
+    except Exception as e:
+        result['error'] = f'Playwright error: {str(e)}'
+        logger.error(f"Playwright error extracting TikTok video: {str(e)}")
+    
+    return result
+
+
 def verify_video_belongs_to_channel(video_url: str, channel_link: str, channel_type: str) -> tuple[bool, str]:
     """
     Verify that a video URL belongs to the same channel as the channel_link
@@ -565,11 +1126,12 @@ def youtube_thumbnail_from_url(url: str) -> Optional[str]:
 
 
 def fetch_tiktok_oembed(video_url: str) -> Dict[str, Optional[str]]:
-    """Fetch TikTok oEmbed metadata (thumbnail, author) for a video URL."""
+    """Fetch TikTok oEmbed metadata (thumbnail, author, title) for a video URL."""
     result: Dict[str, Optional[str]] = {
         'thumbnail_url': None,
         'author_name': None,
         'author_url': None,
+        'title': None,
         'html': None,
         'error': None,
     }
@@ -584,12 +1146,27 @@ def fetch_tiktok_oembed(video_url: str) -> Dict[str, Optional[str]]:
         result['thumbnail_url'] = data.get('thumbnail_url')
         result['author_name'] = data.get('author_name')
         result['author_url'] = data.get('author_url')
+        result['title'] = data.get('title')  # TikTok oEmbed includes title
         result['html'] = data.get('html')
         return result
     except Exception as e:
         logger.warning("TikTok oEmbed failed: %s", e)
         result['error'] = str(e)
         return result
+
+
+def fetch_tiktok_video_title(video_url: str) -> Optional[str]:
+    """
+    Fetch TikTok video title using oEmbed API (simplest method)
+    Returns: title string or None if not found
+    """
+    try:
+        oembed_data = fetch_tiktok_oembed(video_url)
+        if oembed_data.get('title') and not oembed_data.get('error'):
+            return oembed_data['title']
+    except Exception as e:
+        logger.warning(f"Failed to fetch TikTok video title: {str(e)}")
+    return None
 
 
 def fetch_youtube_video_stats(video_url: str) -> Dict[str, any]:
@@ -645,11 +1222,11 @@ def fetch_youtube_video_stats(video_url: str) -> Dict[str, any]:
         result['likes'] = int(stats.get('likeCount', 0))
         result['comments'] = int(stats.get('commentCount', 0))
         
-        # Get channel subscriber count
-        channel_id = video['snippet'].get('channelId')
-        if channel_id:
-            channel_data = fetch_youtube_channel_data(f"https://www.youtube.com/channel/{channel_id}")
-            result['subscriber_count'] = channel_data.get('subscriber_count', 0)
+        # OPTIMIZATION: Skip subscriber_count fetch - it's now reused from EditorApplication
+        # This reduces API calls by 50% as subscriber_count is fetched once when user applies
+        # and reused for all their video submissions
+        # result['subscriber_count'] is set to 0 but won't be used (we use EditorApplication.follower_count instead)
+        result['subscriber_count'] = 0
         
         return result
         
