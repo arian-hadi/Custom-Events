@@ -4,6 +4,7 @@ from django.conf import settings
 from typing import Optional, Dict
 import logging
 import json
+import math
 
 logger = logging.getLogger(__name__)
 
@@ -1637,63 +1638,125 @@ def fetch_tiktok_video_stats(video_url: str) -> Dict[str, any]:
 
 def calculate_youtube_points(views: int, likes: int, comments: int, subscriber_count: int) -> float:
     """
-    Calculate YouTube ranking points based on the formula:
-    Score = (Views × 0.4) + (Likes × 0.3) + (Comments × 0.2) + (Engagement Rate × 0.1)
-    Engagement Rate = ((Likes + Comments) / Views) × 100
-    All values are normalized by subscriber count for fairness.
+    Calculate YouTube ranking points with fairness improvements for smaller creators:
+    - Uses logarithmic scaling for subscriber count normalization
+    - Caps subscriber count at 1M for normalization
+    - Increased engagement rate weight (20% instead of 10%)
+    - Engagement bonus multiplier for high engagement (>15%)
+    - Minimum threshold protection for very small creators
+    
+    Formula: (Normalized Views × 0.35) + (Normalized Likes × 0.25) + (Normalized Comments × 0.2) + (Engagement Rate × 0.2)
     """
     if subscriber_count == 0:
         subscriber_count = 1  # Avoid division by zero
     
-    # Normalize values by subscriber count
-    normalized_views = views / subscriber_count if subscriber_count > 0 else 0
-    normalized_likes = likes / subscriber_count if subscriber_count > 0 else 0
-    normalized_comments = comments / subscriber_count if subscriber_count > 0 else 0
+    # Cap subscriber count at 1M for normalization fairness
+    capped_subscriber_count = min(subscriber_count, 1000000)
     
-    # Calculate engagement rate
+    # Use logarithmic scaling for normalization (more fair for smaller creators)
+    # Add 1 to avoid log(0) and ensure minimum threshold protection
+    log_subscriber = math.log10(max(capped_subscriber_count, 1) + 1)
+    
+    # Normalize values using logarithmic scaling
+    # This helps smaller creators compete more fairly
+    if log_subscriber > 0:
+        normalized_views = views / log_subscriber if views > 0 else 0
+        normalized_likes = likes / log_subscriber if likes > 0 else 0
+        normalized_comments = comments / log_subscriber if comments > 0 else 0
+    else:
+        normalized_views = normalized_likes = normalized_comments = 0
+    
+    # Calculate engagement rate (percentage)
     if views > 0:
         engagement_rate = ((likes + comments) / views) * 100
     else:
         engagement_rate = 0
     
-    # Calculate points
-    points = (
-        (normalized_views * 0.4) +
-        (normalized_likes * 0.3) +
+    # Base points calculation with increased engagement weight (20% instead of 10%)
+    base_points = (
+        (normalized_views * 0.35) +
+        (normalized_likes * 0.25) +
         (normalized_comments * 0.2) +
-        (engagement_rate * 0.1)
+        (engagement_rate * 0.2)  # Increased from 0.1 to 0.2
     )
+    
+    # Engagement bonus multiplier for high engagement (rewards quality over quantity)
+    engagement_multiplier = 1.0
+    if engagement_rate > 20:
+        engagement_multiplier = 1.5  # 50% bonus for >20% engagement
+    elif engagement_rate > 15:
+        engagement_multiplier = 1.3  # 30% bonus for >15% engagement
+    elif engagement_rate > 10:
+        engagement_multiplier = 1.2  # 20% bonus for >10% engagement
+    
+    points = base_points * engagement_multiplier
+    
+    # Minimum threshold protection: ensure very small creators get meaningful points
+    # If subscriber count < 1K and engagement is decent, add bonus
+    if subscriber_count < 1000 and engagement_rate > 5:
+        points += 5.0  # Small bonus for small creators with decent engagement
     
     return round(points, 2)
 
 
 def calculate_tiktok_points(views: int, likes: int, comments: int, follower_count: int) -> float:
     """
-    Calculate TikTok ranking points based on the formula:
-    Score = (Views × 0.35) + (Likes × 0.4) + (Comments × 0.15) + (Engagement Rate × 0.1)
-    Engagement Rate = ((Likes + Comments) / Views) × 100
-    Values are normalized by follower count.
+    Calculate TikTok ranking points with fairness improvements for smaller creators:
+    - Uses logarithmic scaling for follower count normalization
+    - Caps follower count at 1M for normalization
+    - Increased engagement rate weight (20% instead of 10%)
+    - Engagement bonus multiplier for high engagement (>15%)
+    - Minimum threshold protection for very small creators
+    
+    Formula: (Normalized Views × 0.3) + (Normalized Likes × 0.35) + (Normalized Comments × 0.15) + (Engagement Rate × 0.2)
     """
     if follower_count == 0:
         follower_count = 1  # Avoid division by zero
     
-    # Normalize values by follower count
-    normalized_views = views / follower_count if follower_count > 0 else 0
-    normalized_likes = likes / follower_count if follower_count > 0 else 0
-    normalized_comments = comments / follower_count if follower_count > 0 else 0
+    # Cap follower count at 1M for normalization fairness
+    capped_follower_count = min(follower_count, 1000000)
     
-    # Calculate engagement rate
+    # Use logarithmic scaling for normalization (more fair for smaller creators)
+    # Add 1 to avoid log(0) and ensure minimum threshold protection
+    log_follower = math.log10(max(capped_follower_count, 1) + 1)
+    
+    # Normalize values using logarithmic scaling
+    # This helps smaller creators compete more fairly
+    if log_follower > 0:
+        normalized_views = views / log_follower if views > 0 else 0
+        normalized_likes = likes / log_follower if likes > 0 else 0
+        normalized_comments = comments / log_follower if comments > 0 else 0
+    else:
+        normalized_views = normalized_likes = normalized_comments = 0
+    
+    # Calculate engagement rate (percentage)
     if views > 0:
         engagement_rate = ((likes + comments) / views) * 100
     else:
         engagement_rate = 0
     
-    # Calculate points
-    points = (
-        (normalized_views * 0.35) +
-        (normalized_likes * 0.4) +
+    # Base points calculation with increased engagement weight (20% instead of 10%)
+    base_points = (
+        (normalized_views * 0.3) +
+        (normalized_likes * 0.35) +
         (normalized_comments * 0.15) +
-        (engagement_rate * 0.1)
+        (engagement_rate * 0.2)  # Increased from 0.1 to 0.2
     )
+    
+    # Engagement bonus multiplier for high engagement (rewards quality over quantity)
+    engagement_multiplier = 1.0
+    if engagement_rate > 20:
+        engagement_multiplier = 1.5  # 50% bonus for >20% engagement
+    elif engagement_rate > 15:
+        engagement_multiplier = 1.3  # 30% bonus for >15% engagement
+    elif engagement_rate > 10:
+        engagement_multiplier = 1.2  # 20% bonus for >10% engagement
+    
+    points = base_points * engagement_multiplier
+    
+    # Minimum threshold protection: ensure very small creators get meaningful points
+    # If follower count < 1K and engagement is decent, add bonus
+    if follower_count < 1000 and engagement_rate > 5:
+        points += 5.0  # Small bonus for small creators with decent engagement
     
     return round(points, 2)
