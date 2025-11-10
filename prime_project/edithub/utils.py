@@ -962,17 +962,30 @@ def extract_tiktok_video_url(video_url: str) -> Dict[str, Optional[str]]:
                         r'https://[^"]*\.tiktokcdn\.com/[^"]*\.mp4\?[^"]*',
                         r'https://[^"]*v\.tiktokcdn\.com/[^"]*',
                     ]
+                    found_urls = []
                     for pattern in video_url_patterns:
                         matches = re.finditer(pattern, page_content)
                         for match in matches:
                             potential_url = match.group(1) if match.groups() else match.group(0)
                             # Clean up the URL
                             potential_url = potential_url.replace('\\u002F', '/').replace('\\/', '/')
-                            # Validate it's a real video URL
+                            # Validate it's a real URL
                             if '.mp4' in potential_url or 'tiktokcdn.com' in potential_url:
-                                video_src = potential_url
-                                break
-                        if video_src:
+                                found_urls.append(potential_url)
+                    
+                    # Filter: Prefer video URLs over audio URLs
+                    # TikTok audio URLs often have mime_type=audio_mpeg in the URL
+                    for url in found_urls:
+                        # Skip audio URLs
+                        if 'mime_type=audio' in url or 'audio_mpeg' in url or 'mime_type=audio_mpeg' in url:
+                            continue
+                        # Prefer video URLs with mime_type=video_mp4
+                        if 'mime_type=video_mp4' in url or 'mime_type=video' in url:
+                            video_src = url
+                            break
+                        # Fallback: any URL that's not audio
+                        if not video_src:
+                            video_src = url
                             break
                 
                 # Method 5: Try to intercept network requests for video
@@ -1005,8 +1018,17 @@ def extract_tiktok_video_url(video_url: str) -> Dict[str, Optional[str]]:
                     elif not video_src.startswith('http'):
                         video_src = 'https://' + video_src.lstrip('/')
                     
-                    result['video_url'] = video_src
-                    logger.info(f"Successfully extracted TikTok video URL")
+                    # Final check: Make sure it's not an audio URL
+                    if 'mime_type=audio' in video_src or 'audio_mpeg' in video_src:
+                        logger.warning(f"Extracted URL appears to be audio, not video: {video_src[:100]}...")
+                        video_src = None  # Reject audio URLs
+                    
+                    if video_src:
+                        result['video_url'] = video_src
+                        logger.info(f"Successfully extracted TikTok video URL (verified as video, not audio)")
+                    else:
+                        result['error'] = 'Only audio URL found, video URL not available'
+                        logger.warning("Only audio URL was found, skipping")
                 else:
                     result['error'] = 'Could not extract video URL from TikTok page'
                     logger.warning(f"Could not find video URL in TikTok page: {video_url}")
@@ -1238,8 +1260,8 @@ def fetch_youtube_video_stats(video_url: str) -> Dict[str, any]:
 
 def fetch_tiktok_video_stats(video_url: str) -> Dict[str, any]:
     """
-    Fetch TikTok video statistics (views, likes, comments, follower count)
-    Note: TikTok doesn't have a public API, so this uses web scraping or third-party APIs
+    Fetch TikTok video statistics using web scraping (similar to fetch_tiktok_channel_data)
+    TikTok requires JavaScript execution to load data, so we use Playwright
     Returns: {'views': int, 'likes': int, 'comments': int, 'follower_count': int, 'error': str}
     """
     result = {
@@ -1250,17 +1272,365 @@ def fetch_tiktok_video_stats(video_url: str) -> Dict[str, any]:
         'error': None
     }
     
-    # TikTok doesn't have a public API, so we'll need to use web scraping
-    # For now, return an error indicating this needs to be implemented
-    # You can use libraries like playwright or selenium, or third-party APIs
-    result['error'] = 'TikTok stats fetching not yet implemented. Requires web scraping or third-party API.'
-    logger.warning("TikTok video stats fetching not implemented")
+    if not video_url:
+        result['error'] = 'Video URL is required'
+        return result
     
-    # TODO: Implement TikTok stats fetching using web scraping or third-party API
-    # Example approach:
-    # 1. Use playwright/selenium to load the TikTok page
-    # 2. Extract stats from the page HTML
-    # 3. Or use a third-party API service
+    # Try simple HTTP request first (faster if it works)
+    try:
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'DNT': '1',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1',
+            'Referer': 'https://www.tiktok.com/',
+        }
+        
+        response = requests.get(video_url, headers=headers, timeout=20)
+        response.raise_for_status()
+        html_content = response.text
+        
+        # Try to extract JSON from script tags
+        json_data = None
+        script_patterns = [
+            r'<script[^>]*id="__UNIVERSAL_DATA_FOR_REHYDRATION__"[^>]*>(.*?)</script>',
+            r'<script[^>]*type="application/json"[^>]*id="__UNIVERSAL_DATA_FOR_REHYDRATION__"[^>]*>(.*?)</script>',
+            r'window\.__UNIVERSAL_DATA_FOR_REHYDRATION__\s*=\s*({.*?});',
+        ]
+        
+        for pattern in script_patterns:
+            script_match = re.search(pattern, html_content, re.DOTALL)
+            if script_match:
+                try:
+                    json_str = script_match.group(1).strip().strip(';').strip()
+                    json_str = re.sub(r';\s*$', '', json_str)
+                    json_data = json.loads(json_str)
+                    logger.info("Successfully parsed TikTok video JSON data")
+                    break
+                except (json.JSONDecodeError, IndexError):
+                    continue
+        
+        # Extract video stats from JSON
+        if json_data:
+            def find_video_data(obj, depth=0):
+                if depth > 6:
+                    return None
+                if not isinstance(obj, dict):
+                    return None
+                # Check if this looks like video data
+                if 'playCount' in obj or 'viewCount' in obj or 'diggCount' in obj or 'commentCount' in obj:
+                    return obj
+                # Search recursively
+                for key, value in obj.items():
+                    if isinstance(value, (dict, list)):
+                        found = find_video_data(value, depth + 1)
+                        if found:
+                            return found
+                return None
+            
+            video_data = find_video_data(json_data)
+            if video_data:
+                result['views'] = int(video_data.get('playCount', 0) or video_data.get('viewCount', 0) or 0)
+                result['likes'] = int(video_data.get('diggCount', 0) or video_data.get('likeCount', 0) or 0)
+                result['comments'] = int(video_data.get('commentCount', 0) or 0)
+                logger.info(f"Extracted from JSON: views={result['views']}, likes={result['likes']}, comments={result['comments']}")
+        
+        # Fallback to regex if JSON extraction didn't work
+        if not result['views']:
+            patterns = [
+                r'"playCount"\s*:\s*(\d+)',
+                r'"viewCount"\s*:\s*(\d+)',
+                r'"playCount":\s*(\d+)',
+                r'playCount["\']?\s*:\s*(\d+)',
+            ]
+            for pattern in patterns:
+                match = re.search(pattern, html_content)
+                if match:
+                    try:
+                        result['views'] = int(match.group(1))
+                        logger.info(f"Extracted views via regex: {result['views']}")
+                        break
+                    except (ValueError, IndexError):
+                        continue
+        
+        if not result['likes']:
+            patterns = [
+                r'"diggCount"\s*:\s*(\d+)',
+                r'"likeCount"\s*:\s*(\d+)',
+                r'"diggCount":\s*(\d+)',
+                r'diggCount["\']?\s*:\s*(\d+)',
+            ]
+            for pattern in patterns:
+                match = re.search(pattern, html_content)
+                if match:
+                    try:
+                        result['likes'] = int(match.group(1))
+                        logger.info(f"Extracted likes via regex: {result['likes']}")
+                        break
+                    except (ValueError, IndexError):
+                        continue
+        
+        if not result['comments']:
+            patterns = [
+                r'"commentCount"\s*:\s*(\d+)',
+                r'"commentCount":\s*(\d+)',
+                r'commentCount["\']?\s*:\s*(\d+)',
+            ]
+            for pattern in patterns:
+                match = re.search(pattern, html_content)
+                if match:
+                    try:
+                        result['comments'] = int(match.group(1))
+                        logger.info(f"Extracted comments via regex: {result['comments']}")
+                        break
+                    except (ValueError, IndexError):
+                        continue
+        
+        # If we got at least some stats, return (don't require all fields)
+        if result['views'] or result['likes'] or result['comments']:
+            logger.info(f"Simple request extracted stats: views={result['views']}, likes={result['likes']}, comments={result['comments']}")
+            return result
+        
+    except requests.exceptions.RequestException as e:
+        logger.warning(f"TikTok simple fetch failed: {str(e)}, trying Playwright")
+    except Exception as e:
+        logger.warning(f"TikTok simple fetch error: {str(e)}, trying Playwright")
+    
+    # Use Playwright if simple request didn't work
+    try:
+        try:
+            from playwright.sync_api import sync_playwright
+        except ImportError:
+            result['error'] = 'Playwright is not installed. Run: pip install playwright && playwright install chromium'
+            logger.error("Playwright not installed for TikTok video stats")
+            return result
+        
+        with sync_playwright() as p:
+            browser = p.chromium.launch(
+                headless=True,
+                args=['--no-sandbox', '--disable-setuid-sandbox', '--disable-blink-features=AutomationControlled']
+            )
+            
+            context = browser.new_context(
+                user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                viewport={'width': 1920, 'height': 1080}
+            )
+            
+            context.add_init_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined});")
+            
+            page = context.new_page()
+            
+            try:
+                logger.info(f"Loading TikTok video page with Playwright: {video_url}")
+                
+                try:
+                    page.goto(video_url, wait_until='load', timeout=45000)
+                except Exception as goto_error:
+                    logger.warning(f"Load timeout, trying domcontentloaded: {str(goto_error)}")
+                    try:
+                        page.goto(video_url, wait_until='domcontentloaded', timeout=20000)
+                    except Exception:
+                        logger.warning("Both load and domcontentloaded timed out, continuing anyway")
+                
+                # Wait for dynamic content to load
+                page.wait_for_timeout(3000)
+                
+                # Try to wait for video stats elements
+                try:
+                    page.wait_for_selector('body', timeout=5000)
+                except Exception:
+                    pass
+                
+                # Extract stats using JavaScript
+                js_code = """
+                    () => {
+                        const data = {};
+                        
+                        function isPlainObject(obj) {
+                            if (!obj || typeof obj !== 'object') return false;
+                            if (obj.constructor && obj.constructor.name !== 'Object') return false;
+                            if (obj.nodeType !== undefined) return false;
+                            if (obj.length !== undefined && typeof obj.length === 'number' && !Array.isArray(obj)) return false;
+                            try {
+                                return Object.getPrototypeOf(obj) === Object.prototype || Object.getPrototypeOf(obj) === null;
+                            } catch(e) {
+                                return false;
+                            }
+                        }
+                        
+                        // Try window.__UNIVERSAL_DATA_FOR_REHYDRATION__
+                        if (window.__UNIVERSAL_DATA_FOR_REHYDRATION__) {
+                            const ud = window.__UNIVERSAL_DATA_FOR_REHYDRATION__;
+                            function findVideo(obj, depth=0) {
+                                if (depth > 8) return null;
+                                if (!isPlainObject(obj) && !Array.isArray(obj)) return null;
+                                
+                                if (isPlainObject(obj)) {
+                                    if ((obj.playCount !== undefined || obj.viewCount !== undefined || obj.diggCount !== undefined) && 
+                                        (obj.playCount !== undefined || obj.diggCount !== undefined || obj.commentCount !== undefined)) {
+                                        return obj;
+                                    }
+                                }
+                                
+                                try {
+                                    if (Array.isArray(obj)) {
+                                        for (let i = 0; i < Math.min(obj.length, 100); i++) {
+                                            const found = findVideo(obj[i], depth+1);
+                                            if (found) return found;
+                                        }
+                                    } else if (isPlainObject(obj)) {
+                                        const keys = Object.keys(obj);
+                                        for (let i = 0; i < Math.min(keys.length, 200); i++) {
+                                            const key = keys[i];
+                                            try {
+                                                const value = obj[key];
+                                                if (typeof value === 'function') continue;
+                                                if (value && typeof value === 'object' && value.nodeType !== undefined) continue;
+                                                const found = findVideo(value, depth+1);
+                                                if (found) return found;
+                                            } catch(e) {
+                                                continue;
+                                            }
+                                        }
+                                    }
+                                } catch(e) {
+                                }
+                                return null;
+                            }
+                            
+                            try {
+                                const video = findVideo(ud);
+                                if (video && isPlainObject(video)) {
+                                    data.views = video.playCount || video.viewCount || 0;
+                                    data.likes = video.diggCount || video.likeCount || 0;
+                                    data.comments = video.commentCount || 0;
+                                }
+                            } catch(e) {
+                            }
+                        }
+                        
+                        // Try DOM elements as fallback
+                        try {
+                            if (!data.views) {
+                                const viewEl = document.querySelector('[data-e2e="video-views"], [class*="view"]');
+                                if (viewEl) {
+                                    const text = viewEl.textContent.trim();
+                                    const match = text.match(/([\\d.]+)([KMB]?)/i);
+                                    if (match) {
+                                        let count = parseFloat(match[1]);
+                                        if (match[2] === 'K') count *= 1000;
+                                        else if (match[2] === 'M') count *= 1000000;
+                                        else if (match[2] === 'B') count *= 1000000000;
+                                        data.views = Math.floor(count);
+                                    }
+                                }
+                            }
+                            
+                            if (!data.likes) {
+                                const likeEl = document.querySelector('[data-e2e="like-count"], [class*="like"]');
+                                if (likeEl) {
+                                    const text = likeEl.textContent.trim();
+                                    const match = text.match(/([\\d.]+)([KMB]?)/i);
+                                    if (match) {
+                                        let count = parseFloat(match[1]);
+                                        if (match[2] === 'K') count *= 1000;
+                                        else if (match[2] === 'M') count *= 1000000;
+                                        else if (match[2] === 'B') count *= 1000000000;
+                                        data.likes = Math.floor(count);
+                                    }
+                                }
+                            }
+                            
+                            if (!data.comments) {
+                                const commentEl = document.querySelector('[data-e2e="comment-count"], [class*="comment"]');
+                                if (commentEl) {
+                                    const text = commentEl.textContent.trim();
+                                    const match = text.match(/([\\d.]+)([KMB]?)/i);
+                                    if (match) {
+                                        let count = parseFloat(match[1]);
+                                        if (match[2] === 'K') count *= 1000;
+                                        else if (match[2] === 'M') count *= 1000000;
+                                        else if (match[2] === 'B') count *= 1000000000;
+                                        data.comments = Math.floor(count);
+                                    }
+                                }
+                            }
+                        } catch(e) {
+                        }
+                        
+                        return data;
+                    }
+                """
+                video_data = page.evaluate(js_code)
+                
+                if video_data:
+                    if video_data.get('views'):
+                        result['views'] = int(video_data['views'])
+                    if video_data.get('likes'):
+                        result['likes'] = int(video_data['likes'])
+                    if video_data.get('comments'):
+                        result['comments'] = int(video_data['comments'])
+                
+                # Fallback to page content parsing
+                if not result['views'] or not result['likes'] or not result['comments']:
+                    page_content = page.content()
+                    if not result['views']:
+                        match = re.search(r'"playCount"\s*:\s*(\d+)|"viewCount"\s*:\s*(\d+)', page_content)
+                        if match:
+                            result['views'] = int(match.group(1) or match.group(2))
+                    if not result['likes']:
+                        match = re.search(r'"diggCount"\s*:\s*(\d+)|"likeCount"\s*:\s*(\d+)', page_content)
+                        if match:
+                            result['likes'] = int(match.group(1) or match.group(2))
+                    if not result['comments']:
+                        match = re.search(r'"commentCount"\s*:\s*(\d+)', page_content)
+                        if match:
+                            result['comments'] = int(match.group(1))
+                
+            except Exception as e:
+                error_msg = str(e)
+                logger.error(f"Playwright error: {error_msg}", exc_info=True)
+                
+                # Try to extract from page content even if page load failed
+                try:
+                    page_content = page.content()
+                    if not result['views']:
+                        match = re.search(r'"playCount"\s*:\s*(\d+)|"viewCount"\s*:\s*(\d+)', page_content)
+                        if match:
+                            result['views'] = int(match.group(1) or match.group(2))
+                    if not result['likes']:
+                        match = re.search(r'"diggCount"\s*:\s*(\d+)|"likeCount"\s*:\s*(\d+)', page_content)
+                        if match:
+                            result['likes'] = int(match.group(1) or match.group(2))
+                    if not result['comments']:
+                        match = re.search(r'"commentCount"\s*:\s*(\d+)', page_content)
+                        if match:
+                            result['comments'] = int(match.group(1))
+                except Exception:
+                    pass
+                
+                # Only set error if we got nothing
+                if not result['views'] and not result['likes'] and not result['comments']:
+                    result['error'] = f'Error loading TikTok video: {error_msg}'
+            finally:
+                try:
+                    browser.close()
+                except Exception:
+                    pass
+                
+    except Exception as e:
+        logger.error(f"Playwright setup error: {str(e)}", exc_info=True)
+        if not result['views'] and not result['likes'] and not result['comments']:
+            result['error'] = f'Playwright error: {str(e)}'
+    
+    # Note: follower_count is not available from video page
+    # It should be fetched from channel data (already stored in EditorApplication)
+    result['follower_count'] = 0
+    
+    logger.info(f"TikTok video stats extraction result: views={result['views']}, likes={result['likes']}, comments={result['comments']}, error={result['error']}")
     
     return result
 

@@ -22,9 +22,15 @@ class Command(BaseCommand):
             action='store_true',
             help='Force update even if already updated today',
         )
+        parser.add_argument(
+            '--limit',
+            type=int,
+            help='Limit the number of edits to update (useful for testing)',
+        )
 
     def handle(self, *args, **options):
         force = options.get('force', False)
+        limit = options.get('limit')
         
         # Get all verified edits
         edits = EditSubmission.objects.filter(status='verified')
@@ -37,6 +43,10 @@ class Command(BaseCommand):
                 Q(last_points_calculation__isnull=True) |
                 Q(last_points_calculation__date__lt=today)
             )
+        
+        # Apply limit if specified
+        if limit:
+            edits = edits[:limit]
         
         total = edits.count()
         updated = 0

@@ -148,16 +148,20 @@ class RankingTableView(ListView):
         from .utils import fetch_tiktok_oembed, youtube_thumbnail_from_url
         enriched = []
         for edit in top_three:
-            thumb = None
             if edit.channel_type == 'youtube':
                 thumb = youtube_thumbnail_from_url(edit.video_url)
+                embed_html = None
             else:
-                meta = fetch_tiktok_oembed(edit.video_url)
-                thumb = meta.get('thumbnail_url')
+                oembed_data = fetch_tiktok_oembed(edit.video_url)
+                thumb = oembed_data.get('thumbnail_url')
+                embed_html = oembed_data.get('html')  # Get TikTok's official embed HTML
+            
             enriched.append({
                 'instance': edit,
                 'id': edit.id,
                 'video_url': edit.video_url,
+                'direct_video_url': getattr(edit, 'direct_video_url', None),  # For TikTok HTML5 video player (deprecated, using embed now)
+                'tiktok_embed_html': embed_html,  # TikTok's official embed HTML from oEmbed API
                 'channel_type': edit.channel_type,
                 'channel_name': edit.channel_name,
                 'channel_thumbnail': edit.channel_thumbnail,
@@ -852,15 +856,24 @@ def view_all_edits(request):
         user_upvoted_ids = {upvote.edit_submission_id for upvote in user_upvotes}
         user_upvote_count = len(user_upvoted_ids)
     
-    # Enrich current page with thumbnails
+    # Enrich current page with thumbnails and TikTok embed HTML
     from .utils import fetch_tiktok_oembed, youtube_thumbnail_from_url
     enriched_page = []
     for e in page_obj.object_list:
-        thumb = youtube_thumbnail_from_url(e.video_url) if e.channel_type == 'youtube' else fetch_tiktok_oembed(e.video_url).get('thumbnail_url')
+        if e.channel_type == 'youtube':
+            thumb = youtube_thumbnail_from_url(e.video_url)
+            embed_html = None
+        else:
+            oembed_data = fetch_tiktok_oembed(e.video_url)
+            thumb = oembed_data.get('thumbnail_url')
+            embed_html = oembed_data.get('html')  # Get TikTok's official embed HTML
+        
         enriched_page.append({
             'instance': e,
             'id': e.id,
             'video_url': e.video_url,
+            'direct_video_url': getattr(e, 'direct_video_url', None),  # For TikTok HTML5 video player (deprecated, using embed now)
+            'tiktok_embed_html': embed_html,  # TikTok's official embed HTML from oEmbed API
             'channel_type': e.channel_type,
             'channel_name': e.channel_name,
             'channel_thumbnail': e.channel_thumbnail,
