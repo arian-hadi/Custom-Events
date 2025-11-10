@@ -6,111 +6,68 @@
 
 {% block content %}
 <style>
-  /* Desktop: Fixed position, no scrolling */
-  .shorts-container { 
-    height: 100vh; 
-    overflow: hidden; 
-    position: relative;
-  }
-  .shorts-container::-webkit-scrollbar { display: none; }
-  .shorts-container { -ms-overflow-style: none; scrollbar-width: none; }
-  .video-item { 
-    height: 100vh; 
-    display: flex; 
-    align-items: center; 
-    justify-content: center; 
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
-  }
-  .video-item.active {
-    opacity: 1;
-    visibility: visible;
-    z-index: 1;
-  }
-  /* Mobile: Scrollable with snap */
-  @media (max-width: 768px) {
-    .shorts-container { 
-      overflow-y: auto; 
-      scroll-snap-type: y mandatory; 
-      scroll-behavior: smooth; 
-      -webkit-overflow-scrolling: touch;
-    }
-    .video-item {
-      position: relative;
-      scroll-snap-align: start;
-      scroll-snap-stop: always;
-      opacity: 1;
-      visibility: visible;
-      padding-top: 0;
-      align-items: center;
-    }
-    .video-item.active {
-      position: relative;
-    }
-  }
+  /* Removed Reels-style scrolling - now using paginated format */
   .ranking-panel { max-height: calc(100vh - 120px); overflow-y: auto; }
+  
+  /* Center video content on mobile */
+  @media (max-width: 768px) {
+    .video-content-wrapper {
+      justify-content: center !important;
+      margin-left: auto;
+      margin-right: auto;
+      width: 100%;
+      max-width: 100%;
+    }
+    
+    .video-content-area {
+      padding-left: 0.5rem;
+      padding-right: 0.5rem;
+      justify-content: center;
+    }
+  }
   .ranking-panel::-webkit-scrollbar { width: 6px; }
   .ranking-panel::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.05); border-radius: 3px; }
   .ranking-panel::-webkit-scrollbar-thumb { background: rgba(147, 51, 234, 0.3); border-radius: 3px; }
   .ranking-panel::-webkit-scrollbar-thumb:hover { background: rgba(147, 51, 234, 0.5); }
-  /* Navigation buttons for desktop */
-  .nav-button {
-    position: fixed;
-    right: 2rem;
-    z-index: 50;
-    width: 48px;
-    height: 48px;
-    background: rgba(255, 255, 255, 0.9);
-    backdrop-filter: blur(10px);
-    border: 2px solid rgba(0, 0, 0, 0.1);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: gray;
-    cursor: pointer;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  }
-  .nav-button:disabled {
-    opacity: 0.3;
-    cursor: not-allowed;
-  }
-  .nav-button-up {
-    top: calc(50% - 40px);
-  }
-  .nav-button-down {
-    top: calc(50% + 8px);
-  }
-  @media (max-width: 768px) {
-    .nav-button {
-      display: none;
-    }
-  }
+  /* Navigation buttons removed - using pagination controls instead */
   /* Mobile menu overlay */
   .sidebar-overlay { display: none; }
   .sidebar-overlay.active { display: block; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); z-index: 40; }
   @media (max-width: 768px) {
     .sidebar-overlay.active { display: block; }
   }
-  /* Action buttons positioning */
-  .action-buttons-container {
-    right: 0.5rem;
+  /* Action buttons are now positioned relative to video container */
+  /* Override TikTok embed max-width for phone aspect ratio (slightly bigger, with reduced gap to buttons) */
+  .tiktok-embed {
+    max-width: 450px !important;
+    min-width: 300px !important;
   }
-  @media (min-width: 768px) {
-    .action-buttons-container {
-      left: calc(50% + 360px + 20px);
-      right: auto;
+  
+  /* Ensure TikTok iframe respects container width */
+  .tiktok-embed iframe {
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+  
+  /* Mobile adjustments for video and buttons */
+  @media (max-width: 768px) {
+    .tiktok-embed {
+      max-width: 300px !important;
+      min-width: 300px !important;
     }
   }
-  /* Override TikTok embed max-width to allow larger size */
-  .tiktok-embed {
-    max-width: 720px !important;
-    min-width: 325px !important;
+  
+  /* Animated gradient for points display */
+  @keyframes gradient {
+    0% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+    100% {
+      background-position: 0% 50%;
+    }
   }
 </style>
 <main class="bg-white min-h-screen pt-16">
@@ -219,9 +176,9 @@
         </aside>
         
         <!-- Main Content Area -->
-        <div class="flex-1 overflow-hidden flex flex-col">
+        <div class="flex-1 overflow-y-auto flex flex-col">
             <!-- Platform Tabs -->
-            <div class="flex items-center justify-center gap-2 md:gap-4 px-2 md:px-4 py-3 md:py-4 bg-white border-b border-gray-200">
+            <div class="flex items-center justify-center gap-2 md:gap-4 px-2 md:px-4 py-3 md:py-4 bg-white border-b border-gray-200 sticky top-0 z-30">
                 <a href="?platform=youtube" 
                    class="px-3 md:px-6 py-2 md:py-3 rounded-lg font-semibold text-sm md:text-base transition-all duration-300 flex items-center gap-1 md:gap-2 flex-1 md:flex-initial justify-center {% if current_platform == 'youtube' %}bg-gradient-to-r from-red-500/20 to-red-600/20 border-2 border-red-500/50 text-red-700 shadow-lg shadow-red-500/20{% else %}bg-gray-100 border-2 border-gray-300 text-gray-600 hover:bg-gray-200 hover:text-gray-900{% endif %}">
                     <svg class="w-4 h-4 md:w-5 md:h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -240,96 +197,225 @@
                 </a>
             </div>
             
-            <div class="shorts-container flex-1">
-        {% if edits %}
-            {% for edit in edits %}
-            <div class="video-item" data-edit-id="{{ edit.id }}">
-                <!-- Video Card (centered, phone size) -->
-                {% if edit.channel_type == 'youtube' %}
-                <div class="relative w-full max-w-[90vw] md:max-w-[420px] mx-auto aspect-[9/16] bg-black overflow-hidden rounded-xl shadow-2xl">
-                    <iframe 
-                        class="w-full h-full"
-                        src="{{ edit.video_url|youtube_embed_standard }}"
-                        title="YouTube video player"
-                        frameborder="0"
-                        referrerpolicy="strict-origin-when-cross-origin"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-                        allowfullscreen
-                        playsinline
-                        loading="lazy">
-                    </iframe>
+            <!-- Channel Banner (if viewing a specific edit) -->
+            {% if channel_stats and current_edit %}
+            <div class="bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 border-b border-gray-200 py-6 px-4">
+                <div class="max-w-4xl mx-auto">
+                    <div class="flex flex-col items-center text-center">
+                        <!-- Channel Profile Picture (At the very top) - YouTube/TikTok thumbnail -->
+                        <div class="relative mb-4">
+                            {% if channel_stats.profile_picture %}
+                                <img src="{{ channel_stats.profile_picture }}" 
+                                     alt="{{ channel_stats.username }}" 
+                                     class="w-24 h-24 md:w-32 md:h-32 rounded-full object-cover ring-4 ring-white shadow-xl">
+                            {% else %}
+                                <div class="w-24 h-24 md:w-32 md:h-32 rounded-full bg-gradient-to-br from-purple-400 via-pink-400 to-blue-400 flex items-center justify-center ring-4 ring-white shadow-xl">
+                                    <span class="text-4xl md:text-5xl font-bold text-white">{{ channel_stats.username|first|upper }}</span>
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Channel Name (YouTube/TikTok username) -->
+                        <h2 class="text-2xl md:text-3xl font-bold text-gray-900 mb-3">{{ channel_stats.username }}</h2>
+                        
+                        <!-- Title/Description Space -->
+                        <div class="mb-4 max-w-2xl">
+                            {% if current_edit.title %}
+                                <p class="text-lg md:text-xl text-gray-700 font-medium mb-3">{{ current_edit.title }}</p>
+                            {% else %}
+                                <p class="text-sm md:text-base text-gray-500 italic mb-3">No title provided</p>
+                            {% endif %}
+                            
+                            <!-- Current Points (Below title, inside description section) -->
+                            <div class="mt-4">
+                                <div class="flex flex-col items-center">
+                                    {% if edits and edits.0.calculated_points %}
+                                    <div class="flex items-center gap-2 mb-1">
+                                        <i class="fas fa-star text-yellow-500 text-2xl md:text-3xl"></i>
+                                        <span class="text-3xl md:text-4xl font-extrabold text-gray-900">
+                                            {{ edits.0.calculated_points|floatformat:1 }}
+                                        </span>
+                                        <span class="text-xl md:text-2xl font-semibold text-gray-600">pts</span>
+                                    </div>
+                                    <span class="text-xs md:text-sm text-gray-500 font-medium">Current Video Points</span>
+                                    {% elif current_edit and current_edit.calculated_points %}
+                                    <div class="flex items-center gap-2 mb-1">
+                                        <i class="fas fa-star text-yellow-500 text-2xl md:text-3xl"></i>
+                                        <span class="text-3xl md:text-4xl font-extrabold text-gray-900">
+                                            {{ current_edit.calculated_points|floatformat:1 }}
+                                        </span>
+                                        <span class="text-xl md:text-2xl font-semibold text-gray-600">pts</span>
+                                    </div>
+                                    <span class="text-xs md:text-sm text-gray-500 font-medium">Current Video Points</span>
+                                    {% else %}
+                                    <div class="flex items-center gap-2 mb-1">
+                                        <i class="fas fa-star text-yellow-500 text-2xl md:text-3xl"></i>
+                                        <span class="text-3xl md:text-4xl font-extrabold text-gray-900">0.0</span>
+                                        <span class="text-xl md:text-2xl font-semibold text-gray-600">pts</span>
+                                    </div>
+                                    <span class="text-xs md:text-sm text-gray-500 font-medium">Current Video Points</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- User Statistics (History section) -->
+                        <div class="flex flex-wrap items-center justify-center gap-4 md:gap-6 mb-4">
+                            <div class="flex flex-col items-center">
+                                <span class="text-2xl md:text-3xl font-bold text-purple-600">{{ channel_stats.total_edits }}</span>
+                                <span class="text-xs md:text-sm text-gray-600">Total Edits</span>
+                            </div>
+                            {% if channel_stats.edit_of_week_wins > 0 %}
+                            <div class="flex flex-col items-center">
+                                <span class="text-2xl md:text-3xl font-bold text-yellow-500">🏆 {{ channel_stats.edit_of_week_wins }}</span>
+                                <span class="text-xs md:text-sm text-gray-600">Edit of the Week</span>
+                            </div>
+                            {% endif %}
+                            <div class="flex flex-col items-center">
+                                <span class="text-2xl md:text-3xl font-bold text-blue-600">{{ channel_stats.best_points|floatformat:0 }}</span>
+                                <span class="text-xs md:text-sm text-gray-600">Best Points</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                {% else %}
-                <!-- TikTok Video: Use official TikTok embed - let it size itself for full quality -->
-                <div class="flex items-center justify-center w-full max-w-[90vw] md:max-w-[720px] mx-auto">
-                    {% if edit.tiktok_embed_html %}
-                    <!-- Use TikTok's official embed HTML directly - no constraints, full quality -->
-                    {{ edit.tiktok_embed_html|safe }}
-                    {% else %}
-                    <!-- Fallback: Manual embed if oEmbed HTML not available -->
-                    <blockquote class="tiktok-embed" cite="{{ edit.video_url }}" data-video-id="{{ edit.video_url|tiktok_video_id }}" style="max-width: 100%; min-width: 325px;">
-                        <section></section>
-                    </blockquote>
-                    <script async src="https://www.tiktok.com/embed.js"></script>
-                    {% endif %}
-                </div>
-                {% endif %}
-
-                <!-- Action Buttons (Outside card, close to right edge) -->
-                <div class="absolute action-buttons-container top-1/2 -translate-y-1/2 flex flex-col gap-3 md:gap-4 z-20">
-                    <!-- Upvote Button -->
-                    <button 
-                        type="button"
-                        class="upvote-btn flex flex-col items-center gap-1 text-gray-700 hover:text-blue-600 transition-colors {% if edit.id in user_upvoted_ids %}text-blue-600{% endif %}"
-                        data-edit-id="{{ edit.id }}"
-                        {% if not user.is_authenticated %}disabled title="Login to upvote"{% endif %}
-                        {% if user_upvote_count >= max_upvotes and edit.pk not in user_upvoted_ids %}disabled title="You have reached the maximum of 3 upvotes"{% endif %}>
-                        <svg class="w-6 h-6 md:w-8 md:h-8" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clip-rule="evenodd"/>
-                        </svg>
-                        <span class="upvote-count text-xs md:text-sm font-semibold">{{ edit.upvote_count }}</span>
-                    </button>
-
-                    <!-- Report Button -->
-                    <button 
-                        type="button"
-                        class="report-btn flex flex-col items-center gap-1 text-gray-700 hover:text-red-600 transition-colors"
-                        data-edit-id="{{ edit.id }}"
-                        {% if not user.is_authenticated %}disabled title="Login to report"{% endif %}>
-                        <svg class="w-6 h-6 md:w-8 md:h-8" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
-                        </svg>
-                        <span class="text-[10px] md:text-xs">Report</span>
-                    </button>
-                </div>
-
-                <!-- No description overlay below the video -->
-            </div>
-            {% endfor %}
-            
-            <!-- Load More / Pagination Indicator -->
-            {% if is_paginated and page_obj.has_next %}
-            <div class="video-item flex items-center justify-center">
-                <a href="?platform={{ current_platform }}&page={{ page_obj.next_page_number }}" class="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg font-semibold hover:from-purple-600 hover:to-pink-600 transition-all shadow-lg">
-                    Load More Edits
-                </a>
             </div>
             {% endif %}
-        {% else %}
-        <div class="video-item flex items-center justify-center text-gray-900">
-            <div class="text-center">
-                <p class="text-lg mb-4">
-                    No {% if current_platform == 'youtube' %}YouTube{% else %}TikTok{% endif %} edits submitted yet.
-                </p>
-                {% if user.is_authenticated and user.role == 'user' %}
-                <a href="{% url 'edithub:apply' %}" 
-                   class="inline-block px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all shadow-lg">
-                    Be the First to Submit!
-                </a>
+            
+            <!-- Video Content Area (Single Video Per Page) -->
+            <div class="flex-1 flex items-center justify-center py-8 px-4 video-content-area">
+                {% if edits and current_edit %}
+                    {% with edit=edits.0 %}
+                    <div class="w-full max-w-5xl mx-auto">
+                        <div class="flex items-center justify-center gap-2 md:gap-3 mx-auto video-content-wrapper">
+                            <!-- Video Container (slightly bigger, with reduced gap to buttons) -->
+                            <div class="flex-shrink-0 flex justify-center">
+                                {% if edit.channel_type == 'youtube' %}
+                                <div class="relative w-full max-w-[300px] md:max-w-[450px] aspect-[9/16] bg-black overflow-hidden rounded-xl shadow-2xl mx-auto">
+                                    <iframe 
+                                        class="w-full h-full"
+                                        src="{{ edit.video_url|youtube_embed_standard }}"
+                                        title="YouTube video player"
+                                        frameborder="0"
+                                        referrerpolicy="strict-origin-when-cross-origin"
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                                        allowfullscreen
+                                        playsinline
+                                        loading="lazy">
+                                    </iframe>
+                                </div>
+                                {% else %}
+                                <!-- TikTok Video: Use official TikTok embed with slightly bigger width -->
+                                <div class="flex items-center justify-center w-full max-w-[300px] md:max-w-[450px] mx-auto">
+                                    {% if edit.tiktok_embed_html %}
+                                        <div style="max-width: 300px; width: 100%;">
+                                            {{ edit.tiktok_embed_html|safe }}
+                                        </div>
+                                    {% else %}
+                                        <blockquote class="tiktok-embed" cite="{{ edit.video_url }}" data-video-id="{{ edit.video_url|tiktok_video_id }}" style="max-width: 300px; min-width: 300px;">
+                                            <section></section>
+                                        </blockquote>
+                                        <script async src="https://www.tiktok.com/embed.js"></script>
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Action Buttons (Positioned closer to video, pushed to the right) -->
+                            <div class="flex flex-col gap-3 md:gap-4 flex-shrink-0">
+                                <!-- Upvote Button -->
+                                <button 
+                                    type="button"
+                                    class="upvote-btn flex flex-col items-center gap-1 text-gray-700 hover:text-blue-600 transition-colors bg-white/90 backdrop-blur-sm rounded-full p-2 md:p-3 shadow-lg {% if edit.id in user_upvoted_ids %}text-blue-600{% endif %}"
+                                    data-edit-id="{{ edit.id }}"
+                                    {% if not user.is_authenticated %}disabled title="Login to upvote"{% endif %}
+                                    {% if user_upvote_count >= max_upvotes and edit.pk not in user_upvoted_ids %}disabled title="You have reached the maximum of 3 upvotes"{% endif %}>
+                                    <svg class="w-5 h-5 md:w-6 md:h-6" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clip-rule="evenodd"/>
+                                    </svg>
+                                    <span class="upvote-count text-[10px] md:text-xs font-semibold">{{ edit.upvote_count }}</span>
+                                </button>
+
+                                <!-- Report Button -->
+                                <button 
+                                    type="button"
+                                    class="report-btn flex flex-col items-center gap-1 text-gray-700 hover:text-red-600 transition-colors bg-white/90 backdrop-blur-sm rounded-full p-2 md:p-3 shadow-lg"
+                                    data-edit-id="{{ edit.id }}"
+                                    {% if not user.is_authenticated %}disabled title="Login to report"{% endif %}>
+                                    <svg class="w-5 h-5 md:w-6 md:h-6" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                                    </svg>
+                                    <span class="text-[9px] md:text-[10px]">Report</span>
+                                </button>
+
+                                <!-- Share Button -->
+                                <button 
+                                    type="button"
+                                    onclick="shareEdit()"
+                                    class="share-btn flex flex-col items-center gap-1 text-gray-700 hover:text-purple-600 transition-colors bg-white/90 backdrop-blur-sm rounded-full p-2 md:p-3 shadow-lg">
+                                    <svg class="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/>
+                                    </svg>
+                                    <span class="text-[9px] md:text-[10px]">Share</span>
+                                </button>
+                            </div>
+                        
+                        <!-- Video Info Below - Removed channel name (now in banner) -->
+                    </div>
+                    {% endwith %}
+                    
+                    <!-- Pagination Controls -->
+                    <div class="fixed bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-4 bg-white/90 backdrop-blur-md rounded-full px-6 py-3 shadow-xl border border-gray-200 z-40">
+                        {% if page_obj.has_previous %}
+                            <a href="?platform={{ current_platform }}&page={{ page_obj.previous_page_number }}" 
+                               class="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg font-semibold hover:from-purple-600 hover:to-pink-600 transition-all shadow-md">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                                </svg>
+                                Previous
+                            </a>
+                        {% else %}
+                            <span class="flex items-center gap-2 px-4 py-2 bg-gray-200 text-gray-400 rounded-lg font-semibold cursor-not-allowed">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                                </svg>
+                                Previous
+                            </span>
+                        {% endif %}
+                        
+                        <span class="text-gray-700 font-semibold px-4">
+                            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                        </span>
+                        
+                        {% if page_obj.has_next %}
+                            <a href="?platform={{ current_platform }}&page={{ page_obj.next_page_number }}" 
+                               class="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg font-semibold hover:from-purple-600 hover:to-pink-600 transition-all shadow-md">
+                                Next
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                </svg>
+                            </a>
+                        {% else %}
+                            <span class="flex items-center gap-2 px-4 py-2 bg-gray-200 text-gray-400 rounded-lg font-semibold cursor-not-allowed">
+                                Next
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                </svg>
+                            </span>
+                        {% endif %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-12">
+                        <p class="text-lg mb-4 text-gray-900">
+                            No {% if current_platform == 'youtube' %}YouTube{% else %}TikTok{% endif %} edits submitted yet.
+                        </p>
+                        {% if user.is_authenticated and user.role == 'user' %}
+                        <a href="{% url 'edithub:apply' %}" 
+                           class="inline-block px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all shadow-lg">
+                            Be the First to Submit!
+                        </a>
+                        {% endif %}
+                    </div>
                 {% endif %}
-            </div>
-        </div>
-        {% endif %}
             </div>
         </div>
     </div>
@@ -376,17 +462,7 @@
         </div>
     </div>
     
-    <!-- Navigation Buttons (Desktop Only) -->
-    <button id="navButtonUp" class="nav-button nav-button-up" aria-label="Previous edit">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
-        </svg>
-    </button>
-    <button id="navButtonDown" class="nav-button nav-button-down" aria-label="Next edit">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-        </svg>
-    </button>
+    <!-- Navigation buttons removed - using pagination controls at bottom -->
 </main>
 
 <script>
@@ -400,103 +476,65 @@ function toggleSidebar() {
     }
 }
 
-let currentEditIndex = 0;
-let allEdits = [];
-
-// Function to switch to a specific edit (Desktop: fixed, Mobile: scroll)
-function scrollToEdit(editId) {
-    const container = document.querySelector('.shorts-container');
-    const items = Array.from(container.querySelectorAll('.video-item'));
-    const targetItem = items.find(item => parseInt(item.dataset.editId) === parseInt(editId));
+// Function to share the current edit
+function shareEdit() {
+    const currentUrl = window.location.href;
     
-    if (!targetItem) return;
-    
-    const isMobile = window.innerWidth <= 768;
-    
-    if (isMobile) {
-        // Mobile: Scroll to the item
-        targetItem.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        toggleSidebar();
+    // Check if Web Share API is available
+    if (navigator.share) {
+        navigator.share({
+            title: '{{ current_edit.title|default:"Check out this edit!" }}',
+            text: '{{ current_edit.title|default:"Amazing edit on EditHub!" }}',
+            url: currentUrl
+        }).catch(err => {
+            console.log('Error sharing:', err);
+            // Fallback to clipboard
+            copyToClipboard(currentUrl);
+        });
     } else {
-        // Desktop: Switch active class
-        const targetIndex = items.indexOf(targetItem);
-        if (targetIndex !== -1) {
-            switchToEdit(targetIndex);
+        // Fallback: Copy to clipboard
+        copyToClipboard(currentUrl);
+    }
+}
+
+// Function to copy URL to clipboard
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(() => {
+        // Show success message
+        const button = event.target.closest('button');
+        if (button) {
+            const originalText = button.innerHTML;
+            button.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Copied!';
+            button.classList.add('bg-green-50', 'border-green-500', 'text-green-600');
+            setTimeout(() => {
+                button.innerHTML = originalText;
+                button.classList.remove('bg-green-50', 'border-green-500', 'text-green-600');
+            }, 2000);
         }
-    }
+    }).catch(err => {
+        console.error('Failed to copy:', err);
+        alert('Failed to copy link. Please copy manually: ' + text);
+    });
 }
 
-// Function to switch to edit by index (Desktop only)
-function switchToEdit(index) {
-    const items = Array.from(document.querySelectorAll('.video-item'));
-    if (index < 0 || index >= items.length) return;
-    
-    // Remove active class from all items
-    items.forEach(item => item.classList.remove('active'));
-    
-    // Add active class to target item
-    items[index].classList.add('active');
-    currentEditIndex = index;
-    
-    // Update navigation buttons
-    updateNavButtons();
+// Function to switch to a specific edit (for sidebar ranking clicks)
+function scrollToEdit(editId) {
+    // Redirect to the edit's page
+    const currentPlatform = '{{ current_platform }}';
+    // Find the page number for this edit (we'll need to calculate or redirect to edit detail page)
+    // For now, just redirect to page 1 and let user navigate
+    window.location.href = `?platform=${currentPlatform}&page=1`;
+    toggleSidebar();
 }
 
-// Function to update navigation button states
-function updateNavButtons() {
-    const items = Array.from(document.querySelectorAll('.video-item'));
-    const upButton = document.getElementById('navButtonUp');
-    const downButton = document.getElementById('navButtonDown');
-    
-    if (upButton) {
-        upButton.disabled = currentEditIndex === 0;
-    }
-    if (downButton) {
-        downButton.disabled = currentEditIndex === items.length - 1;
-    }
-}
-
-// Function to go to next edit
-function nextEdit() {
-    const items = Array.from(document.querySelectorAll('.video-item'));
-    if (currentEditIndex < items.length - 1) {
-        switchToEdit(currentEditIndex + 1);
-    }
-}
-
-// Function to go to previous edit
-function previousEdit() {
-    if (currentEditIndex > 0) {
-        switchToEdit(currentEditIndex - 1);
-    }
-}
+// Legacy navigation functions (kept for compatibility but not used in new paginated format)
+let currentEditIndex = 0;
 
 document.addEventListener('DOMContentLoaded', function() {
     // Mobile menu toggle
     const menuToggle = document.getElementById('menuToggle');
     if (menuToggle) {
         menuToggle.addEventListener('click', toggleSidebar);
-    }
-    
-    // Initialize desktop: Set first video as active
-    const isMobile = window.innerWidth <= 768;
-    if (!isMobile) {
-        const items = Array.from(document.querySelectorAll('.video-item'));
-        if (items.length > 0) {
-            items[0].classList.add('active');
-            currentEditIndex = 0;
-            updateNavButtons();
-        }
-    }
-    
-    // Navigation button handlers (Desktop only)
-    const navButtonUp = document.getElementById('navButtonUp');
-    const navButtonDown = document.getElementById('navButtonDown');
-    if (navButtonUp) {
-        navButtonUp.addEventListener('click', previousEdit);
-    }
-    if (navButtonDown) {
-        navButtonDown.addEventListener('click', nextEdit);
     }
     
     // Add click handlers for ranking panel items
@@ -507,57 +545,47 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // Keyboard navigation
-    const container = document.querySelector('.shorts-container');
-    if (container) {
-        let isScrolling = false;
+    // Keyboard navigation for pagination (Left/Right arrows)
+    document.addEventListener('keydown', function(e) {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
+            return; // Don't interfere with form inputs
+        }
         
-        document.addEventListener('keydown', function(e) {
-            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
-                return; // Don't interfere with form inputs
-            }
-            
-            const isMobile = window.innerWidth <= 768;
-            
-            if (e.key === 'ArrowDown' || e.key === 'PageDown') {
-                e.preventDefault();
-                if (isMobile) {
-                    // Mobile: Scroll
-                    if (!isScrolling) {
-                        isScrolling = true;
-                        const currentScroll = container.scrollTop;
-                        const itemHeight = container.clientHeight;
-                        container.scrollTo({
-                            top: currentScroll + itemHeight,
-                            behavior: 'smooth'
-                        });
-                        setTimeout(() => { isScrolling = false; }, 500);
-                    }
-                } else {
-                    // Desktop: Switch to next
-                    nextEdit();
+        // Navigate with arrow keys - find pagination links
+        if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+            // Find pagination links by looking for links with page parameter
+            const allLinks = Array.from(document.querySelectorAll('a[href*="page="]'));
+            const prevLink = allLinks.find(link => {
+                const href = link.href || link.getAttribute('href');
+                const match = href.match(/page=(\d+)/);
+                if (match) {
+                    const pageNum = parseInt(match[1]);
+                    const currentPage = parseInt('{{ page_obj.number }}') || 1;
+                    return pageNum < currentPage;
                 }
-            } else if (e.key === 'ArrowUp' || e.key === 'PageUp') {
-                e.preventDefault();
-                if (isMobile) {
-                    // Mobile: Scroll
-                    if (!isScrolling) {
-                        isScrolling = true;
-                        const currentScroll = container.scrollTop;
-                        const itemHeight = container.clientHeight;
-                        container.scrollTo({
-                            top: currentScroll - itemHeight,
-                            behavior: 'smooth'
-                        });
-                        setTimeout(() => { isScrolling = false; }, 500);
-                    }
-                } else {
-                    // Desktop: Switch to previous
-                    previousEdit();
+                return false;
+            });
+            
+            const nextLink = allLinks.find(link => {
+                const href = link.href || link.getAttribute('href');
+                const match = href.match(/page=(\d+)/);
+                if (match) {
+                    const pageNum = parseInt(match[1]);
+                    const currentPage = parseInt('{{ page_obj.number }}') || 1;
+                    return pageNum > currentPage;
                 }
+                return false;
+            });
+            
+            if (e.key === 'ArrowLeft' && prevLink) {
+                e.preventDefault();
+                window.location.href = prevLink.href || prevLink.getAttribute('href');
+            } else if (e.key === 'ArrowRight' && nextLink) {
+                e.preventDefault();
+                window.location.href = nextLink.href || nextLink.getAttribute('href');
             }
-        });
-    }
+        }
+    });
     
     const reportModal = document.getElementById('reportModal');
     const closeReportModal = document.getElementById('closeReportModal');

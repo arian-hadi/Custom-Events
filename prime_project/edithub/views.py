@@ -840,9 +840,9 @@ def view_all_edits(request):
         channel_type=platform
     ).order_by('-calculated_points', '-submitted_date')
     
-    # Pagination
-    paginator = Paginator(edits_qs, 10)
-    page_number = request.GET.get('page')
+    # Pagination: 1 video per page (to avoid multiple videos playing simultaneously)
+    paginator = Paginator(edits_qs, 1)
+    page_number = request.GET.get('page', 1)
     page_obj = paginator.get_page(page_number)
     
     # Get user's upvoted edits if authenticated
@@ -889,8 +889,47 @@ def view_all_edits(request):
         channel_type=platform
     ).order_by('-calculated_points', '-submitted_date').values('id', 'title', 'channel_name', 'calculated_points', 'upvote_count', 'channel_type')[:50])  # Limit to top 50 for performance
     
+    # Get channel statistics for banner (if viewing a specific edit)
+    channel_stats = None
+    current_edit = None
+    if enriched_page:
+        current_edit = enriched_page[0]['instance']
+        edit_user = current_edit.user
+        
+        # Calculate user statistics (for total edits and wins)
+        total_edits = EditSubmission.objects.filter(
+            user=edit_user,
+            status='verified'
+        ).count()
+        
+        # Count Edit of the Week wins (top 3 finishes)
+        edit_of_week_wins = EditSubmission.objects.filter(
+            user=edit_user,
+            status='verified',
+            week_rank__in=[1, 2, 3]
+        ).count()
+        
+        # Get user's best rank
+        best_rank = EditSubmission.objects.filter(
+            user=edit_user,
+            status='verified'
+        ).order_by('-calculated_points').first()
+        best_points = best_rank.calculated_points if best_rank else 0
+        
+        # Use channel thumbnail and channel name from the edit (YouTube/TikTok profile)
+        channel_stats = {
+            'user': edit_user,
+            'total_edits': total_edits,
+            'edit_of_week_wins': edit_of_week_wins,
+            'best_points': float(best_points),
+            'profile_picture': current_edit.channel_thumbnail,  # Use YouTube/TikTok thumbnail
+            'username': current_edit.channel_name,  # Use YouTube/TikTok channel name
+            'channel_type': current_edit.channel_type,
+        }
+    
     context = {
         'edits': enriched_page,
+        'current_edit': current_edit,  # Single edit for current page
         'page_obj': page_obj,
         'is_paginated': page_obj.has_other_pages(),
         'user_upvoted_ids': user_upvoted_ids,
@@ -898,6 +937,7 @@ def view_all_edits(request):
         'max_upvotes': 3,
         'all_edits_ranking': all_edits_ranking,  # For side panel
         'current_platform': platform,  # Current selected platform
+        'channel_stats': channel_stats,  # Channel statistics for banner (YouTube/TikTok profile)
     }
     
     return render(request, 'edithub/view_all_edits.html', context)
