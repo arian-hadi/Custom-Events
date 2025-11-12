@@ -1050,6 +1050,22 @@ def view_all_edits(request):
         # Get editor title (default based on channel type, can be customized later)
         editor_title = f"{current_edit.channel_type.title()} Editor"  # e.g., "TikTok Editor" or "YouTube Editor"
         
+        # Get mix rank (overall ranking in editors table, regardless of platform)
+        mix_rank = None
+        try:
+            # Get the user's EditorApplication(s) - they might have multiple (YouTube and TikTok)
+            # For mix ranking, we use the one with highest follower count
+            editor_app = EditorApplication.objects.filter(
+                user=edit_user,
+                status='accepted',
+                removal_requested=False
+            ).order_by('-follower_count').first()
+            
+            if editor_app and editor_app.rank_position:
+                mix_rank = editor_app.rank_position
+        except Exception:
+            mix_rank = None
+        
         # Use channel thumbnail and channel name from the edit (YouTube/TikTok profile)
         channel_stats = {
             'user': edit_user,
@@ -1061,6 +1077,7 @@ def view_all_edits(request):
             'username': current_edit.channel_name,  # Use YouTube/TikTok channel name
             'channel_type': current_edit.channel_type,
             'editor_title': editor_title,  # Customizable editor title
+            'mix_rank': mix_rank,  # Rank in mix (overall) editors table
         }
     
     context = {
