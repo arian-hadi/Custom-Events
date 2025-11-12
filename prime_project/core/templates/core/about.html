@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% block title %}About Us - 2.0Transformers{% endblock %}
+{% block content %}
+<section class="max-w-4xl mx-auto px-4 pt-32 pb-12">
+  <h1 class="text-4xl font-bold text-gray-800 mb-6">About 2.0Transformers</h1>
+  
+  <div class="prose prose-lg max-w-none">
+    <p class="text-gray-600 mb-6 text-lg leading-relaxed">
+      2.0Transformers is a creative community platform dedicated to showcasing and promoting video editors' work. We feature editor rankings, competitions, and a curated collection of editing content from YouTube and TikTok creators. All content is displayed with proper attribution and consent from creators.
+    </p>
+
+    <h2 class="text-2xl font-semibold text-gray-700 mt-8 mb-4">Our Mission</h2>
+    <p class="text-gray-600 mb-4 leading-relaxed">
+      Our mission is to create a vibrant community where video editors can showcase their talent, compete in friendly competitions, and gain recognition for their creative work. We believe in fostering creativity, supporting emerging editors, and celebrating the art of video editing.
+    </p>
+
+    <h2 class="text-2xl font-semibold text-gray-700 mt-8 mb-4">What We Offer</h2>
+    <ul class="text-gray-600 mb-4 space-y-2 list-disc list-inside">
+      <li><strong>Editor Rankings:</strong> A comprehensive leaderboard system that ranks editors based on their performance, community engagement, and consistent participation.</li>
+      <li><strong>Edit Competitions:</strong> Weekly and monthly competitions like "Edit of the Week" where editors can submit their best work and compete for recognition.</li>
+      <li><strong>Community Features:</strong> Browse and discover amazing edits from talented creators across YouTube and TikTok platforms.</li>
+      <li><strong>Shop:</strong> Discover 2.0Transformers editing products and carefully selected affiliated merchandise.</li>
+    </ul>
+
+    <h2 class="text-2xl font-semibold text-gray-700 mt-8 mb-4">Legal Compliance & Data Privacy</h2>
+    <p class="text-gray-600 mb-4 leading-relaxed">
+      We take legal compliance and data privacy seriously. All video content displayed on our platform is embedded using official platform APIs (TikTok, YouTube) with proper attribution. Content creators retain full ownership and rights to their work.
+    </p>
+    <p class="text-gray-600 mb-4 leading-relaxed">
+      User data is collected with explicit consent and used solely for content display, rankings, and promotional purposes. We do not access, store, or share private or sensitive information from connected platforms. For more details, please see our <a href="{% url 'privacy' %}" class="text-blue-600 hover:text-blue-800 underline">Privacy Policy</a> and <a href="{% url 'disclaimers' %}" class="text-blue-600 hover:text-blue-800 underline">Disclaimers</a>.
+    </p>
+
+    <h2 class="text-2xl font-semibold text-gray-700 mt-8 mb-4">Join Our Community</h2>
+    <p class="text-gray-600 mb-4 leading-relaxed">
+      Whether you're an experienced editor or just starting out, we welcome you to join our community. <a href="{% url 'edithub:apply' %}" class="text-blue-600 hover:text-blue-800 underline">Apply to become an editor</a> and start showcasing your work today!
+    </p>
+
+    <div class="mt-8 p-4 bg-blue-50 border-l-4 border-blue-500 rounded">
+      <p class="text-gray-700 text-sm">
+        <strong>Note:</strong> This website uses cookies and similar technologies to enhance user experience. By continuing to use this site, you consent to our use of cookies as described in our <a href="{% url 'privacy' %}" class="text-blue-600 hover:text-blue-800 underline">Privacy Policy</a>.
+      </p>
+    </div>
+
+    <p class="text-gray-500 text-sm mt-8">
+      Last updated: {% now "F Y" %}
+    </p>
+  </div>
+</section>
+{% endblock %}
+

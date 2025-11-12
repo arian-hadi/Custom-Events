@@ -21,13 +21,46 @@
     We do not sell your information. Data may be shared with trusted services needed to operate the platform.
   </p>
 
-  <h2 class="text-2xl font-semibold text-gray-700 mt-8 mb-3">4. Cookies</h2>
+  <h2 class="text-2xl font-semibold text-gray-700 mt-8 mb-3">4. Cookies and Similar Technologies</h2>
   <p class="text-gray-600 mb-4">
-    We may use cookies to enhance user experience and gather analytics. You can manage cookies via your browser settings.
+    This website uses cookies and similar technologies to enhance user experience, analyze site traffic, and personalize content. By continuing to use this site, you consent to our use of cookies.
+  </p>
+  <p class="text-gray-600 mb-4">
+    <strong>Types of cookies we use:</strong>
+  </p>
+  <ul class="text-gray-600 mb-4 space-y-2 list-disc list-inside ml-4">
+    <li><strong>Essential Cookies:</strong> Required for the website to function properly (e.g., authentication, session management)</li>
+    <li><strong>Analytics Cookies:</strong> Help us understand how visitors interact with our website</li>
+    <li><strong>Preference Cookies:</strong> Remember your settings and preferences</li>
+    <li><strong>Marketing Cookies:</strong> Used to deliver relevant advertisements (if applicable)</li>
+  </ul>
+  <p class="text-gray-600 mb-4">
+    You can manage or disable cookies through your browser settings. However, disabling certain cookies may affect the functionality of the website.
   </p>
 
+  <h2 class="text-2xl font-semibold text-gray-700 mt-8 mb-3">5. Third-Party Services</h2>
+  <p class="text-gray-600 mb-4">
+    We use third-party services (such as YouTube and TikTok embeds) to display content. These services have their own privacy policies, and we encourage you to review them. We are not responsible for the privacy practices of these third-party services.
+  </p>
+
+  <h2 class="text-2xl font-semibold text-gray-700 mt-8 mb-3">6. Data Security</h2>
+  <p class="text-gray-600 mb-4">
+    We implement appropriate technical and organizational measures to protect your personal information. However, no method of transmission over the internet is 100% secure, and we cannot guarantee absolute security.
+  </p>
+
+  <h2 class="text-2xl font-semibold text-gray-700 mt-8 mb-3">7. Your Rights</h2>
+  <p class="text-gray-600 mb-4">
+    You have the right to access, update, or delete your personal information at any time. You can also request a copy of your data or object to certain processing activities. To exercise these rights, please <a href="{% url 'contact' %}" class="text-blue-600 hover:text-blue-800 underline">contact us</a>.
+  </p>
+
+  <div class="mt-8 p-4 bg-blue-50 border-l-4 border-blue-500 rounded">
+    <p class="text-gray-700">
+      For more detailed information about our data practices, content usage, and affiliate relationships, please see our <a href="{% url 'disclaimers' %}" class="text-blue-600 hover:text-blue-800 underline">Disclaimers</a> page.
+    </p>
+  </div>
+
   <p class="text-gray-500 text-sm mt-8">
-    Last updated: April 2025
+    Last updated: {% now "F Y" %}
   </p>
 </section>
 {% endblock %}

@@ -26,4 +26,10 @@ class TermOfServiceView(TemplateView):
 
 class PrivacyPolicyView(TemplateView):
     template_name = "core/privacy_policy.html"
+
+class AboutView(TemplateView):
+    template_name = "core/about.html"
+
+class DisclaimersView(TemplateView):
+    template_name = "core/disclaimers.html"
     
