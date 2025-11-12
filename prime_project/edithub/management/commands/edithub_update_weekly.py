@@ -75,17 +75,20 @@ class Command(BaseCommand):
 
                 # Collect potential updates
                 new_name = data.get("channel_name") or app.channel_name
-                new_thumb = data.get("thumbnail") or app.channel_thumbnail
                 new_followers = (
                     data.get("subscriber_count") or data.get("follower_count") or app.follower_count
                 )
+                # Get thumbnail from API (strip whitespace)
+                api_thumb = (data.get("thumbnail") or "").strip()
 
                 fields_to_update = []
                 if new_name and new_name != app.channel_name:
                     app.channel_name = new_name
                     fields_to_update.append("channel_name")
-                if new_thumb and new_thumb != app.channel_thumbnail:
-                    app.channel_thumbnail = new_thumb
+                # Update thumbnail if we got a valid one from API and it's different
+                # This will also update empty thumbnails
+                if api_thumb and api_thumb != (app.channel_thumbnail or "").strip():
+                    app.channel_thumbnail = api_thumb
                     fields_to_update.append("channel_thumbnail")
                 if new_followers is not None and new_followers != app.follower_count:
                     app.follower_count = new_followers

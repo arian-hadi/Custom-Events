@@ -131,7 +131,7 @@ class EditSubmissionForm(forms.ModelForm):
     
     class Meta:
         model = EditSubmission
-        fields = ['video_url', 'title', 'description']
+        fields = ['video_url', 'title']
         widgets = {
             'video_url': forms.URLInput(attrs={
                 'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500',

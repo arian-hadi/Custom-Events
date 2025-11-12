@@ -18,10 +18,18 @@
                        class="inline-block px-6 py-3 bg-white text-blue-600 rounded-lg font-semibold hover:bg-blue-50 transform hover:scale-105 transition-all duration-300 shadow-lg">
                         Apply to Join Rankings
                     </a>
+                    {% if user_has_submitted_this_week %}
+                    <button type="button" disabled
+                            class="inline-block px-6 py-3 bg-gray-400 text-white rounded-lg font-semibold cursor-not-allowed opacity-75 shadow-lg">
+                        <i class="fas fa-check-circle mr-2"></i>
+                        You Have Applied
+                    </button>
+                    {% else %}
                     <a href="{% url 'edithub:submit_edit' %}" 
                        class="inline-block px-6 py-3 bg-purple-500 text-white rounded-lg font-semibold hover:bg-purple-600 transform hover:scale-105 transition-all duration-300 shadow-lg">
                         Submit Edit for Edit of the Week
                     </a>
+                    {% endif %}
                     {% elif not user.is_authenticated %}
                     <a href="{% url 'edithub:apply' %}" 
                        class="inline-block px-6 py-3 bg-white text-blue-600 rounded-lg font-semibold hover:bg-blue-50 transform hover:scale-105 transition-all duration-300 shadow-lg">
@@ -178,6 +186,27 @@
                                                     {{ ranking.display_user_name }}
                                                 {% endif %}
                                             </button>
+                                            <div class="text-xs text-gray-500 mt-0.5">
+                                                {% if ranking.youtube and ranking.tiktok %}
+                                                    {% if ranking.youtube.editor_title %}
+                                                        {{ ranking.youtube.editor_title }}
+                                                    {% else %}
+                                                        YouTube Editor
+                                                    {% endif %}
+                                                {% elif ranking.youtube %}
+                                                    {% if ranking.youtube.editor_title %}
+                                                        {{ ranking.youtube.editor_title }}
+                                                    {% else %}
+                                                        YouTube Editor
+                                                    {% endif %}
+                                                {% elif ranking.tiktok %}
+                                                    {% if ranking.tiktok.editor_title %}
+                                                        {{ ranking.tiktok.editor_title }}
+                                                    {% else %}
+                                                        TikTok Editor
+                                                    {% endif %}
+                                                {% endif %}
+                                            </div>
                                         </div>
                                     </div>
                                 </td>
@@ -262,7 +291,11 @@
                                         {% if ranking.channel_thumbnail %}
                                         <img src="{{ ranking.channel_thumbnail }}" 
                                              alt="{{ ranking.channel_name }}" 
-                                             class="h-10 w-10 rounded-full mr-3">
+                                             class="h-10 w-10 rounded-full mr-3 object-cover">
+                                        {% else %}
+                                        <div class="h-10 w-10 rounded-full mr-3 bg-gradient-to-br {% if ranking.channel_type == 'youtube' %}from-red-400 to-orange-400{% else %}from-purple-400 via-pink-400 to-blue-400{% endif %} flex items-center justify-center">
+                                            <span class="text-white font-bold text-sm">{{ ranking.channel_name|first|upper|default:"U" }}</span>
+                                        </div>
                                         {% endif %}
                                         <div>
                                             <button type="button"
@@ -270,6 +303,17 @@
                                                     data-user-id="{{ ranking.user.id }}">
                                                 {{ ranking.channel_name|default:"Unknown" }}
                                             </button>
+                                            <div class="text-xs text-gray-500 mt-0.5">
+                                                {% if ranking.editor_title %}
+                                                    {{ ranking.editor_title }}
+                                                {% else %}
+                                                    {% if ranking.channel_type == 'youtube' %}
+                                                        YouTube Editor
+                                                    {% elif ranking.channel_type == 'tiktok' %}
+                                                        TikTok Editor
+                                                    {% endif %}
+                                                {% endif %}
+                                            </div>
                                         </div>
                                     </div>
                                 </td>
@@ -415,10 +459,18 @@
                 {% if not competition_state or competition_state.state == 'live' %}
                 <div class="mt-4">
                     {% if user.is_authenticated and user.role == 'user' %}
-                    <a href="{% url 'edithub:submit_edit' %}" 
-                       class="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transform hover:scale-105 transition-all duration-300 shadow-lg">
-                        Submit Your Edit
-                    </a>
+                        {% if user_has_submitted_this_week %}
+                        <button type="button" disabled
+                                class="inline-block px-6 py-3 bg-gray-400 text-white rounded-lg font-semibold cursor-not-allowed opacity-75 shadow-lg">
+                            <i class="fas fa-check-circle mr-2"></i>
+                            You Have Applied
+                        </button>
+                        {% else %}
+                        <a href="{% url 'edithub:submit_edit' %}" 
+                           class="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transform hover:scale-105 transition-all duration-300 shadow-lg">
+                            Submit Your Edit
+                        </a>
+                        {% endif %}
                     {% elif not user.is_authenticated %}
                     <a href="{% url 'edithub:submit_edit' %}" 
                        class="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transform hover:scale-105 transition-all duration-300 shadow-lg">
@@ -430,9 +482,9 @@
             </div>
 
             {% if top_edits %}
-            <div class="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-6 mb-8">
+            <div class="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-4 mb-8">
                 {% for edit in top_edits %}
-                <div class="relative {% if forloop.counter == 1 %}w-full md:w-2/5 order-2 md:order-2{% else %}w-full md:w-1/4 {% if forloop.counter == 2 %}order-1 md:order-1{% else %}order-3 md:order-3{% endif %}{% endif %}">
+                <div class="relative {% if forloop.counter == 1 %}w-full md:w-[38%] order-2 md:order-2{% else %}w-full md:w-[31%] {% if forloop.counter == 2 %}order-1 md:order-1{% else %}order-3 md:order-3{% endif %}{% endif %}">
                     <div class="bg-white rounded-lg shadow-xl overflow-hidden {% if edit.week_rank == 1 %}transform hover:scale-105 transition-transform{% endif %}">
                         <!-- Video Embed -->
                         {% if edit.channel_type == 'youtube' %}

@@ -255,6 +255,16 @@ class RankingTableView(ListView):
         except:
             context['week_end_iso'] = week_end.isoformat() if 'week_end' in locals() else None
         
+        # Check if user has already submitted an edit for the current week
+        user_has_submitted_this_week = False
+        if self.request.user.is_authenticated and competition_state['state'] == 'live':
+            user_has_submitted_this_week = EditSubmission.objects.filter(
+                user=self.request.user,
+                submitted_date__gte=week_start,
+                submitted_date__lte=week_end
+            ).exists()
+        context['user_has_submitted_this_week'] = user_has_submitted_this_week
+        
         return context
 
     def _build_mix_entries(self):
@@ -286,7 +296,20 @@ class RankingTableView(ListView):
                     'extra': app.editing_area_other if app.editing_area == 'others' else '',
                 })
             display_user_name = apps[0].user.get_full_name() or apps[0].user.username
-            display_thumbnail = primary_app.channel_thumbnail if primary_app else ''
+            # Get thumbnail - prefer primary app, but fallback to other platform if primary has no thumbnail
+            display_thumbnail = ''
+            if primary_app:
+                display_thumbnail = (primary_app.channel_thumbnail or '').strip()
+                # If primary app has no thumbnail, try the other platform
+                if not display_thumbnail and youtube_app and tiktok_app:
+                    other_app = tiktok_app if primary_app == youtube_app else youtube_app
+                    display_thumbnail = (other_app.channel_thumbnail or '').strip()
+                # If still no thumbnail and user only has one platform, use that one
+                elif not display_thumbnail:
+                    if tiktok_app and not youtube_app:
+                        display_thumbnail = (tiktok_app.channel_thumbnail or '').strip()
+                    elif youtube_app and not tiktok_app:
+                        display_thumbnail = (youtube_app.channel_thumbnail or '').strip()
             entries.append({
                 'user': apps[0].user,
                 'apps': apps,

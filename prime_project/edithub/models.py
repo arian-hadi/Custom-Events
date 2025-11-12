@@ -1,4 +1,6 @@
 from django.db import models
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 from django.utils import timezone
 from django.utils.safestring import mark_safe
 
@@ -439,3 +441,37 @@ class EditReport(models.Model):
         edit_submission = self.edit_submission
         super().delete(*args, **kwargs)
         edit_submission.update_report_count()
+
+
+# Signal to keep EditSubmission thumbnails in sync with EditorApplication
+# This will be connected at the end of the file after EditSubmission is defined
+def update_edit_submission_thumbnails_signal(sender, instance, **kwargs):
+    """
+    When EditorApplication thumbnail or channel_name is updated,
+    automatically update all related EditSubmissions to keep them in sync.
+    This ensures banner images always show the latest profile pictures.
+    """
+    # Only update if this is an accepted application
+    if instance.status == 'accepted' and not instance.removal_requested:
+        # Update all EditSubmissions that reference this EditorApplication
+        EditSubmission.objects.filter(
+            approved_application=instance,
+            status='verified'
+        ).update(
+            channel_thumbnail=instance.channel_thumbnail or '',
+            channel_name=instance.channel_name or ''
+        )
+        
+        # Also update EditSubmissions that don't have approved_application but match user/channel
+        EditSubmission.objects.filter(
+            user=instance.user,
+            channel_type=instance.channel_type,
+            status='verified',
+            approved_application__isnull=True
+        ).update(
+            channel_thumbnail=instance.channel_thumbnail or '',
+            channel_name=instance.channel_name or ''
+        )
+
+# Connect the signal after EditSubmission is defined
+post_save.connect(update_edit_submission_thumbnails_signal, sender=EditorApplication)
