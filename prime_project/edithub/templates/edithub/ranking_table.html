@@ -163,15 +163,8 @@
                                         {% endif %}
                                         <div>
                                             <button type="button"
-                                                    class="text-sm font-semibold text-gray-900 hover:underline open-profile"
-                                                    data-profile-type="mix"
-                                                    data-display-name="{% if ranking.youtube and ranking.youtube.channel_name %}{{ ranking.youtube.channel_name }}{% elif ranking.tiktok and ranking.tiktok.channel_name %}{{ ranking.tiktok.channel_name }}{% else %}{{ ranking.display_user_name }}{% endif %}"
-                                                    data-youtube-link="{% if ranking.youtube %}{{ ranking.youtube.channel_link }}{% endif %}"
-                                                    data-youtube-name="{% if ranking.youtube %}{{ ranking.youtube.channel_name }}{% endif %}"
-                                                    data-youtube-followers="{% if ranking.youtube %}{{ ranking.youtube.follower_count|default:0 }}{% endif %}"
-                                                    data-tiktok-link="{% if ranking.tiktok %}{{ ranking.tiktok.channel_link }}{% endif %}"
-                                                    data-tiktok-name="{% if ranking.tiktok %}{{ ranking.tiktok.channel_name }}{% endif %}"
-                                                    data-tiktok-followers="{% if ranking.tiktok %}{{ ranking.tiktok.follower_count|default:0 }}{% endif %}">
+                                                    class="text-sm font-semibold text-gray-900 hover:underline open-user-stats"
+                                                    data-user-id="{% if ranking.user %}{{ ranking.user.id }}{% endif %}">
                                                 {% if ranking.youtube and ranking.youtube.channel_name %}
                                                     {{ ranking.youtube.channel_name }}
                                                 {% elif ranking.tiktok and ranking.tiktok.channel_name %}
@@ -254,12 +247,8 @@
                                         {% endif %}
                                         <div>
                                             <button type="button"
-                                                    class="text-sm font-medium text-gray-900 hover:underline open-profile"
-                                                    data-profile-type="single"
-                                                    data-display-name="{{ ranking.channel_name|default:'Unknown' }}"
-                                                    data-platform="{{ ranking.channel_type }}"
-                                                    data-link="{{ ranking.channel_link }}"
-                                                    data-followers="{{ ranking.follower_count|default:0 }}">
+                                                    class="text-sm font-medium text-gray-900 hover:underline open-user-stats"
+                                                    data-user-id="{{ ranking.user.id }}">
                                                 {{ ranking.channel_name|default:"Unknown" }}
                                             </button>
                                         </div>
@@ -498,88 +487,178 @@
         </div>
     </section>
 
-    <!-- Profile Modal -->
-    <div id="profileModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-lg p-6 relative">
-            <button type="button" id="closeProfileModal" class="absolute top-3 right-3 text-gray-500 hover:text-gray-700">
+    <!-- User Stats Modal -->
+    <div id="userStatsModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative m-4 max-h-[90vh] overflow-y-auto">
+            <button type="button" id="closeUserStatsModal" class="absolute top-3 right-3 text-gray-500 hover:text-gray-700">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>
             </button>
-
-            <div class="mb-4">
-                <h3 id="modalDisplayName" class="text-xl font-semibold text-gray-900">Profile</h3>
-                <p class="text-xs text-gray-500">More details will be added here later.</p>
-            </div>
-
-            <div id="modalPlatforms" class="space-y-3">
-                <!-- Filled by JS: platform rows with link and followers -->
-            </div>
-
-            <div class="mt-6 text-right">
-                <button type="button" id="closeProfileModal2" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Close</button>
+            
+            <div id="userStatsContent" class="text-center">
+                <!-- Content will be loaded via AJAX -->
+                <div class="py-8">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
+                    <p class="mt-4 text-gray-600">Loading...</p>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const modal = document.getElementById('profileModal');
-        const closeBtns = [document.getElementById('closeProfileModal'), document.getElementById('closeProfileModal2')];
-        const nameEl = document.getElementById('modalDisplayName');
-        const platformsEl = document.getElementById('modalPlatforms');
+        const modal = document.getElementById('userStatsModal');
+        const closeBtn = document.getElementById('closeUserStatsModal');
+        const contentEl = document.getElementById('userStatsContent');
 
         function openModal() {
             modal.classList.remove('hidden');
             modal.classList.add('flex');
         }
+        
         function closeModal() {
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
         }
-        closeBtns.forEach(btn => btn && btn.addEventListener('click', closeModal));
-        modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+        
+        // Make closeModal globally accessible
+        window.closeModal = closeModal;
+        
+        if (closeBtn) {
+            closeBtn.addEventListener('click', closeModal);
+        }
+        if (modal) {
+            modal.addEventListener('click', (e) => { 
+                if (e.target === modal) closeModal(); 
+            });
+        }
 
-        function platformRow(iconHtml, label, link, followers) {
-            if (!link) return '';
-            const safeFollowers = followers ? String(followers) : '0';
+        function renderUserStats(data) {
+            const channelType = data.channel_type || 'youtube';
+            const channelLink = data.channel_link || '#';
+            const isYouTube = channelType === 'youtube';
+            
             return `
-                <a href="${link}" target="_blank" rel="noopener noreferrer"
-                   class="flex items-center justify-between gap-3 px-4 py-3 border rounded-md hover:bg-gray-50">
-                    <span class="inline-flex items-center gap-2 text-sm font-medium text-gray-800">
-                        ${iconHtml}
-                        ${label}
-                    </span>
-                    <span class="text-xs text-gray-500">Followers: ${safeFollowers}</span>
-                </a>`;
+                <div class="text-center">
+                    <!-- Profile Picture -->
+                    <div class="relative mb-4 inline-block">
+                        ${data.profile_picture ? 
+                            `<img src="${data.profile_picture}" alt="${data.username}" class="w-20 h-20 rounded-full object-cover ring-4 ring-purple-200 shadow-lg">` :
+                            `<div class="w-20 h-20 rounded-full bg-gradient-to-br from-purple-400 via-pink-400 to-blue-400 flex items-center justify-center ring-4 ring-purple-200 shadow-lg">
+                                <span class="text-3xl font-bold text-white">${(data.username || 'U')[0].toUpperCase()}</span>
+                            </div>`
+                        }
+                    </div>
+                    
+                    <!-- Editor Title (at the top) -->
+                    <h3 class="text-2xl font-bold text-gray-900 mb-2">${data.editor_title || 'Editor'}</h3>
+                    
+                    <!-- Username -->
+                    <p class="text-lg text-gray-600 mb-6">${data.username || 'Unknown'}</p>
+                    
+                    <!-- Statistics Grid -->
+                    <div class="grid grid-cols-2 gap-4 mb-6">
+                        <!-- Highest Points -->
+                        <div class="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-lg p-4 border border-yellow-200">
+                            <div class="flex items-center justify-center gap-2 mb-2">
+                                <i class="fas fa-star text-yellow-500 text-xl"></i>
+                                <span class="text-2xl font-bold text-gray-900">${parseFloat(data.best_points || 0).toFixed(1)}</span>
+                            </div>
+                            <p class="text-xs text-gray-600">Highest Points</p>
+                        </div>
+                        
+                        <!-- Total Edits -->
+                        <div class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-4 border border-purple-200">
+                            <div class="text-2xl font-bold text-gray-900 mb-2">${data.total_edits || 0}</div>
+                            <p class="text-xs text-gray-600">Total Edits</p>
+                        </div>
+                        
+                        <!-- Edit of the Week -->
+                        <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 border border-blue-200">
+                            <div class="flex items-center justify-center gap-2 mb-2">
+                                <span class="text-2xl">🏆</span>
+                                <span class="text-2xl font-bold text-gray-900">${data.edit_of_week_wins || 0}</span>
+                            </div>
+                            <p class="text-xs text-gray-600">Edit of the Week</p>
+                        </div>
+                        
+                        <!-- Edit of the Month -->
+                        <div class="bg-gradient-to-br from-pink-50 to-pink-100 rounded-lg p-4 border border-pink-200">
+                            <div class="flex items-center justify-center gap-2 mb-2">
+                                <span class="text-2xl">⭐</span>
+                                <span class="text-2xl font-bold text-gray-900">${data.edit_of_month_wins || 0}</span>
+                            </div>
+                            <p class="text-xs text-gray-600">Edit of the Month</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Redirect Link to Social Media -->
+                    ${channelLink !== '#' ? `
+                    <div class="mt-6 pt-6 border-t border-gray-200">
+                        <a href="${channelLink}" 
+                           target="_blank" 
+                           rel="noopener noreferrer"
+                           class="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r ${isYouTube ? 'from-red-500 to-red-600' : 'from-purple-500 to-pink-500'} text-white rounded-lg font-semibold hover:opacity-90 transition-all shadow-lg">
+                            ${isYouTube ? 
+                                '<i class="fab fa-youtube text-xl"></i><span>Visit YouTube Channel</span>' :
+                                '<i class="fab fa-tiktok text-xl"></i><span>Visit TikTok Profile</span>'
+                            }
+                        </a>
+                    </div>
+                    ` : ''}
+                    
+                    <!-- Note about future customization -->
+                    <p class="text-xs text-gray-500 italic mt-4">
+                        Customize your editor title with coins (coming soon)
+                    </p>
+                </div>
+            `;
         }
 
-        document.querySelectorAll('.open-profile').forEach(btn => {
+        document.querySelectorAll('.open-user-stats').forEach(btn => {
             btn.addEventListener('click', () => {
-                const type = btn.getAttribute('data-profile-type');
-                const displayName = btn.getAttribute('data-display-name') || 'Profile';
-                nameEl.textContent = displayName;
-                platformsEl.innerHTML = '';
-
-                if (type === 'mix') {
-                    const ytLink = btn.getAttribute('data-youtube-link');
-                    const ytFollowers = btn.getAttribute('data-youtube-followers');
-                    const tkLink = btn.getAttribute('data-tiktok-link');
-                    const tkFollowers = btn.getAttribute('data-tiktok-followers');
-                    platformsEl.innerHTML += platformRow('<i class="fab fa-youtube text-red-600"></i>', 'YouTube', ytLink, ytFollowers);
-                    platformsEl.innerHTML += platformRow('<i class="fab fa-tiktok"></i>', 'TikTok', tkLink, tkFollowers);
-                } else {
-                    const platform = btn.getAttribute('data-platform');
-                    const link = btn.getAttribute('data-link');
-                    const followers = btn.getAttribute('data-followers');
-                    if (platform === 'youtube') {
-                        platformsEl.innerHTML = platformRow('<i class="fab fa-youtube text-red-600"></i>', 'YouTube', link, followers);
-                    } else {
-                        platformsEl.innerHTML = platformRow('<i class="fab fa-tiktok"></i>', 'TikTok', link, followers);
-                    }
+                const userId = btn.getAttribute('data-user-id');
+                if (!userId) {
+                    alert('User ID not found');
+                    return;
                 }
-
+                
+                // Show loading state
+                contentEl.innerHTML = `
+                    <div class="py-8">
+                        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
+                        <p class="mt-4 text-gray-600">Loading...</p>
+                    </div>
+                `;
                 openModal();
+                
+                // Fetch user stats
+                fetch(`{% url 'edithub:get_user_stats' %}?user_id=${userId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            contentEl.innerHTML = renderUserStats(data);
+                        } else {
+                            contentEl.innerHTML = `
+                                <div class="py-8 text-center">
+                                    <p class="text-red-600">Error: ${data.error || 'Failed to load user stats'}</p>
+                                    <button onclick="closeModal()" class="mt-4 px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300">Close</button>
+                                </div>
+                            `;
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching user stats:', error);
+                        contentEl.innerHTML = `
+                            <div class="py-8 text-center">
+                                <p class="text-red-600">Error loading user stats. Please try again.</p>
+                                <button onclick="closeModal()" class="mt-4 px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300">Close</button>
+                            </div>
+                        `;
+                    });
             });
         });
     });

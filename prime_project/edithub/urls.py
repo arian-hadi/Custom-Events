@@ -15,6 +15,7 @@ urlpatterns = [
     
     # AJAX endpoints
     path('verify-channel/', views.verify_channel_ajax, name='verify_channel'),
+    path('user-stats/', views.get_user_stats_ajax, name='get_user_stats'),
     
     # Admin views
     path('admin/', views.admin_applications, name='admin_applications'),

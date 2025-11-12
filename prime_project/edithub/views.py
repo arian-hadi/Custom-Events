@@ -416,6 +416,100 @@ def apply_view(request):
     return render_apply_form(youtube_form, tiktok_form, apply_youtube=True, apply_tiktok=False, data_consent_checked=False)
 
 
+@require_http_methods(["GET"])
+def get_user_stats_ajax(request):
+    """AJAX endpoint to get user statistics for modal display"""
+    try:
+        user_id = request.GET.get('user_id')
+        if not user_id:
+            return JsonResponse({'error': 'User ID is required'}, status=400)
+        
+        try:
+            edit_user = CustomUser.objects.get(id=user_id)
+        except CustomUser.DoesNotExist:
+            return JsonResponse({'error': 'User not found'}, status=404)
+        
+        # Get primary channel info from EditorApplication
+        primary_app = EditorApplication.objects.filter(
+            user=edit_user,
+            status='accepted'
+        ).order_by('-follower_count').first()
+        
+        if not primary_app:
+            return JsonResponse({'error': 'No channel found for this user'}, status=404)
+        
+        # Calculate user statistics
+        total_edits = EditSubmission.objects.filter(
+            user=edit_user,
+            status='verified'
+        ).count()
+        
+        # Count Edit of the Week wins (top 3 finishes)
+        edit_of_week_wins = EditSubmission.objects.filter(
+            user=edit_user,
+            status='verified',
+            week_rank__in=[1, 2, 3]
+        ).count()
+        
+        # Count Edit of the Month wins
+        from django.utils import timezone
+        from datetime import datetime
+        from calendar import monthrange
+        
+        edit_of_month_wins = 0
+        user_edits = EditSubmission.objects.filter(
+            user=edit_user,
+            status='verified'
+        ).order_by('submitted_date')
+        
+        months_checked = set()
+        for edit in user_edits:
+            year_month = (edit.submitted_date.year, edit.submitted_date.month)
+            if year_month in months_checked:
+                continue
+            months_checked.add(year_month)
+            
+            first_day = datetime(year_month[0], year_month[1], 1, tzinfo=timezone.utc)
+            last_day_num = monthrange(year_month[0], year_month[1])[1]
+            last_day = datetime(year_month[0], year_month[1], last_day_num, 23, 59, 59, tzinfo=timezone.utc)
+            
+            top_edit = EditSubmission.objects.filter(
+                status='verified',
+                submitted_date__gte=first_day,
+                submitted_date__lte=last_day
+            ).order_by('-calculated_points', 'submitted_date').first()
+            
+            if top_edit and top_edit.user == edit_user:
+                edit_of_month_wins += 1
+        
+        # Get user's best rank
+        best_rank = EditSubmission.objects.filter(
+            user=edit_user,
+            status='verified'
+        ).order_by('-calculated_points').first()
+        best_points = float(best_rank.calculated_points) if best_rank else 0.0
+        
+        # Get editor title
+        editor_title = f"{primary_app.channel_type.title()} Editor"
+        
+        return JsonResponse({
+            'success': True,
+            'username': primary_app.channel_name or edit_user.username,
+            'profile_picture': primary_app.channel_thumbnail or '',
+            'channel_type': primary_app.channel_type,
+            'channel_link': primary_app.channel_link,
+            'editor_title': editor_title,
+            'total_edits': total_edits,
+            'edit_of_week_wins': edit_of_week_wins,
+            'edit_of_month_wins': edit_of_month_wins,
+            'best_points': best_points,
+        })
+    
+    except Exception as e:
+        logger.error(f"Error fetching user stats: {str(e)}")
+        return JsonResponse({'error': str(e)}, status=500)
+
+
 @login_required
 @require_http_methods(["POST"])
 def verify_channel_ajax(request):
@@ -883,11 +977,11 @@ def view_all_edits(request):
             'thumbnail_url': thumb,
         })
 
-    # Get all edits for ranking panel filtered by platform (simplified, no thumbnails needed)
+    # Get all edits for ranking panel filtered by platform (with channel thumbnails)
     all_edits_ranking = list(EditSubmission.objects.filter(
         status='verified',
         channel_type=platform
-    ).order_by('-calculated_points', '-submitted_date').values('id', 'title', 'channel_name', 'calculated_points', 'upvote_count', 'channel_type')[:50])  # Limit to top 50 for performance
+    ).order_by('-calculated_points', '-submitted_date').values('id', 'title', 'channel_name', 'calculated_points', 'upvote_count', 'channel_type', 'channel_thumbnail')[:50])  # Limit to top 50 for performance
     
     # Get channel statistics for banner (if viewing a specific edit)
     channel_stats = None
@@ -896,7 +990,7 @@ def view_all_edits(request):
         current_edit = enriched_page[0]['instance']
         edit_user = current_edit.user
         
-        # Calculate user statistics (for total edits and wins)
+        # Calculate user statistics (for modal popup)
         total_edits = EditSubmission.objects.filter(
             user=edit_user,
             status='verified'
@@ -909,6 +1003,43 @@ def view_all_edits(request):
             week_rank__in=[1, 2, 3]
         ).count()
         
+        # Count Edit of the Month wins (top edit in a calendar month)
+        from django.utils import timezone
+        from datetime import datetime, timedelta
+        from django.db.models import Max, Q
+        from calendar import monthrange
+        
+        edit_of_month_wins = 0
+        # Get all unique year-month combinations where user had verified edits
+        user_edits = EditSubmission.objects.filter(
+            user=edit_user,
+            status='verified'
+        ).order_by('submitted_date')
+        
+        # Group edits by year-month
+        months_checked = set()
+        for edit in user_edits:
+            year_month = (edit.submitted_date.year, edit.submitted_date.month)
+            if year_month in months_checked:
+                continue
+            months_checked.add(year_month)
+            
+            # Get first and last day of that month
+            first_day = datetime(year_month[0], year_month[1], 1, tzinfo=timezone.utc)
+            last_day_num = monthrange(year_month[0], year_month[1])[1]
+            last_day = datetime(year_month[0], year_month[1], last_day_num, 23, 59, 59, tzinfo=timezone.utc)
+            
+            # Get the highest points edit in that month (across all users)
+            top_edit = EditSubmission.objects.filter(
+                status='verified',
+                submitted_date__gte=first_day,
+                submitted_date__lte=last_day
+            ).order_by('-calculated_points', 'submitted_date').first()
+            
+            # If this user's edit is the top edit of the month, count it as a win
+            if top_edit and top_edit.user == edit_user:
+                edit_of_month_wins += 1
+        
         # Get user's best rank
         best_rank = EditSubmission.objects.filter(
             user=edit_user,
@@ -916,15 +1047,20 @@ def view_all_edits(request):
         ).order_by('-calculated_points').first()
         best_points = best_rank.calculated_points if best_rank else 0
         
+        # Get editor title (default based on channel type, can be customized later)
+        editor_title = f"{current_edit.channel_type.title()} Editor"  # e.g., "TikTok Editor" or "YouTube Editor"
+        
         # Use channel thumbnail and channel name from the edit (YouTube/TikTok profile)
         channel_stats = {
             'user': edit_user,
             'total_edits': total_edits,
             'edit_of_week_wins': edit_of_week_wins,
+            'edit_of_month_wins': edit_of_month_wins,
             'best_points': float(best_points),
             'profile_picture': current_edit.channel_thumbnail,  # Use YouTube/TikTok thumbnail
             'username': current_edit.channel_name,  # Use YouTube/TikTok channel name
             'channel_type': current_edit.channel_type,
+            'editor_title': editor_title,  # Customizable editor title
         }
     
     context = {
