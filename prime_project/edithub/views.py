@@ -13,6 +13,7 @@ from .models import EditorApplication, EditSubmission, EditUpvote, EditReport
 from .forms import EditorApplicationForm, EditSubmissionForm, EditReportForm
 from .utils import fetch_youtube_channel_data, fetch_tiktok_channel_data, validate_channel_url
 from accounts.models import CustomUser
+from datetime import datetime, timedelta, timezone
 import json
 import logging
 
@@ -148,17 +149,66 @@ class RankingTableView(ListView):
                 context['is_paginated'] = False
             context['total_editors'] = queryset.count()
         
-        # Edit of the Week: always compute top 3 by calculated points (fresh every request)
-        # This avoids stale featured flags showing fewer than 3.
-        # Filter by platform for Edit of the Week (separate from table filter)
+        # Edit of the Week: Weekly competition system
+        # Competition runs Monday 00:00 to Friday 23:59
+        # Saturday-Sunday shows winners only
+        try:
+            from .utils import get_competition_state, format_countdown, get_week_start_end
+            competition_state = get_competition_state()
+            week_start, week_end = get_week_start_end()
+        except Exception as e:
+            logger.error(f"Error getting competition state: {e}")
+            # Fallback: treat as live competition
+            from datetime import datetime, timezone
+            now = datetime.now(timezone.utc)
+            days_since_monday = (now.weekday()) % 7
+            week_start = (now - timedelta(days=days_since_monday)).replace(hour=0, minute=0, second=0, microsecond=0)
+            week_end = week_start + timedelta(days=4, hours=23, minutes=59, seconds=59)
+            competition_state = {
+                'state': 'live' if now < week_end else 'winners',
+                'week_start': week_start,
+                'week_end': week_end,
+                'time_remaining': week_end - now if now < week_end else timedelta(0),
+                'next_week_start': week_start + timedelta(days=7),
+            }
+        
         edit_platform = self.request.GET.get('edit_platform', 'youtube')
         if edit_platform not in ['youtube', 'tiktok']:
             edit_platform = 'youtube'
-        top_edits_qs = EditSubmission.objects.filter(
-            status='verified',
-            channel_type=edit_platform
-        ).order_by('-calculated_points', '-submitted_date')
-        top_three = list(top_edits_qs[:3])
+        
+        # Filter edits by current week
+        if competition_state['state'] == 'live':
+            # Show live rankings for current week
+            week_edits_qs = EditSubmission.objects.filter(
+                status='verified',
+                channel_type=edit_platform,
+                submitted_date__gte=week_start,
+                submitted_date__lte=week_end
+            ).order_by('-calculated_points', '-submitted_date')
+            
+            # If we have fewer than 3 edits from this week, fill with top edits from all time
+            week_edits = list(week_edits_qs[:3])
+            if len(week_edits) < 3:
+                all_time_edits = EditSubmission.objects.filter(
+                    status='verified',
+                    channel_type=edit_platform
+                ).exclude(
+                    id__in=[e.id for e in week_edits]
+                ).order_by('-calculated_points', '-submitted_date')[:3 - len(week_edits)]
+                top_three = week_edits + list(all_time_edits)
+            else:
+                top_three = week_edits
+        else:
+            # Show winners from last week (the week that just ended)
+            last_week_start = week_start - timedelta(days=7)
+            last_week_end = week_end - timedelta(days=2)  # Friday of last week
+            top_edits_qs = EditSubmission.objects.filter(
+                status='verified',
+                channel_type=edit_platform,
+                submitted_date__gte=last_week_start,
+                submitted_date__lte=last_week_end
+            ).order_by('-calculated_points', '-submitted_date')
+            top_three = list(top_edits_qs[:3])
         # Attach thumbnails via oEmbed/ID extraction for custom cards
         from .utils import fetch_tiktok_oembed, youtube_thumbnail_from_url
         enriched = []
@@ -188,6 +238,22 @@ class RankingTableView(ListView):
             })
         context['top_edits'] = enriched
         context['edit_platform'] = edit_platform  # Current platform for Edit of the Week section
+        context['competition_state'] = competition_state
+        try:
+            context['countdown'] = format_countdown(competition_state.get('time_remaining', timedelta(0))) if competition_state['state'] == 'live' else None
+        except:
+            context['countdown'] = None
+        context['week_start'] = week_start
+        context['week_end'] = week_end
+        
+        # Convert datetime objects to ISO format for JavaScript
+        try:
+            if competition_state['state'] == 'live':
+                context['week_end_iso'] = week_end.isoformat()
+            else:
+                context['next_week_start_iso'] = competition_state.get('next_week_start', week_start + timedelta(days=7)).isoformat()
+        except:
+            context['week_end_iso'] = week_end.isoformat() if 'week_end' in locals() else None
         
         return context
 

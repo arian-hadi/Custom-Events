@@ -1,10 +1,11 @@
 import re
 import requests
 from django.conf import settings
-from typing import Optional, Dict
+from typing import Optional, Dict, Tuple
 import logging
 import json
 import math
+from datetime import datetime, timedelta, timezone
 
 logger = logging.getLogger(__name__)
 
@@ -1760,3 +1761,97 @@ def calculate_tiktok_points(views: int, likes: int, comments: int, follower_coun
         points += 5.0  # Small bonus for small creators with decent engagement
     
     return round(points, 2)
+
+
+# Weekly Competition System Functions
+
+def get_week_start_end(now: datetime = None) -> Tuple[datetime, datetime]:
+    """
+    Get the current competition week's start (Monday 00:00) and end (Friday 23:59).
+    
+    Args:
+        now: Optional datetime to use as reference. Defaults to current time.
+    
+    Returns:
+        Tuple of (week_start, week_end) as datetime objects
+    """
+    if now is None:
+        now = datetime.now(timezone.utc)
+    
+    # Get Monday of current week (weekday 0 = Monday)
+    days_since_monday = (now.weekday()) % 7
+    week_start = (now - timedelta(days=days_since_monday)).replace(hour=0, minute=0, second=0, microsecond=0)
+    
+    # Get Friday 23:59:59 of the same week
+    week_end = week_start + timedelta(days=4, hours=23, minutes=59, seconds=59)
+    
+    return week_start, week_end
+
+
+def get_competition_state(now: datetime = None) -> Dict[str, any]:
+    """
+    Determine the current state of the weekly competition.
+    
+    Returns:
+        Dict with:
+        - 'state': 'live' (Mon-Fri) or 'winners' (Sat-Sun)
+        - 'week_start': datetime of Monday 00:00
+        - 'week_end': datetime of Friday 23:59
+        - 'time_remaining': timedelta until end (if live)
+        - 'next_week_start': datetime of next Monday 00:00 (if winners)
+    """
+    if now is None:
+        now = datetime.now(timezone.utc)
+    
+    week_start, week_end = get_week_start_end(now)
+    next_week_start = week_start + timedelta(days=7)
+    
+    if now < week_end:
+        # Competition is live (Monday to Friday)
+        time_remaining = week_end - now
+        return {
+            'state': 'live',
+            'week_start': week_start,
+            'week_end': week_end,
+            'time_remaining': time_remaining,
+            'next_week_start': next_week_start,
+        }
+    else:
+        # Showing winners (Saturday to Sunday)
+        return {
+            'state': 'winners',
+            'week_start': week_start,
+            'week_end': week_end,
+            'next_week_start': next_week_start,
+            'time_until_next': next_week_start - now,
+        }
+
+
+def format_countdown(timedelta_obj: timedelta) -> str:
+    """
+    Format a timedelta as a countdown string (e.g., "2d 4h 30m").
+    
+    Args:
+        timedelta_obj: timedelta object to format
+    
+    Returns:
+        Formatted string like "2d 4h 30m" or "4h 30m" or "30m"
+    """
+    total_seconds = int(timedelta_obj.total_seconds())
+    
+    if total_seconds <= 0:
+        return "Ended"
+    
+    days = total_seconds // 86400
+    hours = (total_seconds % 86400) // 3600
+    minutes = (total_seconds % 3600) // 60
+    
+    parts = []
+    if days > 0:
+        parts.append(f"{days}d")
+    if hours > 0:
+        parts.append(f"{hours}h")
+    if minutes > 0 or not parts:
+        parts.append(f"{minutes}m")
+    
+    return " ".join(parts)

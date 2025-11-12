@@ -369,8 +369,28 @@
     <section class="py-12 bg-gradient-to-b from-gray-50 to-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-8">
-                <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-2">Edit of the Week</h2>
-                <p class="text-gray-600">Top 3 most upvoted edits this week</p>
+                {% if competition_state and competition_state.state == 'live' %}
+                    <div class="flex items-center justify-center gap-3 mb-2">
+                        <h2 class="text-3xl md:text-4xl font-bold text-gray-900">Edit of the Week</h2>
+                        <span class="px-3 py-1 bg-red-500 text-white text-sm font-bold rounded-full animate-pulse flex items-center gap-1">
+                            <span class="w-2 h-2 bg-white rounded-full"></span>
+                            LIVE
+                        </span>
+                    </div>
+                    <p class="text-gray-600 mb-2">Top 3 most upvoted edits this week</p>
+                    {% if countdown %}
+                    <p class="text-lg font-semibold text-red-600" id="countdown-timer">
+                        Ends in {{ countdown }}
+                    </p>
+                    {% endif %}
+                {% elif competition_state and competition_state.state == 'winners' %}
+                    <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-2">🏆 Winners of the Week</h2>
+                    <p class="text-gray-600">Top 3 winners from last week's competition</p>
+                    <p class="text-sm text-gray-500 mt-2">New competition starts Monday at 00:00</p>
+                {% else %}
+                    <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-2">Edit of the Week</h2>
+                    <p class="text-gray-600">Top 3 most upvoted edits</p>
+                {% endif %}
                 
                 <!-- Platform Tabs for Edit of the Week -->
                 <div class="flex items-center justify-center gap-2 md:gap-4 mt-6 mb-4">
@@ -392,6 +412,7 @@
                     </a>
                 </div>
                 
+                {% if not competition_state or competition_state.state == 'live' %}
                 <div class="mt-4">
                     {% if user.is_authenticated and user.role == 'user' %}
                     <a href="{% url 'edithub:submit_edit' %}" 
@@ -405,6 +426,7 @@
                     </a>
                     {% endif %}
                 </div>
+                {% endif %}
             </div>
 
             {% if top_edits %}
@@ -856,6 +878,84 @@
             });
         });
     });
+
+    // Weekly Competition System: Countdown Timer and Auto-Refresh
+    {% if competition_state and competition_state.state == 'live' %}
+    (function() {
+        const countdownElement = document.getElementById('countdown-timer');
+        if (!countdownElement) return;
+
+        const weekEnd = new Date('{{ week_end_iso }}');
+        
+        function updateCountdown() {
+            const now = new Date();
+            const diff = weekEnd - now;
+            
+            if (diff <= 0) {
+                countdownElement.textContent = 'Competition Ended';
+                // Reload page to show winners
+                setTimeout(() => {
+                    window.location.reload();
+                }, 2000);
+                return;
+            }
+            
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            
+            let countdownText = 'Ends in ';
+            const parts = [];
+            if (days > 0) parts.push(days + 'd');
+            if (hours > 0) parts.push(hours + 'h');
+            if (minutes > 0 || parts.length === 0) parts.push(minutes + 'm');
+            
+            countdownElement.textContent = countdownText + parts.join(' ');
+        }
+        
+        // Update countdown every second for smooth display
+        updateCountdown();
+        setInterval(updateCountdown, 1000);
+        
+        // Auto-refresh rankings every 60 seconds during live competition
+        let refreshInterval = setInterval(() => {
+            // Only refresh if page is visible
+            if (!document.hidden) {
+                // Reload the page to get updated rankings
+                window.location.reload();
+            }
+        }, 60000); // 60 seconds
+        
+        // Clear interval when page is hidden
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) {
+                clearInterval(refreshInterval);
+            } else {
+                refreshInterval = setInterval(() => {
+                    if (!document.hidden) {
+                        window.location.reload();
+                    }
+                }, 60000);
+            }
+        });
+    })();
+    {% elif competition_state and competition_state.state == 'winners' %}
+    (function() {
+        // Auto-refresh on Monday at 00:00 to start new competition
+        const nextWeekStart = new Date('{{ next_week_start_iso }}');
+        const now = new Date();
+        const timeUntilNext = nextWeekStart - now;
+        
+        if (timeUntilNext > 0) {
+            setTimeout(() => {
+                window.location.reload();
+            }, timeUntilNext);
+        } else {
+            // If we're past the start time, reload immediately
+            window.location.reload();
+        }
+    })();
+    {% endif %}
     </script>
 
     {% if current_user_rank %}
