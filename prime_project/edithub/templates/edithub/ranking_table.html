@@ -231,17 +231,31 @@
                                 </td>
                                 {% else %}
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    {% with position=forloop.counter0|add:page_obj.start_index %}
-                                    <div class="flex items-center">
-                                        {% if position <= 3 %}
-                                        <span class="text-2xl font-bold {% if position == 1 %}text-yellow-500{% elif position == 2 %}text-gray-400{% else %}text-orange-600{% endif %}">
-                                            {% if position == 1 %}🥇{% elif position == 2 %}🥈{% elif position == 3 %}🥉{% endif %}
-                                        </span>
-                                        {% endif %}
-                                        <span class="ml-2 text-lg font-semibold text-gray-900">#{{ position }}</span>
-                                        {% if ranking.rank_trend_icon %}{{ ranking.rank_trend_icon|safe }}{% endif %}
-                                    </div>
-                                    {% endwith %}
+                                    {% if is_paginated %}
+                                        {% with position=forloop.counter0|add:page_obj.start_index %}
+                                        <div class="flex items-center">
+                                            {% if position <= 3 %}
+                                            <span class="text-2xl font-bold {% if position == 1 %}text-yellow-500{% elif position == 2 %}text-gray-400{% else %}text-orange-600{% endif %}">
+                                                {% if position == 1 %}🥇{% elif position == 2 %}🥈{% elif position == 3 %}🥉{% endif %}
+                                            </span>
+                                            {% endif %}
+                                            <span class="ml-2 text-lg font-semibold text-gray-900">#{{ position }}</span>
+                                            {% if ranking.rank_trend_icon %}{{ ranking.rank_trend_icon|safe }}{% endif %}
+                                        </div>
+                                        {% endwith %}
+                                    {% else %}
+                                        {% with position=forloop.counter %}
+                                        <div class="flex items-center">
+                                            {% if position <= 3 %}
+                                            <span class="text-2xl font-bold {% if position == 1 %}text-yellow-500{% elif position == 2 %}text-gray-400{% else %}text-orange-600{% endif %}">
+                                                {% if position == 1 %}🥇{% elif position == 2 %}🥈{% elif position == 3 %}🥉{% endif %}
+                                            </span>
+                                            {% endif %}
+                                            <span class="ml-2 text-lg font-semibold text-gray-900">#{{ position }}</span>
+                                            {% if ranking.rank_trend_icon %}{{ ranking.rank_trend_icon|safe }}{% endif %}
+                                        </div>
+                                        {% endwith %}
+                                    {% endif %}
                                 </td>
                                 <td class="px-6 py-4">
                                     <div class="flex items-center">
@@ -350,7 +364,8 @@
         </div>
     </section>
 
-    <!-- Edit of the Week Section -->
+    <!-- Edit of the Week Section (only show on main page, not on "View All" page) -->
+    {% if not show_all %}
     <section class="py-12 bg-gradient-to-b from-gray-50 to-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-8">
@@ -491,6 +506,7 @@
             {% endif %}
         </div>
     </section>
+    {% endif %}
 
     <!-- How It Works Modal -->
     <div id="howItWorksModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-[100]" style="display: none;">

@@ -45,10 +45,16 @@ class RankingTableView(ListView):
         if channel_filter not in ['mix', 'youtube', 'tiktok']:
             channel_filter = 'mix'
 
+        # Calculate channel counts correctly
+        # For mix: count distinct users (not applications)
+        mix_user_count = base_queryset.values('user_id').distinct().count()
+        youtube_count = base_queryset.filter(channel_type='youtube').count()
+        tiktok_count = base_queryset.filter(channel_type='tiktok').count()
+        
         self.channel_counts = {
-            'mix': base_queryset.values('user_id').distinct().count(),
-            'youtube': base_queryset.filter(channel_type='youtube').count(),
-            'tiktok': base_queryset.filter(channel_type='tiktok').count(),
+            'mix': mix_user_count,
+            'youtube': youtube_count,
+            'tiktok': tiktok_count,
         }
 
         self.mix_queryset = base_queryset
@@ -68,11 +74,20 @@ class RankingTableView(ListView):
         context['editing_areas'] = EditorApplication.EDITING_AREA_CHOICES
         context['selected_area'] = self.request.GET.get('editing_area', '')
         context['channel_filter'] = getattr(self, 'channel_filter', 'mix')
-        context['channel_counts'] = getattr(self, 'channel_counts', {
-            'mix': 0,
-            'youtube': 0,
-            'tiktok': 0,
-        })
+        # Ensure channel_counts are always available
+        if hasattr(self, 'channel_counts'):
+            context['channel_counts'] = self.channel_counts
+        else:
+            # Fallback: calculate if not set
+            base_queryset = EditorApplication.objects.filter(
+                status='accepted',
+                removal_requested=False
+            )
+            context['channel_counts'] = {
+                'mix': base_queryset.values('user_id').distinct().count(),
+                'youtube': base_queryset.filter(channel_type='youtube').count(),
+                'tiktok': base_queryset.filter(channel_type='tiktok').count(),
+            }
         channel_filter = context['channel_filter']
         show_all = self.request.GET.get('all') == '1'
         context['show_all'] = show_all
@@ -181,6 +196,7 @@ class RankingTableView(ListView):
         applications = list(mix_queryset)
         grouped = defaultdict(list)
 
+        # Group applications by user_id to combine YouTube and TikTok channels
         for application in applications:
             grouped[application.user_id].append(application)
 
@@ -1107,6 +1123,13 @@ def upvote_edit(request, pk):
         submission = EditSubmission.objects.get(pk=pk, status='verified')
     except EditSubmission.DoesNotExist:
         return JsonResponse({'error': 'Edit not found'}, status=404)
+    
+    # Check if user is trying to upvote their own edit
+    if submission.user == request.user:
+        return JsonResponse({
+            'error': 'You cannot upvote your own edit.',
+            'self_upvote': True
+        }, status=400)
     
     # Check if user has reached max upvotes (3)
     user_upvote_count = EditUpvote.objects.filter(user=request.user, is_active=True).count()

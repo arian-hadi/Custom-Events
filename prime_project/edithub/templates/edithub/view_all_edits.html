@@ -320,10 +320,11 @@
                                 <!-- Upvote Button -->
                                 <button 
                                     type="button"
-                                    class="upvote-btn flex flex-col items-center gap-1 text-gray-700 hover:text-blue-600 transition-colors bg-white/90 backdrop-blur-sm rounded-full p-2 md:p-3 shadow-lg {% if edit.id in user_upvoted_ids %}text-blue-600{% endif %}"
+                                    class="upvote-btn flex flex-col items-center gap-1 text-gray-700 hover:text-blue-600 transition-colors bg-white/90 backdrop-blur-sm rounded-full p-2 md:p-3 shadow-lg {% if edit.id in user_upvoted_ids %}text-blue-600{% endif %} {% if user.is_authenticated and edit.instance.user == user %}opacity-50 cursor-not-allowed{% endif %}"
                                     data-edit-id="{{ edit.id }}"
                                     {% if not user.is_authenticated %}disabled title="Login to upvote"{% endif %}
-                                    {% if user_upvote_count >= max_upvotes and edit.pk not in user_upvoted_ids %}disabled title="You have reached the maximum of 3 upvotes"{% endif %}>
+                                    {% if user.is_authenticated and edit.instance.user == user %}disabled title="You cannot upvote your own edit"{% endif %}
+                                    {% if user.is_authenticated and user_upvote_count >= max_upvotes and edit.pk not in user_upvoted_ids and edit.instance.user != user %}disabled title="You have reached the maximum of 3 upvotes"{% endif %}>
                                     <svg class="w-5 h-5 md:w-6 md:h-6" fill="currentColor" viewBox="0 0 20 20">
                                         <path fill-rule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clip-rule="evenodd"/>
                                     </svg>
@@ -656,7 +657,7 @@ function copyToClipboard(text) {
         }
     }).catch(err => {
         console.error('Failed to copy:', err);
-        alert('Failed to copy link. Please copy manually: ' + text);
+        showToast('Failed to copy link. Please copy manually: ' + text, 'error');
     });
 }
 
@@ -783,22 +784,34 @@ document.addEventListener('DOMContentLoaded', function() {
                     'X-Requested-With': 'XMLHttpRequest'
                 }
             })
-            .then(response => response.json())
+            .then(response => {
+                return response.json().then(data => {
+                    if (!response.ok) {
+                        // Handle error responses (400, 403, 404, etc.)
+                        if (data.error) {
+                            const errorType = data.self_upvote ? 'warning' : 'error';
+                            showToast(data.error, errorType);
+                        }
+                        return { success: false, error: data.error };
+                    }
+                    return data;
+                });
+            })
             .then(data => {
                 if (data.success) {
                     upvoteCount.textContent = data.upvote_count;
                     if (data.upvoted) {
                         this.classList.add('text-blue-400');
+                        showToast('Edit upvoted successfully!', 'success');
                     } else {
                         this.classList.remove('text-blue-400');
+                        showToast('Upvote removed', 'info');
                     }
-                } else if (data.max_reached) {
-                    alert(data.error);
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('An error occurred. Please try again.');
+                showToast('An error occurred. Please try again.', 'error');
             });
         });
     });
@@ -843,15 +856,15 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                alert(data.message);
+                showToast(data.message, 'success');
                 closeModal();
             } else {
-                alert(data.error || 'An error occurred. Please try again.');
+                showToast(data.error || 'An error occurred. Please try again.', 'error');
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('An error occurred. Please try again.');
+            showToast('An error occurred. Please try again.', 'error');
         });
     });
 });
