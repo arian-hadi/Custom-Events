@@ -34,6 +34,16 @@ class RankingTableView(ListView):
             removal_requested=False
         ).select_related('user').order_by('-follower_count', 'applied_date')
         
+        # Filter by search query if provided
+        search_query = self.request.GET.get('q', '').strip()
+        if search_query:
+            base_queryset = base_queryset.filter(
+                Q(channel_name__icontains=search_query) |
+                Q(user__username__icontains=search_query) |
+                Q(user__email__icontains=search_query)
+            )
+        self.search_query = search_query
+        
         # Filter by editing area if provided
         editing_area = self.request.GET.get('editing_area')
         if editing_area:
@@ -42,8 +52,12 @@ class RankingTableView(ListView):
             )
         self.selected_area = editing_area or ''
 
-        channel_filter = self.request.GET.get('channel_filter', 'mix').lower()
-        if channel_filter not in ['mix', 'youtube', 'tiktok']:
+        # Default to 'mix' if search query is present and no channel_filter specified
+        # If search is present without explicit channel_filter, default to mix
+        channel_filter = self.request.GET.get('channel_filter', '').lower()
+        if search_query and not channel_filter:
+            channel_filter = 'mix'
+        elif not channel_filter or channel_filter not in ['mix', 'youtube', 'tiktok']:
             channel_filter = 'mix'
 
         # Calculate channel counts correctly
@@ -90,9 +104,11 @@ class RankingTableView(ListView):
                 'tiktok': base_queryset.filter(channel_type='tiktok').count(),
             }
         channel_filter = context['channel_filter']
-        show_all = self.request.GET.get('all') == '1'
+        # If search query is present, automatically show all results
+        search_query = getattr(self, 'search_query', '') if hasattr(self, 'search_query') else self.request.GET.get('q', '')
+        show_all = self.request.GET.get('all') == '1' or bool(search_query)
         context['show_all'] = show_all
-        context['search_query'] = getattr(self, 'search_query', '') if hasattr(self, 'search_query') else self.request.GET.get('q', '')
+        context['search_query'] = search_query
 
         if channel_filter == 'mix':
             mix_entries = self._build_mix_entries()
@@ -121,33 +137,76 @@ class RankingTableView(ListView):
                 context['is_paginated'] = False
             context['total_editors'] = len(mix_entries)
         else:
+            # For platform-specific rankings, we need to calculate actual ranks from unfiltered data
+            # Get unfiltered queryset for the platform
+            unfiltered_base = EditorApplication.objects.filter(
+                status='accepted',
+                removal_requested=False,
+                channel_type=channel_filter
+            ).select_related('user').order_by('-follower_count', 'applied_date')
+            
+            # Apply editing area filter if present
+            editing_area = getattr(self, 'selected_area', '')
+            if editing_area:
+                unfiltered_base = unfiltered_base.filter(
+                    Q(editing_area=editing_area) | Q(editing_area='all')
+                )
+            
+            # Build list with actual ranks
+            unfiltered_list = list(unfiltered_base)
+            user_rank_map = {}
+            for index, app in enumerate(unfiltered_list, start=1):
+                user_rank_map[app.user_id] = index
+            
+            # Now get the filtered queryset
             queryset = getattr(self, 'full_queryset', super().get_queryset())
+            
+            # Add actual ranks to the queryset results
+            if search_query:
+                # For filtered results, we need to add rank attribute to each object
+                queryset_list = list(queryset)
+                for app in queryset_list:
+                    app.actual_rank = user_rank_map.get(app.user_id, None)
+                queryset = queryset_list
+            
             # current user rank (platform)
             current_user_rank = None
             if self.request.user.is_authenticated:
-                ids = list(queryset.values_list('user_id', flat=True))
-                try:
-                    idx = ids.index(self.request.user.id)
-                    current_user_rank = idx + 1
-                except ValueError:
-                    current_user_rank = None
+                current_user_rank = user_rank_map.get(self.request.user.id)
             context['current_user_rank'] = current_user_rank
 
             if show_all:
-                paginator = Paginator(queryset, self.paginate_by)
-                page_number = self.request.GET.get('page')
-                page_obj = paginator.get_page(page_number)
-                context['rankings'] = page_obj.object_list
-                context['object_list'] = page_obj.object_list
-                context['page_obj'] = page_obj
-                context['is_paginated'] = page_obj.has_other_pages()
-                context['paginator'] = paginator
+                # If we have a list (from search), use it directly; otherwise paginate
+                if isinstance(queryset, list):
+                    paginator = Paginator(queryset, self.paginate_by)
+                    page_number = self.request.GET.get('page')
+                    page_obj = paginator.get_page(page_number)
+                    context['rankings'] = page_obj.object_list
+                    context['object_list'] = page_obj.object_list
+                    context['page_obj'] = page_obj
+                    context['is_paginated'] = page_obj.has_other_pages()
+                    context['paginator'] = paginator
+                else:
+                    paginator = Paginator(queryset, self.paginate_by)
+                    page_number = self.request.GET.get('page')
+                    page_obj = paginator.get_page(page_number)
+                    # Add actual ranks to paginated results
+                    for app in page_obj.object_list:
+                        app.actual_rank = user_rank_map.get(app.user_id, None)
+                    context['rankings'] = page_obj.object_list
+                    context['object_list'] = page_obj.object_list
+                    context['page_obj'] = page_obj
+                    context['is_paginated'] = page_obj.has_other_pages()
+                    context['paginator'] = paginator
             else:
                 top5 = list(queryset[:5])
+                # Add actual ranks to top 5
+                for app in top5:
+                    app.actual_rank = user_rank_map.get(app.user_id, None)
                 context['rankings'] = top5
                 context['object_list'] = top5
                 context['is_paginated'] = False
-            context['total_editors'] = queryset.count()
+            context['total_editors'] = len(unfiltered_list) if search_query else queryset.count()
         
         # Edit of the Week: Weekly competition system
         # Competition runs Monday 00:00 to Friday 23:59
@@ -268,15 +327,31 @@ class RankingTableView(ListView):
         return context
 
     def _build_mix_entries(self):
-        mix_queryset = getattr(self, 'mix_queryset', EditorApplication.objects.none())
-        applications = list(mix_queryset)
+        # Get the unfiltered queryset to calculate actual ranks
+        search_query = getattr(self, 'search_query', '').strip()
+        
+        # Build unfiltered entries first to get actual ranks
+        unfiltered_queryset = EditorApplication.objects.filter(
+            status='accepted',
+            removal_requested=False
+        ).select_related('user').order_by('-follower_count', 'applied_date')
+        
+        # Apply editing area filter if present (but not search filter yet)
+        editing_area = getattr(self, 'selected_area', '')
+        if editing_area:
+            unfiltered_queryset = unfiltered_queryset.filter(
+                Q(editing_area=editing_area) | Q(editing_area='all')
+            )
+        
+        applications = list(unfiltered_queryset)
         grouped = defaultdict(list)
 
         # Group applications by user_id to combine YouTube and TikTok channels
         for application in applications:
             grouped[application.user_id].append(application)
 
-        entries = []
+        # Build all entries first with actual ranks
+        all_entries = []
         for apps in grouped.values():
             apps.sort(key=lambda app: app.channel_type)
             youtube_app = next((app for app in apps if app.channel_type == 'youtube'), None)
@@ -310,7 +385,7 @@ class RankingTableView(ListView):
                         display_thumbnail = (tiktok_app.channel_thumbnail or '').strip()
                     elif youtube_app and not tiktok_app:
                         display_thumbnail = (youtube_app.channel_thumbnail or '').strip()
-            entries.append({
+            all_entries.append({
                 'user': apps[0].user,
                 'apps': apps,
                 'youtube': youtube_app,
@@ -327,17 +402,39 @@ class RankingTableView(ListView):
                 }
             })
 
-        entries.sort(
+        # Sort and assign actual ranks
+        all_entries.sort(
             key=lambda entry: (
                 -(entry['total_followers'] or 0),
                 entry['primary'].applied_date if entry['primary'] else None
             )
         )
 
-        for index, entry in enumerate(entries, start=1):
+        # Create a mapping of user_id to actual rank
+        user_rank_map = {}
+        for index, entry in enumerate(all_entries, start=1):
             entry['rank'] = index
+            user_rank_map[entry['user'].id] = index
 
-        return entries
+        # Now filter by search query if provided, but preserve actual ranks
+        if search_query:
+            search_lower = search_query.lower()
+            filtered_entries = []
+            for entry in all_entries:
+                # Check if any app for this user matches the search
+                matches = False
+                for app in entry['apps']:
+                    if (search_lower in (app.channel_name or '').lower() or
+                        search_lower in (app.user.username or '').lower() or
+                        search_lower in (app.user.email or '').lower()):
+                        matches = True
+                        break
+                if matches:
+                    # Preserve the actual rank from the unfiltered list
+                    filtered_entries.append(entry)
+            return filtered_entries
+
+        return all_entries
 
 
 @login_required

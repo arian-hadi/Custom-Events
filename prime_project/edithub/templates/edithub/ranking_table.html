@@ -10,8 +10,8 @@
     <section class="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-12">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center">
-                <h1 class="text-4xl md:text-5xl font-bold mb-4">EditingHub Rankings</h1>
-                <p class="text-xl text-blue-100">The Ultimate Editor Leaderboard</p>
+                <h1 class="text-4xl md:text-5xl font-bold mb-4">EditingHub</h1>
+                <p class="text-xl text-blue-100">The Platform for Editor Competitions, Rankings & More</p>
                 <div class="mt-6 flex flex-wrap justify-center gap-4">
                     {% if user.is_authenticated and user.role == 'user' %}
                     <a href="{% url 'edithub:apply' %}" 
@@ -55,7 +55,7 @@
     <section class="py-4 bg-white border-b">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="inline-flex flex-wrap rounded-lg border border-gray-200 overflow-hidden shadow-sm">
-                <a href="?channel_filter=mix{% if selected_area %}&editing_area={{ selected_area }}{% endif %}"
+                <a href="?channel_filter=mix{% if selected_area %}&editing_area={{ selected_area }}{% endif %}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}"
                    class="flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors {% if channel_filter == 'mix' %}bg-blue-600 text-white{% else %}bg-white text-gray-700 hover:bg-gray-50{% endif %}">
                     <span class="flex items-center gap-2">
                         <i class="fab fa-youtube {% if channel_filter == 'mix' %}text-white{% else %}text-red-600{% endif %}"></i>
@@ -63,12 +63,12 @@
                     </span>
                     <span>Mix ({{ channel_counts.mix }})</span>
                 </a>
-                <a href="?channel_filter=youtube{% if selected_area %}&editing_area={{ selected_area }}{% endif %}"
+                <a href="?channel_filter=youtube{% if selected_area %}&editing_area={{ selected_area }}{% endif %}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}"
                    class="flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors {% if channel_filter == 'youtube' %}bg-red-600 text-white{% else %}bg-white text-gray-700 hover:bg-gray-50{% endif %}">
                     <i class="fab fa-youtube {% if channel_filter == 'youtube' %}text-white{% else %}text-red-600{% endif %}"></i>
                     <span>YouTube ({{ channel_counts.youtube }})</span>
                 </a>
-                <a href="?channel_filter=tiktok{% if selected_area %}&editing_area={{ selected_area }}{% endif %}"
+                <a href="?channel_filter=tiktok{% if selected_area %}&editing_area={{ selected_area }}{% endif %}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}"
                    class="flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors {% if channel_filter == 'tiktok' %}bg-black text-white{% else %}bg-white text-gray-700 hover:bg-gray-50{% endif %}">
                     <i class="fab fa-tiktok {% if channel_filter == 'tiktok' %}text-white{% else %}text-gray-900{% endif %}"></i>
                     <span>TikTok ({{ channel_counts.tiktok }})</span>
@@ -105,7 +105,7 @@
             <div class="mt-6">
                 <span class="block text-gray-700 font-medium mb-3">Filter by Platform:</span>
                 <div class="inline-flex flex-wrap rounded-lg border border-gray-200 overflow-hidden shadow-sm">
-                    <a href="?channel_filter=mix{% if selected_area %}&editing_area={{ selected_area }}{% endif %}"
+                    <a href="?channel_filter=mix{% if selected_area %}&editing_area={{ selected_area }}{% endif %}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}"
                        class="flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors {% if channel_filter == 'mix' %}bg-blue-600 text-white{% else %}bg-white text-gray-700 hover:bg-gray-50{% endif %}">
                         <span class="flex items-center gap-2">
                             <i class="fab fa-youtube {% if channel_filter == 'mix' %}text-white{% else %}text-red-600{% endif %}"></i>
@@ -113,12 +113,12 @@
                         </span>
                         <span>Mix ({{ channel_counts.mix }})</span>
                     </a>
-                    <a href="?channel_filter=youtube{% if selected_area %}&editing_area={{ selected_area }}{% endif %}"
+                    <a href="?channel_filter=youtube{% if selected_area %}&editing_area={{ selected_area }}{% endif %}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}"
                        class="flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors {% if channel_filter == 'youtube' %}bg-red-600 text-white{% else %}bg-white text-gray-700 hover:bg-gray-50{% endif %}">
                         <i class="fab fa-youtube {% if channel_filter == 'youtube' %}text-white{% else %}text-red-600{% endif %}"></i>
                         <span>YouTube ({{ channel_counts.youtube }})</span>
                     </a>
-                    <a href="?channel_filter=tiktok{% if selected_area %}&editing_area={{ selected_area }}{% endif %}"
+                    <a href="?channel_filter=tiktok{% if selected_area %}&editing_area={{ selected_area }}{% endif %}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}"
                        class="flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors {% if channel_filter == 'tiktok' %}bg-black text-white{% else %}bg-white text-gray-700 hover:bg-gray-50{% endif %}">
                         <i class="fab fa-tiktok {% if channel_filter == 'tiktok' %}text-white{% else %}text-gray-900{% endif %}"></i>
                         <span>TikTok ({{ channel_counts.tiktok }})</span>
@@ -260,7 +260,19 @@
                                 </td>
                                 {% else %}
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    {% if is_paginated %}
+                                    {% if ranking.actual_rank %}
+                                        {% with position=ranking.actual_rank %}
+                                        <div class="flex items-center">
+                                            {% if position <= 3 %}
+                                            <span class="text-2xl font-bold {% if position == 1 %}text-yellow-500{% elif position == 2 %}text-gray-400{% else %}text-orange-600{% endif %}">
+                                                {% if position == 1 %}🥇{% elif position == 2 %}🥈{% elif position == 3 %}🥉{% endif %}
+                                            </span>
+                                            {% endif %}
+                                            <span class="ml-2 text-lg font-semibold text-gray-900">#{{ position }}</span>
+                                            {% if ranking.rank_trend_icon %}{{ ranking.rank_trend_icon|safe }}{% endif %}
+                                        </div>
+                                        {% endwith %}
+                                    {% elif is_paginated %}
                                         {% with position=forloop.counter0|add:page_obj.start_index %}
                                         <div class="flex items-center">
                                             {% if position <= 3 %}
@@ -368,7 +380,7 @@
 
             {% if not show_all %}
             <div class="mt-6 flex justify-center">
-                <a href="?all=1{% if channel_filter %}&channel_filter={{ channel_filter }}{% endif %}{% if selected_area %}&editing_area={{ selected_area }}{% endif %}"
+                <a href="?all=1{% if channel_filter %}&channel_filter={{ channel_filter }}{% endif %}{% if selected_area %}&editing_area={{ selected_area }}{% endif %}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}"
                    class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700">View All</a>
             </div>
             {% endif %}
@@ -378,7 +390,7 @@
             <div class="mt-8 flex justify-center">
                 <nav class="flex space-x-2">
                     {% if page_obj.has_previous %}
-                    <a href="?page={{ page_obj.previous_page_number }}{% if selected_area %}&editing_area={{ selected_area }}{% endif %}{% if channel_filter %}&channel_filter={{ channel_filter }}{% endif %}" 
+                    <a href="?page={{ page_obj.previous_page_number }}{% if selected_area %}&editing_area={{ selected_area }}{% endif %}{% if channel_filter %}&channel_filter={{ channel_filter }}{% endif %}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}" 
                        class="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">Previous</a>
                     {% endif %}
                     
@@ -387,7 +399,7 @@
                     </span>
                     
                     {% if page_obj.has_next %}
-                    <a href="?page={{ page_obj.next_page_number }}{% if selected_area %}&editing_area={{ selected_area }}{% endif %}{% if channel_filter %}&channel_filter={{ channel_filter }}{% endif %}" 
+                    <a href="?page={{ page_obj.next_page_number }}{% if selected_area %}&editing_area={{ selected_area }}{% endif %}{% if channel_filter %}&channel_filter={{ channel_filter }}{% endif %}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}" 
                        class="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">Next</a>
                     {% endif %}
                 </nav>
