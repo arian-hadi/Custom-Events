@@ -434,17 +434,6 @@
                 {% for edit in top_edits %}
                 <div class="relative {% if forloop.counter == 1 %}w-full md:w-2/5 order-2 md:order-2{% else %}w-full md:w-1/4 {% if forloop.counter == 2 %}order-1 md:order-1{% else %}order-3 md:order-3{% endif %}{% endif %}">
                     <div class="bg-white rounded-lg shadow-xl overflow-hidden {% if edit.week_rank == 1 %}transform hover:scale-105 transition-transform{% endif %}">
-                        <!-- Medal Ranking -->
-                        <div class="absolute top-2 left-2 z-10">
-                            {% if forloop.counter == 1 %}
-                            <span class="text-4xl font-bold text-yellow-500">🥇</span>
-                            {% elif forloop.counter == 2 %}
-                            <span class="text-3xl font-bold text-gray-400">🥈</span>
-                            {% else %}
-                            <span class="text-3xl font-bold text-orange-600">🥉</span>
-                            {% endif %}
-                        </div>
-                        
                         <!-- Video Embed -->
                         {% if edit.channel_type == 'youtube' %}
                         <div class="relative aspect-[4/5] bg-gray-900 overflow-hidden">
@@ -476,29 +465,40 @@
                         </div>
                         {% endif %}
                         
-                        <!-- Edit Info -->
-                        <div class="p-4">
-                            {% if edit.title %}
-                            <h3 class="font-semibold text-gray-900 mb-1 {% if edit.week_rank == 1 %}text-lg{% else %}text-sm{% endif %}">{{ edit.title }}</h3>
-                            {% endif %}
-                            <div class="flex items-center justify-between mt-2">
-                                <div class="flex items-center gap-2">
+                        <!-- Bottom Container: Medal, Profile Picture, Points -->
+                        <div class="p-4 bg-gradient-to-br from-gray-50 to-white border-t border-gray-200">
+                            <div class="flex items-center justify-between gap-3">
+                                <!-- Left: Medal -->
+                                <div class="flex-shrink-0">
+                                    {% if forloop.counter == 1 %}
+                                    <span class="text-4xl font-bold text-yellow-500">🥇</span>
+                                    {% elif forloop.counter == 2 %}
+                                    <span class="text-3xl font-bold text-gray-400">🥈</span>
+                                    {% else %}
+                                    <span class="text-3xl font-bold text-orange-600">🥉</span>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Center: Profile Picture -->
+                                <div class="flex items-center gap-3 flex-1 min-w-0">
                                     {% if edit.channel_thumbnail %}
                                     <img src="{{ edit.channel_thumbnail }}" alt="{{ edit.channel_name }}" 
-                                         class="h-8 w-8 rounded-full object-cover">
+                                         class="h-12 w-12 rounded-full object-cover ring-2 ring-gray-200 shadow-sm flex-shrink-0">
+                                    {% else %}
+                                    <div class="h-12 w-12 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center ring-2 ring-gray-200 shadow-sm flex-shrink-0">
+                                        <span class="text-white font-bold text-lg">{{ edit.channel_name|first|upper }}</span>
+                                    </div>
                                     {% endif %}
-                                    <span class="text-sm text-gray-600">{{ edit.channel_name }}</span>
+                                    <div class="min-w-0 flex-1">
+                                        <p class="text-sm font-semibold text-gray-900 truncate">{{ edit.channel_name }}</p>
+                                    </div>
                                 </div>
-                                <div class="flex items-center gap-2 text-sm">
-                                    <div class="flex items-center gap-1 text-gray-600">
-                                        <i class="fas fa-star text-yellow-500"></i>
-                                        <span class="font-semibold text-gray-900">{{ edit.calculated_points|floatformat:1 }}</span>
-                                        <span class="text-gray-500 text-xs">pts</span>
-                                    </div>
-                                    <div class="flex items-center gap-1 text-gray-400">
-                                        <i class="fas fa-arrow-up"></i>
-                                        <span>{{ edit.upvote_count }}</span>
-                                    </div>
+                                
+                                <!-- Right: Points -->
+                                <div class="flex items-center gap-1.5 flex-shrink-0">
+                                    <i class="fas fa-star text-yellow-500"></i>
+                                    <span class="font-bold text-gray-900 text-lg">{{ edit.calculated_points|floatformat:1 }}</span>
+                                    <span class="text-gray-500 text-xs">pts</span>
                                 </div>
                             </div>
                         </div>
