@@ -64,4 +64,6 @@ volumes:
   static_volume:
   media_volume:
   certbot_certs:
+    name: prime_project_certbot_certs  # Use existing volume with certificates
   certbot_www:
+    name: prime_project_certbot_www  # Use existing volume
