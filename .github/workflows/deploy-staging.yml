@@ -1,0 +1,48 @@
+name: Deploy to Hetzner VPS (Staging)
+
+on:
+  push:
+    branches:
+      - staging  # Deploys when you push to 'staging' branch
+
+jobs:
+  deploy-staging:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Copy files to VPS (Staging)
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          source: "prime_project/"
+          target: "/root/Custom-Events-Staging/"
+          strip_components: 0
+
+      - name: Deploy via SSH to Hetzner (Staging)
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          script: |
+            set -e
+            cd /root/Custom-Events-Staging/prime_project
+            echo "Current directory: $(pwd)"
+            echo "Building new staging images without cache..."
+            docker compose -f docker-compose.staging.yml build --no-cache web
+            echo "Build successful! Now replacing containers..."
+            echo "Stopping existing staging containers..."
+            docker compose -f docker-compose.staging.yml down
+            echo "Starting new staging containers..."
+            docker compose -f docker-compose.staging.yml up -d
+            echo "Cleaning up unused Docker resources..."
+            docker system prune -f
+            echo "Staging deployment completed successfully!"
+
