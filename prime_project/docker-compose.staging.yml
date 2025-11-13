@@ -3,7 +3,9 @@ services:
     build: .
     container_name: staging_web
     command: >
-      sh -c "python manage.py migrate &&
+      sh -c "echo 'Waiting for database...' &&
+             sleep 15 &&
+             python manage.py migrate &&
              python manage.py collectstatic --noinput &&
              gunicorn prime_project.wsgi:application --bind 0.0.0.0:8000"
     ports:
@@ -11,7 +13,8 @@ services:
     env_file:
       - .env  # Uses .env in staging directory
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     restart: unless-stopped
     volumes:
       - static_volume_staging:/app/staticfiles
@@ -45,6 +48,11 @@ services:
       POSTGRES_DB: ${DB_NAME}
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
 volumes:
   postgres_data_staging:      # Separate database volume
