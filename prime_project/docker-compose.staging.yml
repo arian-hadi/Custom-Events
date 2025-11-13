@@ -41,8 +41,10 @@ services:
       - "5433:5432"  # Different port for database (production uses default 5432)
     volumes:
       - postgres_data_staging:/var/lib/postgresql/data/
+    env_file:
+      - .env
     environment:
-      POSTGRES_DB: ${DB_NAME_STAGING:-events_staging}
+      POSTGRES_DB: ${DB_NAME}
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
 
