@@ -15,9 +15,21 @@ urlpatterns = [
     
     # AJAX endpoints
     path('verify-channel/', views.verify_channel_ajax, name='verify_channel'),
+    path('user-stats/', views.get_user_stats_ajax, name='get_user_stats'),
     
     # Admin views
     path('admin/', views.admin_applications, name='admin_applications'),
     path('admin/application/<int:pk>/update-status/', views.admin_update_status, name='admin_update_status'),
+    
+    # Edit of the Week views
+    path('submit-edit/', views.submit_edit, name='submit_edit'),
+    path('confirm-edit/', views.confirm_edit_submission, name='confirm_edit_submission'),
+    path('edits/', views.view_all_edits, name='view_all_edits'),
+    path('edit/<int:pk>/upvote/', views.upvote_edit, name='upvote_edit'),
+    path('edit/<int:pk>/report/', views.report_edit, name='report_edit'),
+    
+    # Edit of the Week admin views
+    path('admin/reported-edits/', views.admin_reported_edits, name='admin_reported_edits'),
+    path('admin/report/<int:pk>/resolve/', views.admin_resolve_report, name='admin_resolve_report'),
 ]
 

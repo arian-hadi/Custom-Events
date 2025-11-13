@@ -63,8 +63,8 @@
                         <div>
                             <p class="text-sm text-gray-600">Editing Tool:</p>
                             <div class="flex items-center gap-2">
-                                <span class="text-2xl" title="{{ application.get_editing_tool_display }}">
-                                    <i class="{{ application.editing_tool_icon }}"></i>
+                                <span class="inline-flex items-center justify-center" aria-hidden="true" title="{{ application.get_editing_tool_display }}">
+                                    {{ application.editing_tool_icon|safe }}
                                 </span>
                                 <span class="text-xs text-gray-500">({{ application.get_editing_tool_display }})</span>
                             </div>

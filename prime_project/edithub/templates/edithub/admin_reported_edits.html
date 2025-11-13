@@ -1,0 +1,178 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load video %}
+
+{% block title %}Manage Reported Edits - Admin - 2.0Transformers{% endblock %}
+
+{% block content %}
+<main class="pt-16 bg-gradient-to-b from-white via-gray-50 to-gray-100 min-h-screen py-12">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-900 mb-2">Reported Edits Management</h1>
+            <p class="text-gray-600">Review and manage reported edits</p>
+        </div>
+
+        <!-- Statistics -->
+        <div class="bg-red-50 border border-red-200 rounded-lg p-6 mb-8">
+            <h3 class="text-lg font-semibold text-red-800">Total Active Reports</h3>
+            <p class="text-3xl font-bold text-red-900">{{ total_reports }}</p>
+        </div>
+
+        <!-- Filters -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <form method="GET" class="flex flex-wrap gap-4 items-center">
+                <label class="text-gray-700 font-medium">Filter by Reason:</label>
+                <select name="reason" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <option value="all" {% if reason_filter == 'all' %}selected{% endif %}>All Reasons</option>
+                    {% for value, label in reason_choices %}
+                    <option value="{{ value }}" {% if reason_filter == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                    Filter
+                </button>
+            </form>
+        </div>
+
+        <!-- Reports List -->
+        {% if reports %}
+        <div class="space-y-6">
+            {% for report in reports %}
+            <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+                <div class="p-6">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900 mb-2">Report #{{ report.pk }}</h3>
+                            <div class="flex items-center gap-4 text-sm text-gray-600">
+                                <span class="flex items-center gap-1">
+                                    <i class="fas fa-user"></i>
+                                    Reported by: {{ report.user.username }}
+                                </span>
+                                <span class="flex items-center gap-1">
+                                    <i class="fas fa-clock"></i>
+                                    {{ report.created_date|date:"M d, Y H:i" }}
+                                </span>
+                                <span class="px-3 py-1 rounded-full bg-red-100 text-red-800 font-semibold">
+                                    {{ report.get_reason_display }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if report.description %}
+                    <div class="mb-4 p-3 bg-gray-50 rounded-lg">
+                        <p class="text-sm text-gray-700">{{ report.description }}</p>
+                    </div>
+                    {% endif %}
+
+                    <!-- Edit Details -->
+                    <div class="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                        <h4 class="font-semibold text-gray-900 mb-2">Edit Details</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <p class="text-sm text-gray-600">Submitted by: <span class="font-medium">{{ report.edit_submission.user.username }}</span></p>
+                                <p class="text-sm text-gray-600">Channel: <span class="font-medium">{{ report.edit_submission.channel_name|default:"N/A" }}</span></p>
+                                <p class="text-sm text-gray-600">Platform: 
+                                    <span class="font-medium">
+                                        {% if report.edit_submission.channel_type == 'youtube' %}
+                                        <i class="fab fa-youtube text-red-600"></i> YouTube
+                                        {% else %}
+                                        <i class="fab fa-tiktok"></i> TikTok
+                                        {% endif %}
+                                    </span>
+                                </p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-600">Upvotes: <span class="font-medium">{{ report.edit_submission.upvote_count }}</span></p>
+                                <p class="text-sm text-gray-600">Reports: <span class="font-medium">{{ report.edit_submission.report_count }}</span></p>
+                                <p class="text-sm text-gray-600">Submitted: <span class="font-medium">{{ report.edit_submission.submitted_date|date:"M d, Y" }}</span></p>
+                            </div>
+                        </div>
+                        {% if report.edit_submission.title %}
+                        <p class="text-sm text-gray-700 mt-2"><strong>Title:</strong> {{ report.edit_submission.title }}</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Video Preview -->
+                    <div class="mb-4">
+                        <h4 class="font-semibold text-gray-900 mb-2">Video Preview</h4>
+                        <div class="relative aspect-video bg-black rounded-lg overflow-hidden">
+                            {% if report.edit_submission.channel_type == 'youtube' %}
+                            <iframe 
+                                src="{{ report.edit_submission.video_url|youtube_embed_standard }}" 
+                                frameborder="0" 
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                allowfullscreen
+                                class="w-full h-full">
+                            </iframe>
+                            {% else %}
+                            <div class="w-full h-full flex items-center justify-center">
+                                <a href="{{ report.edit_submission.video_url }}" target="_blank" rel="noopener noreferrer" 
+                                   class="text-white hover:text-blue-400 text-center">
+                                    <i class="fab fa-tiktok text-4xl mb-2"></i>
+                                    <p>View on TikTok</p>
+                                </a>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <a href="{{ report.edit_submission.video_url }}" target="_blank" rel="noopener noreferrer" 
+                           class="mt-2 inline-block text-sm text-blue-600 hover:underline">
+                            Open video in new tab
+                        </a>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="flex gap-4">
+                        <form method="POST" action="{% url 'edithub:admin_resolve_report' pk=report.pk %}" class="inline">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="remove_edit">
+                            <button type="submit" 
+                                    onclick="return confirm('Are you sure you want to remove this edit? This action cannot be undone.');"
+                                    class="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+                                Remove Edit
+                            </button>
+                        </form>
+                        <form method="POST" action="{% url 'edithub:admin_resolve_report' pk=report.pk %}" class="inline">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="dismiss_report">
+                            <button type="submit" 
+                                    onclick="return confirm('Are you sure you want to dismiss this report?');"
+                                    class="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">
+                                Dismiss Report
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Pagination -->
+        {% if is_paginated %}
+        <div class="mt-8 flex justify-center">
+            <nav class="flex space-x-2">
+                {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}{% if reason_filter != 'all' %}&reason={{ reason_filter }}{% endif %}" 
+                   class="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">Previous</a>
+                {% endif %}
+                
+                <span class="px-4 py-2 bg-blue-600 text-white rounded-lg">
+                    Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                </span>
+                
+                {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}{% if reason_filter != 'all' %}&reason={{ reason_filter }}{% endif %}" 
+                   class="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">Next</a>
+                {% endif %}
+            </nav>
+        </div>
+        {% endif %}
+        {% else %}
+        <div class="text-center py-12 bg-white rounded-lg shadow-lg">
+            <p class="text-gray-500 text-lg">No active reports found.</p>
+        </div>
+        {% endif %}
+    </div>
+</main>
+{% endblock %}
+

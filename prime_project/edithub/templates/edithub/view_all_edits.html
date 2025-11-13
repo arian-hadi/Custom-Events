@@ -1,0 +1,916 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load video %}
+
+{% block title %}View All Edits - Edit of the Week - 2.0Transformers{% endblock %}
+
+{% block content %}
+<style>
+  /* Removed Reels-style scrolling - now using paginated format */
+  .ranking-panel { 
+    max-height: 100%; 
+    overflow-y: auto; 
+    overflow-x: hidden;
+    flex: 1;
+    min-height: 0; /* Allows flex child to shrink below content size */
+  }
+  
+  /* Center video content on mobile */
+  @media (max-width: 768px) {
+    .video-content-wrapper {
+      justify-content: center !important;
+      margin-left: auto;
+      margin-right: auto;
+      width: 100%;
+      max-width: 100%;
+    }
+    
+    .video-content-area {
+      padding-left: 0.5rem;
+      padding-right: 0.5rem;
+      justify-content: center;
+    }
+  }
+  .ranking-panel::-webkit-scrollbar { width: 6px; }
+  .ranking-panel::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.05); border-radius: 3px; }
+  .ranking-panel::-webkit-scrollbar-thumb { background: rgba(147, 51, 234, 0.3); border-radius: 3px; }
+  .ranking-panel::-webkit-scrollbar-thumb:hover { background: rgba(147, 51, 234, 0.5); }
+  
+  /* Platform toggle logo - keep brand colors but dim inactive */
+  .platform-logo-inactive {
+    opacity: 0.5;
+    transition: opacity 0.3s ease;
+  }
+  .platform-logo-active {
+    opacity: 1;
+    transition: opacity 0.3s ease;
+  }
+  /* Navigation buttons removed - using pagination controls instead */
+  /* Mobile menu overlay */
+  .sidebar-overlay { display: none; }
+  .sidebar-overlay.active { 
+    display: block; 
+    position: fixed; 
+    inset: 0; 
+    background: rgba(0, 0, 0, 0.5); 
+    z-index: 30; 
+    overflow: hidden;
+    touch-action: none;
+  }
+  @media (max-width: 768px) {
+    .sidebar-overlay.active { display: block; }
+  }
+  /* Prevent body scroll when sidebar is open on mobile */
+  body.sidebar-open {
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
+  }
+  /* Action buttons are now positioned relative to video container */
+  /* Override TikTok embed max-width for phone aspect ratio (slightly bigger, with reduced gap to buttons) */
+  .tiktok-embed {
+    max-width: 550px !important;
+    min-width: 300px !important;
+  }
+  
+  /* Ensure TikTok iframe respects container width */
+  .tiktok-embed iframe {
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+  
+  /* Mobile adjustments for video and buttons */
+  @media (max-width: 768px) {
+    .tiktok-embed {
+      max-width: 300px !important;
+      min-width: 300px !important;
+    }
+  }
+  
+  /* Animated gradient for points display */
+  @keyframes gradient {
+    0% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+    100% {
+      background-position: 0% 50%;
+    }
+  }
+</style>
+<main class="bg-white min-h-screen pt-16">
+    <!-- Mobile Menu Toggle Button (shown when sidebar is closed) -->
+    <button id="menuToggle" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 md:hidden px-6 py-3 bg-gradient-to-r from-purple-500/80 to-pink-500/80 backdrop-blur-md rounded-full border border-purple-500/50 text-white shadow-lg hover:from-purple-500 hover:to-pink-500 transition-all flex items-center gap-2">
+        <span class="text-sm font-semibold whitespace-nowrap">All Edits ↑</span>
+    </button>
+    
+    <!-- Sidebar Overlay for Mobile -->
+    <div id="sidebarOverlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
+    
+    <div class="flex h-screen">
+        <!-- Left Side Panel -->
+        <aside id="sidebar" class="fixed md:relative w-full md:w-80 h-[85vh] md:h-full bottom-0 md:top-16 bg-gray-50 md:border-r border-t md:border-t-0 border-gray-300 flex flex-col z-40 transform translate-y-full md:translate-y-0 transition-transform duration-300 ease-in-out shadow-lg rounded-t-2xl md:rounded-t-none">
+            <!-- Mobile Header with Close Button -->
+            <div class="md:hidden flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200 shadow-sm">
+                <h3 class="text-gray-900 font-semibold text-base flex items-center gap-2">
+                    <i class="fas fa-trophy text-yellow-400"></i>
+                    <span>All Edits</span>
+                </h3>
+                <button onclick="toggleSidebar()" class="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            
+            <!-- Rankings List -->
+            <div class="px-4 pt-4 mb-2">
+                <h3 class="hidden md:flex text-gray-900 font-semibold text-lg mb-3 items-center">
+                    <i class="fas fa-trophy mr-2 text-yellow-400"></i>
+                    {% if current_platform == 'youtube' %}
+                        <span class="flex items-center gap-2">
+                            <svg class="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                            </svg>
+                            YouTube Rankings
+                        </span>
+                    {% else %}
+                        <span class="flex items-center gap-2">
+                            <svg class="w-5 h-5 text-purple-500" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
+                            </svg>
+                            TikTok Rankings
+                        </span>
+                    {% endif %}
+                </h3>
+            </div>
+            
+            <div class="ranking-panel px-4 pb-2 flex-1 overflow-y-auto">
+                {% if all_edits_ranking %}
+                    <div class="space-y-2">
+                        {% for rank_edit in all_edits_ranking %}
+                        <button 
+                            type="button"
+                            data-edit-id="{{ rank_edit.id }}"
+                            class="rank-item-btn w-full text-left p-3 bg-gray-50 hover:bg-gray-100 rounded-lg border border-gray-200 hover:border-purple-500/50 transition-all duration-200 group cursor-pointer">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-3 flex-1 min-w-0">
+                                    <!-- Channel Profile Picture with Rank Badge -->
+                                    <div class="relative flex-shrink-0">
+                                        {% if rank_edit.channel_thumbnail %}
+                                            <img src="{{ rank_edit.channel_thumbnail }}" 
+                                                 alt="{{ rank_edit.channel_name }}" 
+                                                 class="w-10 h-10 rounded-full object-cover border-2 border-gray-200 group-hover:border-purple-500/50 transition-all">
+                                        {% else %}
+                                            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-purple-400 via-pink-400 to-blue-400 flex items-center justify-center border-2 border-gray-200 group-hover:border-purple-500/50 transition-all">
+                                                <span class="text-sm font-bold text-white">{{ rank_edit.channel_name|first|upper }}</span>
+                                            </div>
+                                        {% endif %}
+                                        <!-- Rank Badge Overlay -->
+                                        <div class="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-gradient-to-r from-purple-500/90 to-pink-500/90 border-2 border-white flex items-center justify-center text-white font-bold text-xs shadow-md">
+                                            {% if forloop.counter <= 3 %}
+                                                {% if forloop.counter == 1 %}🥇{% elif forloop.counter == 2 %}🥈{% else %}🥉{% endif %}
+                                            {% else %}
+                                                {{ forloop.counter }}
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Edit Info -->
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-gray-900 text-sm font-medium truncate group-hover:text-purple-600 transition-colors">
+                                            {{ rank_edit.title|default:"Untitled Edit" }}
+                                        </p>
+                                        <p class="text-gray-600 text-xs truncate">
+                                            {{ rank_edit.channel_name }}
+                                        </p>
+                                    </div>
+                                </div>
+                                
+                                <!-- Points and Upvote Count -->
+                                <div class="flex-shrink-0 ml-2 flex flex-col items-end gap-1">
+                                    <div class="flex items-center gap-1 text-yellow-400">
+                                        <i class="fas fa-star text-xs"></i>
+                                        <span class="text-sm font-semibold">{{ rank_edit.calculated_points|floatformat:1 }}</span>
+                                    </div>
+                                    <div class="flex items-center gap-1 text-purple-300">
+                                        <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clip-rule="evenodd"/>
+                                        </svg>
+                                        <span class="text-xs">{{ rank_edit.upvote_count }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </button>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-gray-600 text-sm text-center py-8">No edits yet</p>
+                {% endif %}
+            </div>
+            
+            <!-- Apply Button at Bottom - Sticky -->
+            <div class="sticky bottom-0 px-4 py-4 bg-white border-t border-gray-200 shadow-lg z-10">
+                <a href="{% url 'edithub:apply' %}" 
+                   class="block w-full px-4 py-3 bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-purple-500/10 rounded-lg border border-purple-500/30 text-purple-700 text-center font-semibold hover:from-purple-500/20 hover:via-pink-500/20 hover:to-purple-500/20 hover:border-purple-500/50 transition-all duration-300 shadow-md hover:shadow-purple-500/20">
+                    <i class="fas fa-plus-circle mr-2"></i>
+                    Apply for Edit of the Week
+                </a>
+            </div>
+        </aside>
+        
+        <!-- Main Content Area -->
+        <div class="flex-1 overflow-y-auto flex flex-col">
+            <!-- Sticky Header Section (Platform Tabs + Banner) -->
+            <div class="sticky top-4 z-30 bg-white" style="position: -webkit-sticky; position: sticky;">
+                <!-- Platform Tabs - Segmented Control Style -->
+                <div class="flex items-center justify-center px-2 md:px-4 pt-0 pb-2 md:pt-0 md:pb-2 border-b border-gray-200">
+                    <div class="inline-flex items-center bg-gray-100 rounded-full p-1 border border-gray-300 shadow-md">
+                        <a href="?platform=youtube" 
+                           class="px-4 md:px-6 py-2 md:py-2.5 rounded-full font-semibold text-sm md:text-base transition-all duration-300 flex items-center gap-2 justify-center min-w-[100px] md:min-w-[120px] {% if current_platform == 'youtube' %}bg-white text-gray-900 shadow-sm{% else %}text-gray-600 hover:text-gray-900 hover:bg-gray-50{% endif %}">
+                            <svg class="w-4 h-4 md:w-5 md:h-5 text-red-600 {% if current_platform == 'youtube' %}platform-logo-active{% else %}platform-logo-inactive{% endif %}" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                            </svg>
+                            <span class="hidden sm:inline">YouTube</span>
+                            <span class="sm:hidden">YT</span>
+                        </a>
+                        <a href="?platform=tiktok" 
+                           class="px-4 md:px-6 py-2 md:py-2.5 rounded-full font-semibold text-sm md:text-base transition-all duration-300 flex items-center gap-2 justify-center min-w-[100px] md:min-w-[120px] {% if current_platform == 'tiktok' %}bg-white text-gray-900 shadow-sm{% else %}text-gray-600 hover:text-gray-900 hover:bg-gray-50{% endif %}">
+                            <svg class="w-4 h-4 md:w-5 md:h-5 text-purple-600 {% if current_platform == 'tiktok' %}platform-logo-active{% else %}platform-logo-inactive{% endif %}" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
+                            </svg>
+                            <span class="hidden sm:inline">TikTok</span>
+                            <span class="sm:hidden">TT</span>
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Channel Banner - Compact Card Style -->
+                {% if channel_stats and current_edit %}
+                <div class="flex justify-center px-4 py-3">
+                    <div class="relative flex items-center justify-between gap-4 px-4 md:px-5 py-3 rounded-full shadow-lg {% if current_platform == 'youtube' %}bg-gradient-to-r from-red-50/60 via-orange-50/50 to-red-50/60{% else %}bg-gradient-to-r from-purple-100/70 via-pink-100/60 to-purple-100/70{% endif %} backdrop-blur-sm hover:shadow-xl transition-all duration-300 group max-w-xl w-full">
+                        <!-- Points Badge - Left Side -->
+                        <div class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-white/80 border border-white/50 shadow-sm">
+                            <i class="fas fa-star text-yellow-500 text-xs"></i>
+                            <span class="text-xs md:text-sm font-bold text-gray-900">
+                                {{ current_edit.calculated_points|floatformat:1 }}
+                            </span>
+                        </div>
+                        
+                        <!-- Center Section - Profile Picture and Username -->
+                        <div class="flex flex-col items-center gap-1 flex-1">
+                            <!-- Profile Picture -->
+                            <div class="relative flex-shrink-0">
+                                {% if channel_stats.profile_picture %}
+                                    <img src="{{ channel_stats.profile_picture }}" 
+                                         alt="{{ channel_stats.username }}" 
+                                         class="w-12 h-12 md:w-14 md:h-14 rounded-full object-cover ring-2 ring-white/90 shadow-md">
+                                {% else %}
+                                    <div class="w-12 h-12 md:w-14 md:h-14 rounded-full {% if current_platform == 'youtube' %}bg-gradient-to-br from-red-400 to-orange-400{% else %}bg-gradient-to-br from-purple-400 via-pink-400 to-pink-500{% endif %} flex items-center justify-center ring-2 ring-white/90 shadow-md">
+                                        <span class="text-lg md:text-xl font-bold text-white">{{ channel_stats.username|first|upper }}</span>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Username -->
+                            <button 
+                                onclick="openUserStatsModal()"
+                                class="text-xs md:text-sm font-bold text-gray-900 hover:opacity-80 transition-opacity cursor-pointer truncate max-w-[120px]">
+                                {{ channel_stats.username }}
+                            </button>
+                        </div>
+                        
+                        <!-- Title Badge - Right Side -->
+                        <div class="flex items-center">
+                            <span class="text-xs font-semibold {% if current_platform == 'youtube' %}text-red-700{% else %}text-purple-700{% endif %} px-2.5 py-1.5 rounded-full {% if current_platform == 'youtube' %}bg-red-50/80{% else %}bg-purple-50/80{% endif %} border border-white/50 shadow-sm whitespace-nowrap">
+                                {{ channel_stats.editor_title }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            <!-- End Sticky Header Section -->
+            
+            <!-- Video Content Area (Single Video Per Page) -->
+            <div class="flex-1 flex items-center justify-center py-8 px-4 video-content-area">
+                {% if edits and current_edit %}
+                    {% with edit=edits.0 %}
+                    <div class="w-full max-w-5xl mx-auto">
+                        <div class="flex items-center justify-center gap-2 md:gap-3 mx-auto video-content-wrapper">
+                            <!-- Video Container (slightly bigger, with reduced gap to buttons) -->
+                            <div class="flex-shrink-0 flex justify-center">
+                                {% if edit.channel_type == 'youtube' %}
+                                <div class="relative w-full max-w-[300px] md:max-w-[550px] aspect-[9/16] bg-black overflow-hidden rounded-xl shadow-2xl mx-auto">
+                                    <iframe 
+                                        class="w-full h-full"
+                                        src="{{ edit.video_url|youtube_embed_standard }}"
+                                        title="YouTube video player"
+                                        frameborder="0"
+                                        referrerpolicy="strict-origin-when-cross-origin"
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                                        allowfullscreen
+                                        playsinline
+                                        loading="lazy">
+                                    </iframe>
+                                </div>
+                                {% else %}
+                                <!-- TikTok Video: Use official TikTok embed with slightly bigger width -->
+                                <div class="flex items-center justify-center w-full max-w-[300px] md:max-w-[550px] mx-auto">
+                                    {% if edit.tiktok_embed_html %}
+                                        <div style="max-width: 300px; width: 100%;">
+                                            {{ edit.tiktok_embed_html|safe }}
+                                        </div>
+                                    {% else %}
+                                        <blockquote class="tiktok-embed" cite="{{ edit.video_url }}" data-video-id="{{ edit.video_url|tiktok_video_id }}" style="max-width: 300px; min-width: 300px;">
+                                            <section></section>
+                                        </blockquote>
+                                        <script async src="https://www.tiktok.com/embed.js"></script>
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Action Buttons (Positioned closer to video, pushed to the right) -->
+                            <div class="flex flex-col gap-3 md:gap-4 flex-shrink-0">
+                                <!-- Upvote Button -->
+                                <button 
+                                    type="button"
+                                    class="upvote-btn flex flex-col items-center gap-1 text-gray-700 hover:text-blue-600 transition-colors bg-white/90 backdrop-blur-sm rounded-full p-2 md:p-3 shadow-lg {% if edit.id in user_upvoted_ids %}text-blue-600{% endif %} {% if user.is_authenticated and edit.instance.user == user %}opacity-50 cursor-not-allowed{% endif %}"
+                                    data-edit-id="{{ edit.id }}"
+                                    {% if not user.is_authenticated %}disabled title="Login to upvote"{% endif %}
+                                    {% if user.is_authenticated and edit.instance.user == user %}disabled title="You cannot upvote your own edit"{% endif %}
+                                    {% if user.is_authenticated and user_upvote_count >= max_upvotes and edit.pk not in user_upvoted_ids and edit.instance.user != user %}disabled title="You have reached the maximum of 3 upvotes"{% endif %}>
+                                    <svg class="w-5 h-5 md:w-6 md:h-6" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clip-rule="evenodd"/>
+                                    </svg>
+                                    <span class="upvote-count text-[10px] md:text-xs font-semibold">{{ edit.upvote_count }}</span>
+                                </button>
+
+                                <!-- Report Button -->
+                                <button 
+                                    type="button"
+                                    class="report-btn flex flex-col items-center gap-1 text-gray-700 hover:text-red-600 transition-colors bg-white/90 backdrop-blur-sm rounded-full p-2 md:p-3 shadow-lg"
+                                    data-edit-id="{{ edit.id }}"
+                                    {% if not user.is_authenticated %}disabled title="Login to report"{% endif %}>
+                                    <svg class="w-5 h-5 md:w-6 md:h-6" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                                    </svg>
+                                    <span class="text-[9px] md:text-[10px]">Report</span>
+                                </button>
+
+                                <!-- Share Button -->
+                                <button 
+                                    type="button"
+                                    onclick="shareEdit(this)"
+                                    class="share-btn flex flex-col items-center gap-1 text-gray-700 hover:text-purple-600 transition-colors bg-white/90 backdrop-blur-sm rounded-full p-2 md:p-3 shadow-lg">
+                                    <svg class="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/>
+                                    </svg>
+                                    <span class="text-[9px] md:text-[10px]">Share</span>
+                                </button>
+                            </div>
+                        
+                        <!-- Video Info Below - Removed channel name (now in banner) -->
+                    </div>
+                    {% endwith %}
+                    
+                    <!-- Pagination Controls - Below Video Area -->
+                    <div class="flex items-center justify-center gap-2 md:gap-4 mt-8 mb-4">
+                        <div class="inline-flex items-center gap-2 md:gap-4 bg-gradient-to-r from-gray-50/90 via-white to-gray-50/90 backdrop-blur-md rounded-full px-4 md:px-6 py-3 shadow-xl border border-gray-300">
+                            <!-- Previous Button -->
+                            {% if page_obj.has_previous %}
+                                <a href="?platform={{ current_platform }}&page={{ page_obj.previous_page_number }}" 
+                                   class="flex items-center gap-1.5 px-3 md:px-4 py-2 text-gray-700 font-medium transition-all rounded-full shadow-md bg-gradient-to-r from-gray-200 to-gray-300 border border-gray-300 hover:from-gray-300 hover:to-gray-400 hover:text-gray-900">
+                                    <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                                    </svg>
+                                    <span class="hidden sm:inline">Previous</span>
+                                </a>
+                            {% else %}
+                                <span class="flex items-center gap-1.5 px-3 md:px-4 py-2 text-gray-400 font-medium cursor-not-allowed bg-gray-100 border border-gray-200 rounded-full">
+                                    <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                                    </svg>
+                                    <span class="hidden sm:inline">Previous</span>
+                                </span>
+                            {% endif %}
+                            
+                            <!-- Separator -->
+                            <div class="h-6 w-px bg-gray-300"></div>
+                            
+                            <!-- Page Info -->
+                            <span class="text-sm md:text-base text-gray-700 font-semibold px-2 md:px-4 whitespace-nowrap">
+                                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                            </span>
+                            
+                            <!-- Separator -->
+                            <div class="h-6 w-px bg-gray-300"></div>
+                            
+                            <!-- Next Button -->
+                            {% if page_obj.has_next %}
+                                <a href="?platform={{ current_platform }}&page={{ page_obj.next_page_number }}" 
+                                   class="flex items-center gap-1.5 px-3 md:px-4 py-2 font-medium transition-all rounded-full shadow-md {% if current_platform == 'youtube' %}bg-gradient-to-r from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700{% else %}bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600{% endif %}">
+                                    <span class="hidden sm:inline">Next</span>
+                                    <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                    </svg>
+                                </a>
+                            {% else %}
+                                <span class="flex items-center gap-1.5 px-3 md:px-4 py-2 text-gray-400 font-medium cursor-not-allowed bg-gray-100 border border-gray-200 rounded-full">
+                                    <span class="hidden sm:inline">Next</span>
+                                    <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                    </svg>
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="text-center py-12">
+                        <p class="text-lg mb-4 text-gray-900">
+                            No {% if current_platform == 'youtube' %}YouTube{% else %}TikTok{% endif %} edits submitted yet.
+                        </p>
+                        {% if user.is_authenticated and user.role == 'user' %}
+                        <a href="{% url 'edithub:apply' %}" 
+                           class="inline-block px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all shadow-lg">
+                            Be the First to Submit!
+                        </a>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- User Stats Modal -->
+    <div id="userStatsModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative m-4 max-h-[90vh] overflow-y-auto">
+            <button type="button" id="closeUserStatsModal" class="absolute top-3 right-3 text-gray-500 hover:text-gray-700">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+            
+            {% if channel_stats %}
+            <div class="text-center">
+                <!-- Profile Picture -->
+                <div class="relative mb-4 inline-block">
+                    {% if channel_stats.profile_picture %}
+                        <img src="{{ channel_stats.profile_picture }}" 
+                             alt="{{ channel_stats.username }}" 
+                             class="w-20 h-20 rounded-full object-cover ring-4 {% if channel_stats.channel_type == 'youtube' %}ring-red-200{% else %}ring-purple-200{% endif %} shadow-lg">
+                    {% else %}
+                        <div class="w-20 h-20 rounded-full {% if channel_stats.channel_type == 'youtube' %}bg-gradient-to-br from-red-400 to-orange-400{% else %}bg-gradient-to-br from-purple-400 via-pink-400 to-blue-400{% endif %} flex items-center justify-center ring-4 {% if channel_stats.channel_type == 'youtube' %}ring-red-200{% else %}ring-purple-200{% endif %} shadow-lg">
+                            <span class="text-3xl font-bold text-white">{{ channel_stats.username|first|upper }}</span>
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Username (Bold, on top) -->
+                <h3 class="text-2xl font-bold text-gray-900 mb-2">{{ channel_stats.username }}</h3>
+                
+                <!-- Editor Title (Below username, styled) -->
+                <div class="mb-6">
+                    <span class="inline-block px-4 py-2 rounded-full text-sm font-semibold {% if channel_stats.channel_type == 'youtube' %}bg-gradient-to-r from-red-50 to-orange-50 text-red-700 border border-red-200{% else %}bg-gradient-to-r from-purple-50 to-pink-50 text-purple-700 border border-purple-200{% endif %} shadow-sm">
+                        {{ channel_stats.editor_title }}
+                    </span>
+                </div>
+                
+                <!-- Statistics Grid -->
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <!-- Highest Points -->
+                    <div class="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-lg p-4 border border-yellow-200">
+                        <div class="flex items-center justify-center gap-2 mb-2">
+                            <i class="fas fa-star text-yellow-500 text-xl"></i>
+                            <span class="text-2xl font-bold text-gray-900">{{ channel_stats.best_points|floatformat:1 }}</span>
+                        </div>
+                        <p class="text-xs text-gray-600">Highest Points</p>
+                    </div>
+                    
+                    <!-- Mix Rank -->
+                    {% if channel_stats.mix_rank %}
+                    <div class="bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-lg p-4 border border-indigo-200">
+                        <div class="flex items-center justify-center gap-2 mb-2">
+                            <i class="fas fa-trophy text-indigo-500 text-xl"></i>
+                            <span class="text-2xl font-bold text-gray-900">#{{ channel_stats.mix_rank }}</span>
+                        </div>
+                        <p class="text-xs text-gray-600">Mix Rank</p>
+                    </div>
+                    {% else %}
+                    <!-- Total Edits (fallback if no mix rank) -->
+                    <div class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-4 border border-purple-200">
+                        <div class="text-2xl font-bold text-gray-900 mb-2">{{ channel_stats.total_edits }}</div>
+                        <p class="text-xs text-gray-600">Total Edits</p>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Edit of the Week -->
+                    <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 border border-blue-200">
+                        <div class="flex items-center justify-center gap-2 mb-2">
+                            <span class="text-2xl">🏆</span>
+                            <span class="text-2xl font-bold text-gray-900">{{ channel_stats.edit_of_week_wins }}</span>
+                        </div>
+                        <p class="text-xs text-gray-600">Edit of the Week</p>
+                    </div>
+                    
+                    <!-- Edit of the Month -->
+                    <div class="bg-gradient-to-br from-pink-50 to-pink-100 rounded-lg p-4 border border-pink-200">
+                        <div class="flex items-center justify-center gap-2 mb-2">
+                            <span class="text-2xl">⭐</span>
+                            <span class="text-2xl font-bold text-gray-900">{{ channel_stats.edit_of_month_wins }}</span>
+                        </div>
+                        <p class="text-xs text-gray-600">Edit of the Month</p>
+                    </div>
+                </div>
+                
+                <!-- Total Edits (shown below grid if mix rank is displayed) -->
+                {% if channel_stats.mix_rank %}
+                <div class="mb-4">
+                    <div class="inline-block bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg px-4 py-2 border border-gray-200">
+                        <span class="text-sm text-gray-600">Total Edits: </span>
+                        <span class="text-sm font-bold text-gray-900">{{ channel_stats.total_edits }}</span>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Redirect Link to Social Media -->
+                {% if current_edit and current_edit.channel_link %}
+                <div class="mt-6 pt-6 border-t border-gray-200">
+                    <a href="{{ current_edit.channel_link }}" 
+                       target="_blank" 
+                       rel="noopener noreferrer"
+                       class="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r {% if channel_stats.channel_type == 'youtube' %}from-red-500 to-red-600{% else %}from-purple-500 to-pink-500{% endif %} text-white rounded-lg font-semibold hover:opacity-90 transition-all shadow-lg">
+                        {% if channel_stats.channel_type == 'youtube' %}
+                            <i class="fab fa-youtube text-xl"></i>
+                            <span>Visit YouTube Channel</span>
+                        {% else %}
+                            <i class="fab fa-tiktok text-xl"></i>
+                            <span>Visit TikTok Profile</span>
+                        {% endif %}
+                    </a>
+                </div>
+                {% endif %}
+                
+                <!-- Note about future customization -->
+                <p class="text-xs text-gray-500 italic mt-4">
+                    Customize your editor title with coins (coming soon)
+                </p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Report Modal -->
+    <div id="reportModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative m-4">
+            <button type="button" id="closeReportModal" class="absolute top-3 right-3 text-gray-500 hover:text-gray-700">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+
+            <h3 class="text-xl font-semibold text-gray-900 mb-4">Report Edit</h3>
+            <form id="reportForm" method="POST">
+                {% csrf_token %}
+                <input type="hidden" name="reason" id="reportReason" value="explicit">
+                <input type="hidden" name="description" id="reportDescription" value="">
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Reason</label>
+                    <select id="reasonSelect" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                        <option value="explicit">Explicit Content</option>
+                        <option value="spam">Spam</option>
+                        <option value="copyright">Copyright Violation</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Additional Details (Optional)</label>
+                    <textarea id="descriptionText" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Please provide more details..."></textarea>
+                </div>
+
+                <div class="flex gap-4">
+                    <button type="submit" class="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
+                        Submit Report
+                    </button>
+                    <button type="button" id="cancelReport" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Navigation buttons removed - using pagination controls at bottom -->
+</main>
+
+<script>
+// Function to toggle sidebar (mobile)
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    const menuToggle = document.getElementById('menuToggle');
+    const body = document.body;
+    
+    if (sidebar && overlay) {
+        // Check if sidebar is closed (translate-y-full means it's hidden below)
+        const isClosed = sidebar.classList.contains('translate-y-full');
+        if (isClosed) {
+            // Opening: remove translate-y-full to slide up
+            sidebar.classList.remove('translate-y-full');
+            overlay.classList.add('active');
+            // Prevent body scroll when sidebar is open (mobile only)
+            if (window.innerWidth <= 768) {
+                body.classList.add('sidebar-open');
+            }
+            // Hide floating button when sidebar is opening
+            if (menuToggle) {
+                menuToggle.style.display = 'none';
+            }
+        } else {
+            // Closing: add translate-y-full to slide down
+            sidebar.classList.add('translate-y-full');
+            overlay.classList.remove('active');
+            // Allow body scroll when sidebar is closed
+            body.classList.remove('sidebar-open');
+            // Show floating button when sidebar is closing
+            if (menuToggle) {
+                menuToggle.style.display = 'flex';
+            }
+        }
+    }
+}
+
+// Function to open user stats modal
+function openUserStatsModal() {
+    const modal = document.getElementById('userStatsModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+}
+
+// Function to close user stats modal
+function closeUserStatsModal() {
+    const modal = document.getElementById('userStatsModal');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+}
+
+// Function to share the current edit
+function shareEdit(buttonEl) {
+    // Always use the current page URL
+    const shareUrl = window.location.href;
+    
+    // Check if Web Share API is available
+    if (navigator.share) {
+        navigator.share({
+            title: '{{ current_edit.title|default:"Check out this edit!" }}',
+            text: '{{ current_edit.title|default:"Amazing edit on EditHub!" }}',
+            url: shareUrl
+        }).catch(err => {
+            console.log('Error sharing:', err);
+            // Fallback: copy to clipboard
+            copyToClipboard(shareUrl);
+        });
+    } else {
+        // Fallback: copy to clipboard
+        copyToClipboard(shareUrl);
+    }
+}
+
+// Function to copy URL to clipboard
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(() => {
+        // Show success message
+        const button = event.target.closest('button');
+        if (button) {
+            const originalText = button.innerHTML;
+            button.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Copied!';
+            button.classList.add('bg-green-50', 'border-green-500', 'text-green-600');
+            setTimeout(() => {
+                button.innerHTML = originalText;
+                button.classList.remove('bg-green-50', 'border-green-500', 'text-green-600');
+            }, 2000);
+        }
+    }).catch(err => {
+        console.error('Failed to copy:', err);
+        showToast('Failed to copy link. Please copy manually: ' + text, 'error');
+    });
+}
+
+// Create a mapping of edit IDs to page numbers based on ranking position
+// Since pagination is 1 per page, page number = ranking position (1-indexed)
+const editToPageMap = {
+    {% if all_edits_ranking %}
+        {% for rank_edit in all_edits_ranking %}
+        "{{ rank_edit.id }}": {{ forloop.counter }}{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    {% endif %}
+};
+
+// Function to switch to a specific edit (for sidebar ranking clicks)
+function scrollToEdit(editId) {
+    // Redirect to the edit's page
+    const currentPlatform = '{{ current_platform }}';
+    // Convert editId to string to match the map keys
+    const pageNumber = editToPageMap[String(editId)];
+    
+    if (pageNumber) {
+        window.location.href = `?platform=${currentPlatform}&page=${pageNumber}`;
+    } else {
+        // Fallback: if edit not found in ranking, go to page 1
+        window.location.href = `?platform=${currentPlatform}&page=1`;
+    }
+    // Close sidebar on mobile after navigation
+    if (window.innerWidth <= 768) {
+        toggleSidebar();
+    }
+}
+
+// Legacy navigation functions (kept for compatibility but not used in new paginated format)
+let currentEditIndex = 0;
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Mobile menu toggle
+    const menuToggle = document.getElementById('menuToggle');
+    if (menuToggle) {
+        menuToggle.addEventListener('click', toggleSidebar);
+    }
+    
+    // User Stats Modal handlers
+    const userStatsModal = document.getElementById('userStatsModal');
+    const closeUserStatsModalBtn = document.getElementById('closeUserStatsModal');
+    if (closeUserStatsModalBtn) {
+        closeUserStatsModalBtn.addEventListener('click', closeUserStatsModal);
+    }
+    if (userStatsModal) {
+        userStatsModal.addEventListener('click', (e) => {
+            if (e.target === userStatsModal) closeUserStatsModal();
+        });
+    }
+    
+    // Add click handlers for ranking panel items
+    document.querySelectorAll('.rank-item-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const editId = this.dataset.editId;
+            scrollToEdit(parseInt(editId));
+        });
+    });
+    
+    // Keyboard navigation for pagination (Left/Right arrows)
+    document.addEventListener('keydown', function(e) {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
+            return; // Don't interfere with form inputs
+        }
+        
+        // Navigate with arrow keys - find pagination links
+        if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+            // Find pagination links by looking for links with page parameter
+            const allLinks = Array.from(document.querySelectorAll('a[href*="page="]'));
+            const prevLink = allLinks.find(link => {
+                const href = link.href || link.getAttribute('href');
+                const match = href.match(/page=(\d+)/);
+                if (match) {
+                    const pageNum = parseInt(match[1]);
+                    const currentPage = parseInt('{{ page_obj.number }}') || 1;
+                    return pageNum < currentPage;
+                }
+                return false;
+            });
+            
+            const nextLink = allLinks.find(link => {
+                const href = link.href || link.getAttribute('href');
+                const match = href.match(/page=(\d+)/);
+                if (match) {
+                    const pageNum = parseInt(match[1]);
+                    const currentPage = parseInt('{{ page_obj.number }}') || 1;
+                    return pageNum > currentPage;
+                }
+                return false;
+            });
+            
+            if (e.key === 'ArrowLeft' && prevLink) {
+                e.preventDefault();
+                window.location.href = prevLink.href || prevLink.getAttribute('href');
+            } else if (e.key === 'ArrowRight' && nextLink) {
+                e.preventDefault();
+                window.location.href = nextLink.href || nextLink.getAttribute('href');
+            }
+        }
+    });
+    
+    const reportModal = document.getElementById('reportModal');
+    const closeReportModal = document.getElementById('closeReportModal');
+    const cancelReport = document.getElementById('cancelReport');
+    const reportForm = document.getElementById('reportForm');
+    const reasonSelect = document.getElementById('reasonSelect');
+    const descriptionText = document.getElementById('descriptionText');
+    let currentEditId = null;
+
+    // Upvote functionality
+    document.querySelectorAll('.upvote-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            if (this.disabled) return;
+            const editId = this.dataset.editId;
+            const upvoteCount = this.querySelector('.upvote-count');
+            
+            fetch(`{% url 'edithub:upvote_edit' pk=0 %}`.replace('0', editId), {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => {
+                return response.json().then(data => {
+                    if (!response.ok) {
+                        // Handle error responses (400, 403, 404, etc.)
+                        if (data.error) {
+                            const errorType = data.self_upvote ? 'warning' : 'error';
+                            showToast(data.error, errorType);
+                        }
+                        return { success: false, error: data.error };
+                    }
+                    return data;
+                });
+            })
+            .then(data => {
+                if (data.success) {
+                    upvoteCount.textContent = data.upvote_count;
+                    if (data.upvoted) {
+                        this.classList.add('text-blue-400');
+                        showToast('Edit upvoted successfully!', 'success');
+                    } else {
+                        this.classList.remove('text-blue-400');
+                        showToast('Upvote removed', 'info');
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('An error occurred. Please try again.', 'error');
+            });
+        });
+    });
+
+    // Report functionality
+    document.querySelectorAll('.report-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            if (this.disabled) return;
+            currentEditId = this.dataset.editId;
+            reportForm.action = `{% url 'edithub:report_edit' pk=0 %}`.replace('0', currentEditId);
+            reportModal.classList.remove('hidden');
+            reportModal.classList.add('flex');
+        });
+    });
+
+    function closeModal() {
+        reportModal.classList.add('hidden');
+        reportModal.classList.remove('flex');
+        reasonSelect.value = 'explicit';
+        descriptionText.value = '';
+    }
+
+    closeReportModal.addEventListener('click', closeModal);
+    cancelReport.addEventListener('click', closeModal);
+    reportModal.addEventListener('click', (e) => {
+        if (e.target === reportModal) closeModal();
+    });
+
+    reportForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        document.getElementById('reportReason').value = reasonSelect.value;
+        document.getElementById('reportDescription').value = descriptionText.value;
+
+        fetch(reportForm.action, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: new FormData(reportForm)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast(data.message, 'success');
+                closeModal();
+            } else {
+                showToast(data.error || 'An error occurred. Please try again.', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast('An error occurred. Please try again.', 'error');
+        });
+    });
+});
+</script>
+{% endblock %}

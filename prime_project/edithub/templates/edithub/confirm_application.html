@@ -7,10 +7,12 @@
     <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="bg-white rounded-lg shadow-lg p-8">
             <div class="text-center mb-8">
-                <h1 class="text-3xl font-bold text-gray-900 mb-2">Confirm Your Channel</h1>
-                <p class="text-gray-600">Please verify that we fetched the correct channel information</p>
+                <h1 class="text-3xl font-bold text-gray-900 mb-2">Confirm Your Channels</h1>
+                <p class="text-gray-600">Please verify the information below before submitting your application{% if applications|length > 1 %}s{% endif %}.</p>
             </div>
 
+            {% for summary in applications %}
+            {% with application=summary.instance %}
             <div class="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
                 <div class="flex items-start">
                     <div class="flex-shrink-0">
@@ -18,53 +20,60 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                     </div>
-                    <div class="ml-3">
-                        <h3 class="text-lg font-medium text-blue-900">Channel Information</h3>
-                        <div class="mt-4">
-                            <div class="flex items-center mb-4">
-                                {% if application_data.channel_thumbnail %}
-                                <img src="{{ application_data.channel_thumbnail }}" 
-                                     alt="{{ application_data.channel_name }}" 
-                                     class="h-16 w-16 rounded-full mr-4">
+                    <div class="ml-3 w-full">
+                        <div class="flex items-center justify-between flex-wrap gap-3">
+                            <h3 class="text-lg font-medium text-blue-900 flex items-center gap-2">
+                                {% if summary.channel_type == 'youtube' %}
+                                <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-red-100 text-red-700"><i class="fab fa-youtube"></i></span>
+                                YouTube Channel
+                                {% else %}
+                                <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-black text-white"><i class="fab fa-tiktok"></i></span>
+                                TikTok Channel
                                 {% endif %}
-                                <div>
-                                    <p class="text-lg font-semibold text-gray-900">{{ application_data.channel_name|default:"Unknown" }}</p>
-                                    <p class="text-sm text-gray-600">Followers: {{ application_data.follower_count|floatformat:0|default:"0" }}</p>
-                                    <p class="text-sm text-blue-600 mt-1">
-                                        <a href="{{ application_data.channel_link }}" target="_blank" rel="noopener noreferrer" class="hover:underline">
-                                            {{ application_data.channel_link }}
-                                        </a>
-                                    </p>
-                                </div>
-                            </div>
-                            <div class="mt-4 space-y-2">
-                                <p class="text-sm text-gray-700">
-                                    <span class="font-medium">Platform:</span> 
-                                    <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
-                                        {% if application_data.channel_type == 'youtube' %}bg-red-100 text-red-800
-                                        {% else %}bg-black text-white{% endif %}">
-                                        {% if application_data.channel_type == 'youtube' %}YouTube{% else %}TikTok{% endif %}
-                                    </span>
+                            </h3>
+                            <span class="px-3 py-1 text-xs font-semibold rounded-full {% if application.status == 'pending' %}bg-yellow-100 text-yellow-800{% elif application.status == 'accepted' %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
+                                {{ application.get_status_display }}
+                            </span>
+                        </div>
+
+                        <div class="mt-4 flex items-center">
+                            {% if summary.channel_thumbnail %}
+                            <img src="{{ summary.channel_thumbnail }}" alt="{{ summary.channel_name }}" class="h-16 w-16 rounded-full mr-4 object-cover">
+                            {% endif %}
+                            <div class="space-y-1">
+                                <p class="text-lg font-semibold text-gray-900">{{ summary.channel_name|default:"Unknown" }}</p>
+                                <p class="text-sm text-gray-600">Followers: {{ summary.follower_count|floatformat:0|default:"0" }}</p>
+                                <p class="text-sm text-blue-600">
+                                    <a href="{{ summary.channel_link }}" target="_blank" rel="noopener noreferrer" class="hover:underline">
+                                        {{ summary.channel_link }}
+                                    </a>
                                 </p>
-                                <p class="text-sm text-gray-700 flex items-center gap-2">
-                                    <span class="font-medium">Editing Tool:</span>
-                                    <span class="text-xl" title="{{ application.get_editing_tool_display }}">
-                                        <i class="{{ application.editing_tool_icon }}"></i>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-gray-700">
+                            <div>
+                                <span class="font-medium">Editing Tool:</span>
+                                <span class="inline-flex items-center gap-2 ml-2">
+                                    <span class="inline-flex items-center justify-center" aria-hidden="true">
+                                        {{ application.editing_tool_icon|safe }}
                                     </span>
                                     <span class="text-xs text-gray-500">({{ application.get_editing_tool_display }})</span>
-                                </p>
-                                <p class="text-sm text-gray-700">
-                                    <span class="font-medium">Editing Area:</span> 
-                                    {{ application.get_editing_area_display }}
-                                    {% if application.editing_area == 'others' and application.editing_area_other %}
-                                    - {{ application.editing_area_other }}
-                                    {% endif %}
-                                </p>
+                                </span>
+                            </div>
+                            <div>
+                                <span class="font-medium">Editing Area:</span>
+                                <span class="ml-2">{{ application.get_editing_area_display }}</span>
+                                {% if application.editing_area == 'others' and application.editing_area_other %}
+                                <span class="ml-1 text-xs text-gray-500">({{ application.editing_area_other }})</span>
+                                {% endif %}
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+            {% endwith %}
+            {% endfor %}
 
             <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
                 <p class="text-yellow-800 text-sm">

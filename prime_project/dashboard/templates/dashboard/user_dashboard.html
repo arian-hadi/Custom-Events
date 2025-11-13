@@ -91,7 +91,7 @@
                 </div>
             </div>
 
-            {% comment %}
+            
             <!-- EditingHub Application Status (temporarily hidden for production) -->
             <div class="bg-white rounded-lg border border-gray-200 p-6">
                 <h2 class="text-lg font-semibold text-gray-900 mb-4">EditingHub Application</h2>
@@ -108,8 +108,8 @@
                             <div>
                                 <p class="font-medium text-gray-900 flex items-center gap-2">
                                     {{ editor_application.channel_name|default:"Unknown" }}
-                                    <span class="text-xl" title="{{ editor_application.get_editing_tool_display }}">
-                                        <i class="{{ editor_application.editing_tool_icon }}"></i>
+                                    <span class="inline-flex items-center justify-center" title="{{ editor_application.get_editing_tool_display }}" aria-hidden="true">
+                                        {{ editor_application.editing_tool_icon|safe }}
                                     </span>
                                 </p>
                                 <p class="text-sm text-gray-500">{{ editor_application.get_status_display }}</p>
@@ -147,7 +147,7 @@
                 </div>
                 {% endif %}
             </div>
-            {% endcomment %}
+            
         </div>
 
         <!-- Applications moved to dedicated page -->

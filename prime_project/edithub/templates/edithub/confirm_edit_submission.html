@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+
+{% block title %}Confirm Edit Submission - 2.0Transformers{% endblock %}
+
+{% block content %}
+<main class="pt-16 bg-gradient-to-b from-white via-gray-50 to-gray-100 min-h-screen py-12">
+    <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="bg-white rounded-lg shadow-lg p-8">
+            <div class="text-center mb-8">
+                <h1 class="text-3xl font-bold text-gray-900 mb-2">Confirm Your Edit Submission</h1>
+                <p class="text-gray-600">Please verify the details below before submitting</p>
+            </div>
+
+            <div class="bg-gray-50 border border-gray-200 rounded-lg p-6 mb-6">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">Channel Information</h2>
+                <div class="space-y-3">
+                    <div>
+                        <span class="text-sm font-medium text-gray-700">Platform:</span>
+                        <span class="ml-2 text-sm text-gray-900">
+                            {% if submission.channel_type == 'youtube' %}
+                            <i class="fab fa-youtube text-red-600"></i> YouTube
+                            {% else %}
+                            <i class="fab fa-tiktok"></i> TikTok
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div>
+                        <span class="text-sm font-medium text-gray-700">Channel:</span>
+                        <span class="ml-2 text-sm text-gray-900">{{ submission.channel_name|default:submission.channel_link }}</span>
+                    </div>
+                    <div>
+                        <span class="text-sm font-medium text-gray-700">Channel Link:</span>
+                        <a href="{{ submission.channel_link }}" target="_blank" rel="noopener noreferrer" class="ml-2 text-sm text-blue-600 hover:underline">{{ submission.channel_link }}</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-gray-50 border border-gray-200 rounded-lg p-6 mb-6">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">Edit Information</h2>
+                <div class="space-y-3">
+                    <div>
+                        <span class="text-sm font-medium text-gray-700">Video URL:</span>
+                        <a href="{{ submission.video_url }}" target="_blank" rel="noopener noreferrer" class="ml-2 text-sm text-blue-600 hover:underline">{{ submission.video_url }}</a>
+                    </div>
+                    {% if submission.title %}
+                    <div>
+                        <span class="text-sm font-medium text-gray-700">Title:</span>
+                        <span class="ml-2 text-sm text-gray-900">{{ submission.title }}</span>
+                    </div>
+                    {% endif %}
+                    {% if submission.description %}
+                    <div>
+                        <span class="text-sm font-medium text-gray-700">Description:</span>
+                        <p class="mt-1 text-sm text-gray-900">{{ submission.description }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <form method="POST" class="space-y-4">
+                {% csrf_token %}
+                <div class="flex gap-4">
+                    <button type="submit" name="action" value="confirm" class="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors">
+                        Confirm & Submit
+                    </button>
+                    <button type="submit" name="action" value="cancel" class="px-6 py-3 bg-gray-200 text-gray-800 rounded-lg font-semibold hover:bg-gray-300 transition-colors">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</main>
+{% endblock %}
+

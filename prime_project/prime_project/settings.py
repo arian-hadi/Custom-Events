@@ -330,10 +330,10 @@ AUTHENTICATION_BACKENDS = [
 #     "https://20transformers.com",
 # ]
 
-CSRF_TRUSTED_ORIGINS = env.list(
-    "CSRF_TRUSTED_ORIGINS",
-    default=["http://localhost"]
-)
+# Parse CSRF_TRUSTED_ORIGINS manually to preserve ports in URLs
+# django-environ's env.list() strips ports from URLs, so we parse the raw string
+csrf_origins_str = os.getenv("CSRF_TRUSTED_ORIGINS", "http://localhost")
+CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in csrf_origins_str.split(",") if origin.strip()]
 
 #Email verification
 EMAIL_BACKEND = env("EMAIL_BACKEND") 

@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+{% block title %}Disclaimers - 2.0Transformers{% endblock %}
+{% block content %}
+<section class="max-w-4xl mx-auto px-4 pt-32 pb-12">
+  <h1 class="text-4xl font-bold text-gray-800 mb-6">Disclaimers</h1>
+  <p class="text-gray-600 mb-8 text-lg">
+    Please read the following disclaimers carefully. By using our platform, you acknowledge that you have read, understood, and agree to these terms.
+  </p>
+
+  <div class="space-y-8">
+    <!-- Content Disclaimer -->
+    <div class="bg-white border-l-4 border-blue-500 p-6 rounded-lg shadow-sm">
+      <h2 class="text-2xl font-semibold text-gray-700 mb-4">Content Disclaimer</h2>
+      <p class="text-gray-600 mb-3 leading-relaxed">
+        All video content displayed on this platform is embedded using official platform APIs (TikTok, YouTube) with proper attribution. Content creators retain full ownership and rights to their work.
+      </p>
+      <p class="text-gray-600 mb-3 leading-relaxed">
+        We do not claim ownership of any user-submitted content. All videos, images, and other media remain the property of their respective creators. By submitting content to our platform, creators grant us permission to display and promote their work solely for the purposes of showcasing their editing talent and participating in our community rankings and competitions.
+      </p>
+      <p class="text-gray-600 leading-relaxed">
+        If you believe that your content has been used without proper authorization, please <a href="{% url 'contact' %}" class="text-blue-600 hover:text-blue-800 underline">contact us</a> immediately.
+      </p>
+    </div>
+
+    <!-- Data Privacy Disclaimer -->
+    <div class="bg-white border-l-4 border-green-500 p-6 rounded-lg shadow-sm">
+      <h2 class="text-2xl font-semibold text-gray-700 mb-4">Data Privacy Disclaimer</h2>
+      <p class="text-gray-600 mb-3 leading-relaxed">
+        User data is collected with explicit consent and used solely for content display, rankings, and promotional purposes. We do not access, store, or share private or sensitive information from connected platforms.
+      </p>
+      <p class="text-gray-600 mb-3 leading-relaxed">
+        When you connect your YouTube or TikTok account, we only access publicly available information such as:
+      </p>
+      <ul class="text-gray-600 mb-3 space-y-1 list-disc list-inside ml-4">
+        <li>Channel name and profile information</li>
+        <li>Public video statistics (views, likes, comments)</li>
+        <li>Follower/subscriber counts</li>
+        <li>Public video URLs for embedding</li>
+      </ul>
+      <p class="text-gray-600 leading-relaxed">
+        We do not access, store, or process:
+      </p>
+      <ul class="text-gray-600 space-y-1 list-disc list-inside ml-4">
+        <li>Private messages or communications</li>
+        <li>Payment or financial information</li>
+        <li>Personal contact information beyond what is publicly available</li>
+        <li>Account passwords or authentication tokens</li>
+      </ul>
+      <p class="text-gray-600 mt-3 leading-relaxed">
+        For complete details on how we handle your data, please review our <a href="{% url 'privacy' %}" class="text-blue-600 hover:text-blue-800 underline">Privacy Policy</a>.
+      </p>
+    </div>
+
+    <!-- Affiliate Disclosure -->
+    <div class="bg-white border-l-4 border-purple-500 p-6 rounded-lg shadow-sm">
+      <h2 class="text-2xl font-semibold text-gray-700 mb-4">Affiliate Disclosure</h2>
+      <p class="text-gray-600 mb-3 leading-relaxed">
+        This website may contain affiliate links. Purchases made through these links may result in a commission for 2.0Transformers at no additional cost to you.
+      </p>
+      <p class="text-gray-600 mb-3 leading-relaxed">
+        We only recommend products and services that we believe will be valuable to our community. Our affiliate relationships do not influence our content, reviews, or recommendations. We are committed to maintaining transparency and trust with our users.
+      </p>
+      <p class="text-gray-600 leading-relaxed">
+        When you click on an affiliate link and make a purchase, we may receive a small commission. This helps support the platform and allows us to continue providing free services to our community. Thank you for your support!
+      </p>
+    </div>
+
+    <!-- Cookie Notice -->
+    <div class="bg-white border-l-4 border-orange-500 p-6 rounded-lg shadow-sm">
+      <h2 class="text-2xl font-semibold text-gray-700 mb-4">Cookie Notice</h2>
+      <p class="text-gray-600 mb-3 leading-relaxed">
+        This website uses cookies and similar technologies to enhance user experience, analyze site traffic, and personalize content. By continuing to use this site, you consent to our use of cookies as described in our <a href="{% url 'privacy' %}" class="text-blue-600 hover:text-blue-800 underline">Privacy Policy</a>.
+      </p>
+      <p class="text-gray-600 mb-3 leading-relaxed">
+        Cookies we use include:
+      </p>
+      <ul class="text-gray-600 space-y-1 list-disc list-inside ml-4">
+        <li><strong>Essential Cookies:</strong> Required for the website to function properly (e.g., authentication, session management)</li>
+        <li><strong>Analytics Cookies:</strong> Help us understand how visitors interact with our website</li>
+        <li><strong>Preference Cookies:</strong> Remember your settings and preferences</li>
+        <li><strong>Marketing Cookies:</strong> Used to deliver relevant advertisements (if applicable)</li>
+      </ul>
+      <p class="text-gray-600 mt-3 leading-relaxed">
+        You can manage or disable cookies through your browser settings. However, disabling certain cookies may affect the functionality of the website.
+      </p>
+    </div>
+
+    <!-- Platform-Specific Disclaimers -->
+    <div class="bg-white border-l-4 border-red-500 p-6 rounded-lg shadow-sm">
+      <h2 class="text-2xl font-semibold text-gray-700 mb-4">Platform-Specific Disclaimers</h2>
+      <p class="text-gray-600 mb-3 leading-relaxed">
+        <strong>YouTube:</strong> This website uses YouTube's official embed API to display video content. YouTube is a trademark of Google LLC. We are not affiliated with, endorsed by, or sponsored by YouTube or Google.
+      </p>
+      <p class="text-gray-600 leading-relaxed">
+        <strong>TikTok:</strong> This website uses TikTok's official embed functionality to display video content. TikTok is a trademark of ByteDance Ltd. We are not affiliated with, endorsed by, or sponsored by TikTok or ByteDance.
+      </p>
+    </div>
+  </div>
+
+  <div class="mt-8 p-4 bg-gray-50 rounded-lg">
+    <p class="text-gray-600 text-sm">
+      If you have any questions about these disclaimers, please <a href="{% url 'contact' %}" class="text-blue-600 hover:text-blue-800 underline">contact us</a>.
+    </p>
+  </div>
+
+  <p class="text-gray-500 text-sm mt-8">
+    Last updated: {% now "F Y" %}
+  </p>
+</section>
+{% endblock %}
+
