@@ -35,10 +35,12 @@ jobs:
             set -e
             cd /root/Custom-Events/prime_project
             echo "Current directory: $(pwd)"
-            echo "Stopping any containers using port 8000..."
+            echo "Stopping any containers using ports 80, 443, or 8000..."
+            docker ps --filter "publish=80" --format "{{.ID}}" | xargs -r docker stop || true
+            docker ps --filter "publish=443" --format "{{.ID}}" | xargs -r docker stop || true
             docker ps --filter "publish=8000" --format "{{.ID}}" | xargs -r docker stop || true
             echo "Stopping existing production containers..."
-            docker compose down || true
+            docker compose down --remove-orphans || true
             echo "Building new images without cache..."
             docker compose build --no-cache web
             echo "Build successful! Now starting containers..."
