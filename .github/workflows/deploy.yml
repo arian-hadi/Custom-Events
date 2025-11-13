@@ -35,13 +35,10 @@ jobs:
             set -e
             cd /root/Custom-Events/prime_project
             echo "Current directory: $(pwd)"
-            echo "Building new images without cache (old containers still running)..."
-            docker compose build --no-cache web
-            echo "Build successful! Now replacing containers..."
-            echo "Stopping existing containers..."
-            docker compose down
-            echo "Starting new containers..."
-            docker compose up -d
-            echo "Cleaning up unused Docker resources..."
-            docker system prune -f
-            echo "Deployment completed successfully!"
+            echo "Stopping only production containers (project: production)..."
+            docker compose -p production down || true
+            echo "Building new production images..."
+            docker compose -p production build --no-cache web
+            echo "Build successful! Starting production containers..."
+            docker compose -p production up -d
+            echo "Production deployment completed successfully!"
