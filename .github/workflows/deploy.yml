@@ -35,12 +35,13 @@ jobs:
             set -e
             cd /root/Custom-Events/prime_project
             echo "Current directory: $(pwd)"
-            echo "Building new images without cache (old containers still running)..."
+            echo "Stopping any containers using port 8000..."
+            docker ps --filter "publish=8000" --format "{{.ID}}" | xargs -r docker stop || true
+            echo "Stopping existing production containers..."
+            docker compose down || true
+            echo "Building new images without cache..."
             docker compose build --no-cache web
-            echo "Build successful! Now replacing containers..."
-            echo "Stopping existing containers..."
-            docker compose down
-            echo "Starting new containers..."
+            echo "Build successful! Now starting containers..."
             docker compose up -d
             echo "Cleaning up unused Docker resources..."
             docker system prune -f
