@@ -35,13 +35,10 @@ jobs:
             set -e
             cd /root/Custom-Events-Staging/prime_project
             echo "Current directory: $(pwd)"
-            echo "Building new staging images without cache..."
-            docker compose -f docker-compose.staging.yml build --no-cache web
-            echo "Build successful! Now replacing containers..."
-            echo "Stopping existing staging containers..."
-            docker compose -f docker-compose.staging.yml down
-            echo "Starting new staging containers..."
-            docker compose -f docker-compose.staging.yml up -d
-            echo "Cleaning up unused Docker resources..."
-            docker system prune -f
+            echo "Stopping only staging containers (project: staging)..."
+            docker compose -f docker-compose.staging.yml -p staging down || true
+            echo "Building new staging images..."
+            docker compose -f docker-compose.staging.yml -p staging build --no-cache web
+            echo "Build successful! Starting staging containers..."
+            docker compose -f docker-compose.staging.yml -p staging up -d
             echo "Staging deployment completed successfully!"
