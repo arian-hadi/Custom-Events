@@ -1,3 +1,5 @@
+name: staging
+
 services:
   web:
     build: .
