@@ -490,8 +490,28 @@ def apply_view(request):
             apply_tiktok = selected_platform == 'tiktok'
             return render_apply_form(youtube_form, tiktok_form, apply_youtube, apply_tiktok, data_consent)
 
-        # Prepare form for selected platform only
+        # Early file size validation BEFORE form processing
+        from core.validators import MAX_CHANNEL_SCREENSHOT_SIZE_MB
         prefix = selected_platform
+        screenshot_key = f'{prefix}-channel_screenshot'
+        
+        if screenshot_key in request.FILES:
+            uploaded_file = request.FILES[screenshot_key]
+            max_size_bytes = MAX_CHANNEL_SCREENSHOT_SIZE_MB * 1024 * 1024
+            if uploaded_file.size > max_size_bytes:
+                file_size_mb = uploaded_file.size / (1024 * 1024)
+                messages.error(
+                    request, 
+                    f"File too large. Maximum size is {MAX_CHANNEL_SCREENSHOT_SIZE_MB} MB. "
+                    f"Your file is {file_size_mb:.2f} MB. Please compress or resize your image."
+                )
+                youtube_form = build_form('youtube', 'youtube')
+                tiktok_form = build_form('tiktok', 'tiktok')
+                apply_youtube = selected_platform == 'youtube'
+                apply_tiktok = selected_platform == 'tiktok'
+                return render_apply_form(youtube_form, tiktok_form, apply_youtube, apply_tiktok, data_consent)
+
+        # Prepare form for selected platform only
         post_data = request.POST.copy()
         post_data[f'{prefix}-channel_type'] = selected_platform
         post_data[f'{prefix}-data_consent'] = 'on'

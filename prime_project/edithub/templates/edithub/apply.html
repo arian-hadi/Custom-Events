@@ -285,6 +285,135 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
+    // File size validation - works with any file input
+    function validateFileSize(input) {
+        // Get max size from data attribute or use default (10MB for channel screenshots)
+        const maxSizeBytes = parseInt(input.getAttribute('data-max-size')) || 10 * 1024 * 1024; // Default 10MB
+        const maxSizeMB = parseInt(input.getAttribute('data-max-size-mb')) || 10;
+        
+        if (input.files && input.files[0]) {
+            const file = input.files[0];
+            const fileSizeMB = file.size / (1024 * 1024);
+            
+            if (file.size > maxSizeBytes) {
+                // Find the parent container (usually a div)
+                let container = input.closest('div');
+                if (!container) {
+                    container = input.parentElement;
+                }
+                
+                // Remove existing error message if any
+                const existingError = container.querySelector('.file-size-error');
+                if (existingError) {
+                    existingError.remove();
+                }
+                
+                // Create error message
+                const errorDiv = document.createElement('p');
+                errorDiv.className = 'mt-1.5 sm:mt-2 text-xs sm:text-sm text-red-600 font-medium file-size-error';
+                errorDiv.textContent = `File too large. Maximum size is ${maxSizeMB} MB. Your file is ${fileSizeMB.toFixed(2)} MB. Please compress or resize your image.`;
+                
+                // Insert error message after the input or after help text
+                const helpText = container.querySelector('p.text-gray-500');
+                if (helpText) {
+                    helpText.insertAdjacentElement('afterend', errorDiv);
+                } else {
+                    input.insertAdjacentElement('afterend', errorDiv);
+                }
+                
+                // Clear the file input
+                input.value = '';
+                
+                // Add error styling to input
+                input.classList.add('border-red-500', 'ring-2', 'ring-red-500/20');
+                input.classList.remove('border-gray-300');
+                
+                return false;
+            } else {
+                // Remove error message if file is valid
+                let container = input.closest('div');
+                if (!container) {
+                    container = input.parentElement;
+                }
+                const existingError = container.querySelector('.file-size-error');
+                if (existingError) {
+                    existingError.remove();
+                }
+                
+                // Remove error styling
+                input.classList.remove('border-red-500', 'ring-2', 'ring-red-500/20');
+                if (!input.classList.contains('border-gray-300')) {
+                    input.classList.add('border-gray-300');
+                }
+                
+                return true;
+            }
+        }
+        return true;
+    }
+    
+    // Add file size validation to all file inputs (check for channel_screenshot specifically)
+    function setupFileValidation() {
+        // Find all file inputs, especially channel_screenshot fields
+        const fileInputs = document.querySelectorAll('input[type="file"]');
+        const maxSizeMB = 10; // Channel screenshot max size
+        const maxSizeBytes = maxSizeMB * 1024 * 1024;
+        
+        fileInputs.forEach(input => {
+            // Set data attributes if not already set (for channel_screenshot fields)
+            if (input.name && input.name.includes('channel_screenshot')) {
+                if (!input.hasAttribute('data-max-size')) {
+                    input.setAttribute('data-max-size', maxSizeBytes);
+                    input.setAttribute('data-max-size-mb', maxSizeMB);
+                }
+            }
+            
+            // Add change event listener
+            input.addEventListener('change', function() {
+                validateFileSize(this);
+            });
+        });
+    }
+    
+    // Setup validation when DOM is ready
+    setupFileValidation();
+    
+    // Re-setup validation after form sections are updated
+    const originalUpdateSections = updateSections;
+    updateSections = function() {
+        originalUpdateSections();
+        // Re-setup file validation after sections change
+        setTimeout(setupFileValidation, 100);
+    };
+    
+    // Validate on form submission
+    const forms = document.querySelectorAll('form');
+    forms.forEach(form => {
+        form.addEventListener('submit', function(e) {
+            let isValid = true;
+            const fileInputsInForm = form.querySelectorAll('input[type="file"]');
+            
+            fileInputsInForm.forEach(input => {
+                if (input.files && input.files.length > 0) {
+                    if (!validateFileSize(input)) {
+                        isValid = false;
+                    }
+                }
+            });
+            
+            if (!isValid) {
+                e.preventDefault();
+                e.stopPropagation();
+                // Scroll to first error
+                const firstError = form.querySelector('.file-size-error');
+                if (firstError) {
+                    firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+                return false;
+            }
+        });
+    });
+
     // Initial setup
     updateSections();
     updateEditingArea('youtube');
