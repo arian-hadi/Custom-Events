@@ -1,6 +1,8 @@
 from django import forms
+from django.core.exceptions import ValidationError
 from .models import EditorApplication, EditSubmission, EditReport
 from .utils import validate_channel_url
+from core.validators import validate_file_size, MAX_CHANNEL_SCREENSHOT_SIZE_MB
 
 
 class EditorApplicationForm(forms.ModelForm):
@@ -36,9 +38,11 @@ class EditorApplicationForm(forms.ModelForm):
         required=True,
         widget=forms.FileInput(attrs={
             'class': 'mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100',
-            'accept': 'image/*'
+            'accept': 'image/*',
+            'data-max-size': MAX_CHANNEL_SCREENSHOT_SIZE_MB * 1024 * 1024,  # In bytes for JavaScript
+            'data-max-size-mb': MAX_CHANNEL_SCREENSHOT_SIZE_MB
         }),
-        help_text="Upload a screenshot of your channel page to verify ownership (no need to show email address)"
+        help_text=f"Upload a screenshot of your channel page to verify ownership (maximum size: {MAX_CHANNEL_SCREENSHOT_SIZE_MB} MB)"
     )
     
     channel_verified = forms.BooleanField(
@@ -104,6 +108,18 @@ class EditorApplicationForm(forms.ModelForm):
         self.cleaned_data['channel_type'] = channel_type
         
         return channel_link
+    
+    def clean_channel_screenshot(self):
+        """Validate channel screenshot file size"""
+        screenshot = self.cleaned_data.get('channel_screenshot')
+        if screenshot:
+            try:
+                validate_file_size(screenshot, MAX_CHANNEL_SCREENSHOT_SIZE_MB)
+            except ValidationError as e:
+                # Handle both message and messages attributes
+                error_message = getattr(e, 'message', None) or (e.messages[0] if e.messages else str(e))
+                raise forms.ValidationError(error_message)
+        return screenshot
     
     def clean(self):
         cleaned_data = super().clean()

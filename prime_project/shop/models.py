@@ -4,18 +4,14 @@ from django.core.exceptions import ValidationError
 from django.utils import timezone
 from django.conf import settings
 from django.db import models as dj_models  # alias to avoid confusion
+from core.validators import (
+    validate_image_file_size,
+    MAX_IMAGE_FILE_SIZE_MB,
+    MAX_CHANNEL_SCREENSHOT_SIZE_MB,
+)
 
-MAX_IMAGE_FILE_SIZE_MB = 4
-
-
-def validate_image_file_size(image):
-    if not image:
-        return
-    limit = MAX_IMAGE_FILE_SIZE_MB * 1024 * 1024
-    if image.size > limit:
-        raise ValidationError(
-            f"Image file too large. Max size is {MAX_IMAGE_FILE_SIZE_MB} MB."
-        )
+# Keep MAX_IMAGE_FILE_SIZE_MB for backward compatibility
+# It's now imported from core.validators
 
 
 class Product(models.Model):
@@ -109,6 +105,20 @@ class Product(models.Model):
         verbose_name = 'Product'
         verbose_name_plural = 'Products'
     
+    def clean(self):
+        """Enforce image size limits even outside forms/admin."""
+        super().clean()
+        image_fields = ['thumbnail', 'main_image', 'image_2', 'image_3', 'image_4']
+        for field_name in image_fields:
+            image = getattr(self, field_name)
+            if image:
+                validate_image_file_size(image)
+
+    def save(self, *args, **kwargs):
+        # Ensure validations (including image sizes) run before saving from any entry point
+        self.full_clean()
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return self.name
     
@@ -197,11 +207,21 @@ class SiteLogo(models.Model):
         verbose_name = 'Site Logo'
         verbose_name_plural = 'Site Logos'
     
+    def clean(self):
+        """Enforce file size limits for logo and favicon."""
+        super().clean()
+        if self.image:
+            validate_image_file_size(self.image, max_size_mb=MAX_CHANNEL_SCREENSHOT_SIZE_MB)
+        if self.favicon:
+            validate_image_file_size(self.favicon, max_size_mb=MAX_CHANNEL_SCREENSHOT_SIZE_MB)
+
     def __str__(self):
         status = "Active" if self.is_active else "Inactive"
         return f"{self.name} - {status}"
     
     def save(self, *args, **kwargs):
+        # Ensure validations run
+        self.full_clean()
         # If this logo is being set as active, deactivate all others
         if self.is_active:
             SiteLogo.objects.filter(is_active=True).exclude(pk=self.pk).update(is_active=False)

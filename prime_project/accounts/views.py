@@ -215,9 +215,18 @@ class VerifyUserEmail(View):
                 request.session.pop("user_email", None)
                 request.session.pop("registration_time", None)
 
+                # Log the user in automatically
+                # Specify backend since multiple backends are configured
+                login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+                
                 logger.info(f"Email verified successfully for user: {user.email}")
-                messages.success(request, "Email verified successfully! You can now log in.")
-                return redirect("login")
+                messages.success(request, "Email verified successfully! Welcome to your dashboard.")
+
+                # Redirect to appropriate dashboard
+                if user.is_admin():
+                    return redirect('dashboard:admin_dashboard')
+                else:
+                    return redirect('dashboard:user_dashboard')
 
             except CustomUser.DoesNotExist:
                 messages.error(request, "User does not exist.")
