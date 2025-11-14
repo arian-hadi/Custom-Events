@@ -460,6 +460,20 @@ def apply_view(request):
             'youtube': [app for app in user_applications if app.channel_type == 'youtube'],
             'tiktok': [app for app in user_applications if app.channel_type == 'tiktok'],
         }
+        
+        # Check if user has active applications (pending or accepted) for each platform
+        youtube_active = EditorApplication.objects.filter(
+            user=request.user,
+            channel_type='youtube',
+            status__in=['pending', 'accepted']
+        ).exclude(removal_requested=True).exists()
+        
+        tiktok_active = EditorApplication.objects.filter(
+            user=request.user,
+            channel_type='tiktok',
+            status__in=['pending', 'accepted']
+        ).exclude(removal_requested=True).exists()
+        
         return render(request, 'edithub/apply.html', {
             'youtube_form': youtube_form,
             'tiktok_form': tiktok_form,
@@ -468,6 +482,8 @@ def apply_view(request):
             'data_consent_checked': data_consent_checked,
             'existing_applications': user_applications,
             'existing_applications_grouped': grouped_existing,
+            'youtube_already_applied': youtube_active,
+            'tiktok_already_applied': tiktok_active,
         })
 
     if request.method == 'POST':
@@ -634,8 +650,20 @@ def apply_view(request):
     # GET request - initialise forms
     youtube_form = build_form('youtube', 'youtube')
     tiktok_form = build_form('tiktok', 'tiktok')
+    
+    # Check if platform is specified in query params
+    edit_platform = request.GET.get('edit_platform', '').lower()
+    if edit_platform == 'youtube':
+        apply_youtube = True
+        apply_tiktok = False
+    elif edit_platform == 'tiktok':
+        apply_youtube = False
+        apply_tiktok = True
+    else:
+        apply_youtube = True
+        apply_tiktok = False
 
-    return render_apply_form(youtube_form, tiktok_form, apply_youtube=True, apply_tiktok=False, data_consent_checked=False)
+    return render_apply_form(youtube_form, tiktok_form, apply_youtube=apply_youtube, apply_tiktok=apply_tiktok, data_consent_checked=False)
 
 
 @require_http_methods(["GET"])
@@ -1013,30 +1041,75 @@ def submit_edit(request):
         messages.error(request, "Only regular users can submit edits.")
         return redirect('edithub:ranking_table')
     
-    # Check if user has an approved EditorApplication
-    approved_app = EditorApplication.objects.filter(
+    # Check if user has approved EditorApplications for YouTube and TikTok separately
+    youtube_app = EditorApplication.objects.filter(
         user=request.user,
+        channel_type='youtube',
         status='accepted',
         removal_requested=False
     ).first()
     
-    if not approved_app:
+    tiktok_app = EditorApplication.objects.filter(
+        user=request.user,
+        channel_type='tiktok',
+        status='accepted',
+        removal_requested=False
+    ).first()
+    
+    # Check if user has at least one approved application
+    if not youtube_app and not tiktok_app:
         messages.error(request, "You must have an approved channel application before submitting edits. Please apply first.")
         return redirect('edithub:apply')
     
+    # Get current week start and end for submission limit checking
+    from .utils import get_week_start_end
+    from django.utils import timezone
+    week_start, week_end = get_week_start_end()
+    
+    # Check if user has already submitted for each platform this week
+    youtube_submitted_this_week = False
+    tiktok_submitted_this_week = False
+    
+    if youtube_app:
+        youtube_submitted_this_week = EditSubmission.objects.filter(
+            user=request.user,
+            channel_type='youtube',
+            submitted_date__gte=week_start,
+            submitted_date__lte=week_end
+        ).exists()
+    
+    if tiktok_app:
+        tiktok_submitted_this_week = EditSubmission.objects.filter(
+            user=request.user,
+            channel_type='tiktok',
+            submitted_date__gte=week_start,
+            submitted_date__lte=week_end
+        ).exists()
+    
     if request.method == 'POST':
+        platform = request.POST.get('platform', '').lower()
+        approved_app = None
+        
+        if platform == 'youtube' and youtube_app:
+            approved_app = youtube_app
+        elif platform == 'tiktok' and tiktok_app:
+            approved_app = tiktok_app
+        else:
+            messages.error(request, "Invalid platform or you don't have an approved application for this platform.")
+            return redirect('edithub:submit_edit')
+        
+        # Check if user has already submitted for this platform this week
+        if platform == 'youtube' and youtube_submitted_this_week:
+            messages.warning(request, "You have already submitted a YouTube edit for this week. You can submit one edit per platform per week.")
+            return redirect('edithub:submit_edit')
+        elif platform == 'tiktok' and tiktok_submitted_this_week:
+            messages.warning(request, "You have already submitted a TikTok edit for this week. You can submit one edit per platform per week.")
+            return redirect('edithub:submit_edit')
+        
         form = EditSubmissionForm(data=request.POST, files=request.FILES, approved_application=approved_app)
         
         if form.is_valid():
             try:
-                # Create submission using approved application data
-                if not approved_app:
-                    messages.error(request, "No approved application found.")
-                    return render(request, 'edithub/submit_edit.html', {
-                        'form': form,
-                        'approved_application': approved_app
-                    })
-                
                 # Extract direct video URL for TikTok videos (for clean HTML5 player)
                 # Also fetch title automatically for TikTok if user didn't provide one
                 direct_video_url = None
@@ -1074,26 +1147,35 @@ def submit_edit(request):
                 )
                 submission.save()
                 
-                from django.utils import timezone
                 submission.verified_date = timezone.now()
                 submission.save()
                 
-                messages.success(request, "Edit submitted successfully! It will be visible in the Edit of the Week section.")
+                messages.success(request, f"Edit submitted successfully for {approved_app.get_channel_type_display()}! It will be visible in the Edit of the Week section.")
                 return redirect('edithub:view_all_edits')
             
             except Exception as error:
                 logger.error("Error creating edit submission", exc_info=True)
                 messages.error(request, f"An error occurred: {error}")
-                return render(request, 'edithub/submit_edit.html', {
-                    'form': form,
-                    'approved_application': approved_app
-                })
+        
+        # Re-initialize forms - keep the submitted form with errors, initialize the other one fresh
+        if platform == 'youtube':
+            youtube_form = form
+            tiktok_form = EditSubmissionForm(approved_application=tiktok_app) if tiktok_app else None
+        else:  # tiktok
+            youtube_form = EditSubmissionForm(approved_application=youtube_app) if youtube_app else None
+            tiktok_form = form
     else:
-        form = EditSubmissionForm(approved_application=approved_app)
+        # Initialize forms for both platforms (will be used conditionally in template)
+        youtube_form = EditSubmissionForm(approved_application=youtube_app) if youtube_app else None
+        tiktok_form = EditSubmissionForm(approved_application=tiktok_app) if tiktok_app else None
     
     return render(request, 'edithub/submit_edit.html', {
-        'form': form,
-        'approved_application': approved_app
+        'youtube_form': youtube_form,
+        'tiktok_form': tiktok_form,
+        'youtube_app': youtube_app,
+        'tiktok_app': tiktok_app,
+        'youtube_submitted_this_week': youtube_submitted_this_week,
+        'tiktok_submitted_this_week': tiktok_submitted_this_week,
     })
 
 

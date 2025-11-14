@@ -55,6 +55,12 @@ def user_dashboard(request):
     # Get EditingHub application status
     from edithub.models import EditorApplication
     editor_applications = EditorApplication.objects.filter(user=request.user).order_by('-applied_date')
+    
+    # Separate applications by platform
+    youtube_application = editor_applications.filter(channel_type='youtube').first()
+    tiktok_application = editor_applications.filter(channel_type='tiktok').first()
+    
+    # Get the first application (for backward compatibility)
     editor_application = editor_applications.first() if editor_applications.exists() else None
 
     context = {
@@ -64,6 +70,10 @@ def user_dashboard(request):
         'accepted_applications': applications.filter(status='accepted').count(),
         'editor_application': editor_application,
         'has_editor_application': editor_applications.exists(),
+        'youtube_application': youtube_application,
+        'tiktok_application': tiktok_application,
+        'has_youtube_application': youtube_application is not None,
+        'has_tiktok_application': tiktok_application is not None,
     }
     return render(request, 'dashboard/user_dashboard.html', context)
 

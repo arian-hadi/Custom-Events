@@ -92,60 +92,123 @@
             </div>
 
             
-            <!-- EditingHub Application Status (temporarily hidden for production) -->
+            <!-- EditingHub Application Status -->
             <div class="bg-white rounded-lg border border-gray-200 p-6">
-                <h2 class="text-lg font-semibold text-gray-900 mb-4">EditingHub Application</h2>
-                {% if has_editor_application %}
-                <div class="space-y-4">
-                    {% if editor_application %}
-                    <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                        <div class="flex items-center gap-4">
-                            {% if editor_application.channel_thumbnail %}
-                            <img src="{{ editor_application.channel_thumbnail }}" 
-                                 alt="{{ editor_application.channel_name }}" 
-                                 class="h-12 w-12 rounded-full mr-3">
-                            {% endif %}
-                            <div>
-                                <p class="font-medium text-gray-900 flex items-center gap-2">
-                                    {{ editor_application.channel_name|default:"Unknown" }}
-                                    <span class="inline-flex items-center justify-center" title="{{ editor_application.get_editing_tool_display }}" aria-hidden="true">
-                                        {{ editor_application.editing_tool_icon|safe }}
-                                    </span>
-                                </p>
-                                <p class="text-sm text-gray-500">{{ editor_application.get_status_display }}</p>
-                            </div>
-                        </div>
-                        <span class="px-3 py-1 text-xs font-semibold rounded-full
-                            {% if editor_application.status == 'accepted' %}bg-green-100 text-green-800
-                            {% elif editor_application.status == 'rejected' %}bg-red-100 text-red-800
-                            {% else %}bg-yellow-100 text-yellow-800{% endif %}">
-                            {{ editor_application.get_status_display }}
-                        </span>
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">EditingHub Applications</h2>
+                
+                <!-- YouTube Application -->
+                <div class="mb-6">
+                    <div class="flex items-center gap-2 mb-3">
+                        <i class="fab fa-youtube text-red-600 text-lg"></i>
+                        <h3 class="font-semibold text-gray-900">YouTube</h3>
                     </div>
-                    <div class="flex gap-3">
-                        <a href="{% url 'edithub:application_detail' pk=editor_application.pk %}" 
-                           class="flex-1 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors text-center">
-                            View Details
+                    {% if has_youtube_application %}
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                            <div class="flex items-center gap-4">
+                                {% if youtube_application.channel_thumbnail %}
+                                <img src="{{ youtube_application.channel_thumbnail }}" 
+                                     alt="{{ youtube_application.channel_name }}" 
+                                     class="h-12 w-12 rounded-full">
+                                {% endif %}
+                                <div>
+                                    <p class="font-medium text-gray-900 flex items-center gap-2">
+                                        {{ youtube_application.channel_name|default:"Unknown" }}
+                                        <span class="inline-flex items-center justify-center" title="{{ youtube_application.get_editing_tool_display }}" aria-hidden="true">
+                                            {{ youtube_application.editing_tool_icon|safe }}
+                                        </span>
+                                    </p>
+                                    <p class="text-sm text-gray-500">{{ youtube_application.get_status_display }}</p>
+                                </div>
+                            </div>
+                            <span class="px-3 py-1 text-xs font-semibold rounded-full
+                                {% if youtube_application.status == 'accepted' %}bg-green-100 text-green-800
+                                {% elif youtube_application.status == 'rejected' %}bg-red-100 text-red-800
+                                {% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                                {{ youtube_application.get_status_display }}
+                            </span>
+                        </div>
+                        <div class="flex gap-3">
+                            <a href="{% url 'edithub:application_detail' pk=youtube_application.pk %}" 
+                               class="flex-1 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors text-center">
+                                View Details
+                            </a>
+                            {% if youtube_application.status == 'accepted' %}
+                            <a href="{% url 'edithub:ranking_table' %}?channel_filter=youtube" 
+                               class="flex-1 px-4 py-2 bg-gray-200 text-gray-800 text-sm font-medium rounded-md hover:bg-gray-300 transition-colors text-center">
+                                View Rankings
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4 bg-gray-50 rounded-lg">
+                        <p class="text-sm text-gray-500 mb-3">You haven't applied for YouTube yet.</p>
+                        <a href="{% url 'edithub:apply' %}?edit_platform=youtube" 
+                           class="inline-flex items-center px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 transition-colors">
+                            Apply for YouTube
+                            <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
                         </a>
-                        {% if editor_application.status == 'accepted' %}
-                        <a href="{% url 'edithub:ranking_table' %}" 
-                           class="flex-1 px-4 py-2 bg-gray-200 text-gray-800 text-sm font-medium rounded-md hover:bg-gray-300 transition-colors text-center">
-                            View Rankings
-                        </a>
-                        {% endif %}
                     </div>
                     {% endif %}
                 </div>
-                {% else %}
-                <div class="text-center py-6">
-                    <p class="text-gray-500 mb-4">You haven't applied to EditingHub yet.</p>
-                    <a href="{% url 'edithub:apply' %}" 
-                       class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors">
-                        Apply Now
-                        <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-                    </a>
+
+                <!-- TikTok Application -->
+                <div>
+                    <div class="flex items-center gap-2 mb-3">
+                        <i class="fab fa-tiktok text-gray-900 text-lg"></i>
+                        <h3 class="font-semibold text-gray-900">TikTok</h3>
+                    </div>
+                    {% if has_tiktok_application %}
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                            <div class="flex items-center gap-4">
+                                {% if tiktok_application.channel_thumbnail %}
+                                <img src="{{ tiktok_application.channel_thumbnail }}" 
+                                     alt="{{ tiktok_application.channel_name }}" 
+                                     class="h-12 w-12 rounded-full">
+                                {% endif %}
+                                <div>
+                                    <p class="font-medium text-gray-900 flex items-center gap-2">
+                                        {{ tiktok_application.channel_name|default:"Unknown" }}
+                                        <span class="inline-flex items-center justify-center" title="{{ tiktok_application.get_editing_tool_display }}" aria-hidden="true">
+                                            {{ tiktok_application.editing_tool_icon|safe }}
+                                        </span>
+                                    </p>
+                                    <p class="text-sm text-gray-500">{{ tiktok_application.get_status_display }}</p>
+                                </div>
+                            </div>
+                            <span class="px-3 py-1 text-xs font-semibold rounded-full
+                                {% if tiktok_application.status == 'accepted' %}bg-green-100 text-green-800
+                                {% elif tiktok_application.status == 'rejected' %}bg-red-100 text-red-800
+                                {% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                                {{ tiktok_application.get_status_display }}
+                            </span>
+                        </div>
+                        <div class="flex gap-3">
+                            <a href="{% url 'edithub:application_detail' pk=tiktok_application.pk %}" 
+                               class="flex-1 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors text-center">
+                                View Details
+                            </a>
+                            {% if tiktok_application.status == 'accepted' %}
+                            <a href="{% url 'edithub:ranking_table' %}?channel_filter=tiktok" 
+                               class="flex-1 px-4 py-2 bg-gray-200 text-gray-800 text-sm font-medium rounded-md hover:bg-gray-300 transition-colors text-center">
+                                View Rankings
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4 bg-gray-50 rounded-lg">
+                        <p class="text-sm text-gray-500 mb-3">You haven't applied for TikTok yet.</p>
+                        <a href="{% url 'edithub:apply' %}?edit_platform=tiktok" 
+                           class="inline-flex items-center px-4 py-2 bg-gray-900 text-white text-sm font-medium rounded-md hover:bg-gray-800 transition-colors">
+                            Apply for TikTok
+                            <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                        </a>
+                    </div>
+                    {% endif %}
                 </div>
-                {% endif %}
             </div>
             
         </div>
