@@ -6,42 +6,42 @@
 {% block content %}
 <main class="pt-16 bg-gradient-to-b from-white via-gray-50 to-gray-100 min-h-screen py-12">
     <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="bg-white rounded-lg shadow-lg p-8">
-            <div class="text-center mb-8">
-                <h1 class="text-3xl font-bold text-gray-900 mb-2">Apply to EditingHub</h1>
-                <p class="text-gray-600">Join the ultimate editor ranking table</p>
+        <div class="bg-white rounded-xl shadow-xl p-4 sm:p-6 md:p-10 border border-gray-100">
+            <div class="text-center mb-6 md:mb-10">
+                <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 text-transparent bg-clip-text mb-2 md:mb-3">Apply to EditingHub</h1>
+                <p class="text-gray-600 text-sm sm:text-base md:text-lg">Join the ultimate editor ranking table</p>
             </div>
 
             {% if existing_applications %}
-            <div class="mb-8 bg-blue-50 border border-blue-200 rounded-lg p-5">
-                <h2 class="text-lg font-semibold text-blue-900 mb-2">Your Current Applications</h2>
-                <p class="text-sm text-blue-800 mb-4">You can submit a separate application for each platform you edit on. Existing entries are listed below.</p>
-                <div class="space-y-3">
+            <div class="mb-6 md:mb-8 bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-4 sm:p-5 md:p-6 shadow-sm">
+                <h2 class="text-lg sm:text-xl font-bold text-blue-900 mb-2">Your Current Applications</h2>
+                <p class="text-xs sm:text-sm text-blue-800 mb-4 md:mb-5">You can submit a separate application for each platform you edit on. Existing entries are listed below.</p>
+                <div class="space-y-2 sm:space-y-3">
                     {% for application in existing_applications %}
-                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-white rounded-md shadow-sm border border-blue-100 px-4 py-3">
-                        <div class="space-y-1">
-                            <div class="flex items-center gap-2 text-sm font-semibold text-gray-900">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-white rounded-lg shadow-sm border-2 border-blue-100 px-3 sm:px-4 md:px-5 py-3 sm:py-4 hover:shadow-md transition-shadow duration-200">
+                        <div class="space-y-1 sm:space-y-1.5">
+                            <div class="flex items-center gap-2 sm:gap-3 text-sm sm:text-base font-semibold text-gray-900">
                                 {% if application.channel_type == 'youtube' %}
-                                <span class="inline-flex items-center gap-1 text-red-600 text-xs font-bold uppercase">
-                                    <i class="fab fa-youtube"></i> YouTube
+                                <span class="inline-flex items-center gap-1 sm:gap-1.5 text-red-600 text-xs sm:text-sm font-bold uppercase">
+                                    <i class="fab fa-youtube text-sm sm:text-base md:text-lg"></i> YouTube
                                 </span>
                                 {% else %}
-                                <span class="inline-flex items-center gap-1 text-black text-xs font-bold uppercase">
-                                    <i class="fab fa-tiktok"></i> TikTok
+                                <span class="inline-flex items-center gap-1 sm:gap-1.5 text-gray-900 text-xs sm:text-sm font-bold uppercase">
+                                    <i class="fab fa-tiktok text-sm sm:text-base md:text-lg"></i> TikTok
                                 </span>
                                 {% endif %}
-                                <span>{{ application.channel_name|default:application.channel_link }}</span>
+                                <span class="text-xs sm:text-sm md:text-base">{{ application.channel_name|default:application.channel_link }}</span>
                             </div>
-                            <div class="text-xs text-gray-500">
-                                Status: <span class="font-medium text-gray-700">{{ application.get_status_display }}</span>
-                                • Followers: {{ application.follower_count|floatformat:0|default:"0" }}
+                            <div class="text-xs sm:text-sm text-gray-600">
+                                Status: <span class="font-semibold text-gray-800">{{ application.get_status_display }}</span>
+                                • Followers: <span class="font-semibold text-gray-800">{{ application.follower_count|floatformat:0|default:"0" }}</span>
                             </div>
                         </div>
                         <div class="mt-2 sm:mt-0">
                             <a href="{% url 'edithub:application_detail' pk=application.pk %}"
-                               class="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700">
+                               class="inline-flex items-center gap-1 sm:gap-2 text-xs sm:text-sm font-semibold text-blue-600 hover:text-blue-700 transition-colors duration-200">
                                 View Details
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg class="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                                 </svg>
                             </a>
@@ -52,34 +52,36 @@
             </div>
             {% endif %}
 
-            <form method="POST" id="applicationForm" enctype="multipart/form-data" class="space-y-8">
+            <form method="POST" id="applicationForm" enctype="multipart/form-data" class="space-y-5 sm:space-y-6 md:space-y-8">
                 {% csrf_token %}
 
-                <section class="bg-white border border-gray-200 rounded-lg p-6">
-                    <h2 class="text-lg font-semibold text-gray-900 mb-4">Select Platform</h2>
-                    <p class="text-sm text-gray-600 mb-4">You can only apply for one platform at a time. Choose either YouTube or TikTok.</p>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <label class="flex items-center gap-4 px-4 py-3 border rounded-lg transition-colors cursor-pointer {% if apply_youtube %}border-blue-500 bg-blue-50{% else %}border-gray-200 bg-white hover:border-gray-300{% endif %}">
-                            <input type="radio" name="platform" value="youtube" id="platformYoutube" class="h-4 w-4 text-blue-600 focus:ring-blue-500" {% if apply_youtube %}checked{% endif %}>
-                            <span class="flex items-center gap-2 text-sm font-medium text-gray-800">
-                                <span class="text-2xl text-red-600"><i class="fab fa-youtube"></i></span>
-                                YouTube Channel
+                <section class="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-4 sm:p-5 md:p-6 shadow-sm">
+                    <h2 class="text-lg sm:text-xl font-bold text-gray-900 mb-2">Select Platform</h2>
+                    <p class="text-xs sm:text-sm text-gray-600 mb-4 sm:mb-5 md:mb-6">You can only apply for one platform at a time. Choose either YouTube or TikTok.</p>
+                    <div class="grid grid-cols-2 gap-2 sm:gap-3 md:gap-4">
+                        <label id="youtubeLabel" class="platform-label flex items-center justify-center gap-1.5 sm:gap-2 md:gap-3 px-2 sm:px-3 md:px-5 py-2.5 sm:py-3 md:py-4 border-2 rounded-xl transition-all duration-200 cursor-pointer {% if apply_youtube %}border-red-500 bg-red-50 shadow-md{% else %}border-gray-300 bg-white hover:border-red-300 hover:bg-red-50/50{% endif %}">
+                            <input type="radio" name="platform" value="youtube" id="platformYoutube" class="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5 text-red-600 focus:ring-red-500 flex-shrink-0" {% if apply_youtube %}checked{% endif %}>
+                            <span class="flex items-center gap-1 sm:gap-1.5 md:gap-2.5 text-xs sm:text-sm md:text-base font-semibold text-gray-900 whitespace-nowrap">
+                                <span class="text-lg sm:text-xl md:text-3xl text-red-600"><i class="fab fa-youtube"></i></span>
+                                <span class="hidden sm:inline">YouTube Channel</span>
+                                <span class="sm:hidden">YouTube</span>
                             </span>
                         </label>
-                        <label class="flex items-center gap-4 px-4 py-3 border rounded-lg transition-colors cursor-pointer {% if apply_tiktok %}border-blue-500 bg-blue-50{% else %}border-gray-200 bg-white hover:border-gray-300{% endif %}">
-                            <input type="radio" name="platform" value="tiktok" id="platformTiktok" class="h-4 w-4 text-blue-600 focus:ring-blue-500" {% if apply_tiktok %}checked{% endif %}>
-                            <span class="flex items-center gap-2 text-sm font-medium text-gray-800">
-                                <span class="text-2xl text-gray-900"><i class="fab fa-tiktok"></i></span>
-                                TikTok Channel
+                        <label id="tiktokLabel" class="platform-label flex items-center justify-center gap-1.5 sm:gap-2 md:gap-3 px-2 sm:px-3 md:px-5 py-2.5 sm:py-3 md:py-4 border-2 rounded-xl transition-all duration-200 cursor-pointer {% if apply_tiktok %}border-purple-500 bg-purple-50 shadow-md{% else %}border-gray-300 bg-white hover:border-purple-300 hover:bg-purple-50/50{% endif %}">
+                            <input type="radio" name="platform" value="tiktok" id="platformTiktok" class="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5 text-purple-600 focus:ring-purple-500 flex-shrink-0" {% if apply_tiktok %}checked{% endif %}>
+                            <span class="flex items-center gap-1 sm:gap-1.5 md:gap-2.5 text-xs sm:text-sm md:text-base font-semibold text-gray-900 whitespace-nowrap">
+                                <span class="text-lg sm:text-xl md:text-3xl text-gray-900"><i class="fab fa-tiktok"></i></span>
+                                <span class="hidden sm:inline">TikTok Channel</span>
+                                <span class="sm:hidden">TikTok</span>
                             </span>
                         </label>
                     </div>
-                    <p class="text-xs text-gray-500 mt-3">Select one platform to apply for.</p>
+                    <p class="text-xs text-gray-500 mt-3 sm:mt-4">Select one platform to apply for.</p>
                 </section>
 
-                <section id="youtubeSection" class="platform-section {% if not apply_youtube %}hidden{% endif %} bg-white border border-gray-200 rounded-lg p-6 space-y-6">
-                    <div class="flex items-center gap-2 text-red-600 font-semibold text-sm">
-                        <i class="fab fa-youtube"></i>
+                <section id="youtubeSection" class="platform-section {% if not apply_youtube %}hidden{% endif %} bg-white border-2 border-red-100 rounded-xl p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-5 md:space-y-6 shadow-sm">
+                    <div class="flex items-center gap-2 sm:gap-3 text-red-600 font-bold text-base sm:text-lg mb-2">
+                        <i class="fab fa-youtube text-xl sm:text-2xl"></i>
                         <span>YouTube Channel Details</span>
                     </div>
 
@@ -88,51 +90,51 @@
                     {{ youtube_form.data_consent }}
 
                     <div>
-                        <label for="{{ youtube_form.channel_link.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">Channel Link *</label>
-                        {% render_field youtube_form.channel_link class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" data-required-field="true" %}
+                        <label for="{{ youtube_form.channel_link.id_for_label }}" class="block text-xs sm:text-sm font-semibold text-gray-800 mb-1.5 sm:mb-2">Channel Link *</label>
+                        {% render_field youtube_form.channel_link class="mt-1 block w-full px-3 sm:px-4 py-2 sm:py-2.5 md:py-3 rounded-lg border-2 border-gray-300 bg-gray-50 text-sm sm:text-base text-gray-900 placeholder-gray-400 focus:border-red-500 focus:ring-2 focus:ring-red-500/20 focus:bg-white transition-all duration-200" data-required-field="true" %}
                         {% if youtube_form.channel_link.errors %}
-                        <p class="mt-1 text-sm text-red-600">{{ youtube_form.channel_link.errors.0 }}</p>
+                        <p class="mt-1.5 sm:mt-2 text-xs sm:text-sm text-red-600 font-medium">{{ youtube_form.channel_link.errors.0 }}</p>
                         {% endif %}
-                        <p class="mt-1 text-xs text-gray-500">Enter your YouTube channel URL (e.g., https://www.youtube.com/@channelname).</p>
+                        <p class="mt-1.5 sm:mt-2 text-xs text-gray-500">Enter your YouTube channel URL (e.g., https://www.youtube.com/@channelname).</p>
                     </div>
 
                     <div>
-                        <label for="{{ youtube_form.channel_screenshot.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">Channel Screenshot *</label>
-                        {% render_field youtube_form.channel_screenshot data-required-field="true" %}
+                        <label for="{{ youtube_form.channel_screenshot.id_for_label }}" class="block text-xs sm:text-sm font-semibold text-gray-800 mb-1.5 sm:mb-2">Channel Screenshot *</label>
+                        {% render_field youtube_form.channel_screenshot class="mt-1 block w-full px-3 sm:px-4 py-2 sm:py-2.5 md:py-3 rounded-lg border-2 border-gray-300 bg-gray-50 text-sm sm:text-base text-gray-900 focus:border-red-500 focus:ring-2 focus:ring-red-500/20 focus:bg-white transition-all duration-200" data-required-field="true" %}
                         {% if youtube_form.channel_screenshot.errors %}
-                        <p class="mt-1 text-sm text-red-600">{{ youtube_form.channel_screenshot.errors.0 }}</p>
+                        <p class="mt-1.5 sm:mt-2 text-xs sm:text-sm text-red-600 font-medium">{{ youtube_form.channel_screenshot.errors.0 }}</p>
                         {% endif %}
-                        <p class="mt-1 text-xs text-gray-500">{{ youtube_form.channel_screenshot.help_text }}</p>
+                        <p class="mt-1.5 sm:mt-2 text-xs text-gray-500">{{ youtube_form.channel_screenshot.help_text }}</p>
                     </div>
 
                     <div>
-                        <label for="{{ youtube_form.editing_area.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">Editing Area *</label>
-                        {% render_field youtube_form.editing_area class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" data-required-field="true" %}
+                        <label for="{{ youtube_form.editing_area.id_for_label }}" class="block text-xs sm:text-sm font-semibold text-gray-800 mb-1.5 sm:mb-2">Editing Area *</label>
+                        {% render_field youtube_form.editing_area class="mt-1 block w-full px-3 sm:px-4 py-2 sm:py-2.5 md:py-3 rounded-lg border-2 border-gray-300 bg-gray-50 text-sm sm:text-base text-gray-900 focus:border-red-500 focus:ring-2 focus:ring-red-500/20 focus:bg-white transition-all duration-200" data-required-field="true" %}
                         {% if youtube_form.editing_area.errors %}
-                        <p class="mt-1 text-sm text-red-600">{{ youtube_form.editing_area.errors.0 }}</p>
+                        <p class="mt-1.5 sm:mt-2 text-xs sm:text-sm text-red-600 font-medium">{{ youtube_form.editing_area.errors.0 }}</p>
                         {% endif %}
                     </div>
 
                     <div id="youtubeEditingAreaOther" class="{% if youtube_form.editing_area.value != 'others' %}hidden{% endif %}">
-                        <label for="{{ youtube_form.editing_area_other.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">Specify Your Editing Area *</label>
-                        {% render_field youtube_form.editing_area_other class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" data-required-field="true" %}
+                        <label for="{{ youtube_form.editing_area_other.id_for_label }}" class="block text-xs sm:text-sm font-semibold text-gray-800 mb-1.5 sm:mb-2">Specify Your Editing Area *</label>
+                        {% render_field youtube_form.editing_area_other class="mt-1 block w-full px-3 sm:px-4 py-2 sm:py-2.5 md:py-3 rounded-lg border-2 border-gray-300 bg-gray-50 text-sm sm:text-base text-gray-900 placeholder-gray-400 focus:border-red-500 focus:ring-2 focus:ring-red-500/20 focus:bg-white transition-all duration-200" data-required-field="true" %}
                         {% if youtube_form.editing_area_other.errors %}
-                        <p class="mt-1 text-sm text-red-600">{{ youtube_form.editing_area_other.errors.0 }}</p>
+                        <p class="mt-1.5 sm:mt-2 text-xs sm:text-sm text-red-600 font-medium">{{ youtube_form.editing_area_other.errors.0 }}</p>
                         {% endif %}
                     </div>
 
                     <div>
-                        <label for="{{ youtube_form.editing_tool.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">Editing Software *</label>
-                        {% render_field youtube_form.editing_tool data-required-field="true" %}
+                        <label for="{{ youtube_form.editing_tool.id_for_label }}" class="block text-xs sm:text-sm font-semibold text-gray-800 mb-1.5 sm:mb-2">Editing Software *</label>
+                        {% render_field youtube_form.editing_tool class="mt-1 block w-full px-3 sm:px-4 py-2 sm:py-2.5 md:py-3 rounded-lg border-2 border-gray-300 bg-gray-50 text-sm sm:text-base text-gray-900 focus:border-red-500 focus:ring-2 focus:ring-red-500/20 focus:bg-white transition-all duration-200" data-required-field="true" %}
                         {% if youtube_form.editing_tool.errors %}
-                        <p class="mt-1 text-sm text-red-600">{{ youtube_form.editing_tool.errors.0 }}</p>
+                        <p class="mt-1.5 sm:mt-2 text-xs sm:text-sm text-red-600 font-medium">{{ youtube_form.editing_tool.errors.0 }}</p>
                         {% endif %}
                     </div>
                 </section>
 
-                <section id="tiktokSection" class="platform-section {% if not apply_tiktok %}hidden{% endif %} bg-white border border-gray-200 rounded-lg p-6 space-y-6">
-                    <div class="flex items-center gap-2 text-gray-900 font-semibold text-sm">
-                        <i class="fab fa-tiktok"></i>
+                <section id="tiktokSection" class="platform-section {% if not apply_tiktok %}hidden{% endif %} bg-white border-2 border-purple-100 rounded-xl p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-5 md:space-y-6 shadow-sm">
+                    <div class="flex items-center gap-2 sm:gap-3 text-gray-900 font-bold text-base sm:text-lg mb-2">
+                        <i class="fab fa-tiktok text-xl sm:text-2xl"></i>
                         <span>TikTok Channel Details</span>
                     </div>
 
@@ -141,57 +143,57 @@
                     {{ tiktok_form.data_consent }}
 
                     <div>
-                        <label for="{{ tiktok_form.channel_link.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">Channel Link *</label>
-                        {% render_field tiktok_form.channel_link class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" data-required-field="true" %}
+                        <label for="{{ tiktok_form.channel_link.id_for_label }}" class="block text-xs sm:text-sm font-semibold text-gray-800 mb-1.5 sm:mb-2">Channel Link *</label>
+                        {% render_field tiktok_form.channel_link class="mt-1 block w-full px-3 sm:px-4 py-2 sm:py-2.5 md:py-3 rounded-lg border-2 border-gray-300 bg-gray-50 text-sm sm:text-base text-gray-900 placeholder-gray-400 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 focus:bg-white transition-all duration-200" data-required-field="true" %}
                         {% if tiktok_form.channel_link.errors %}
-                        <p class="mt-1 text-sm text-red-600">{{ tiktok_form.channel_link.errors.0 }}</p>
+                        <p class="mt-1.5 sm:mt-2 text-xs sm:text-sm text-red-600 font-medium">{{ tiktok_form.channel_link.errors.0 }}</p>
                         {% endif %}
-                        <p class="mt-1 text-xs text-gray-500">Enter your TikTok profile URL (e.g., https://www.tiktok.com/@username).</p>
+                        <p class="mt-1.5 sm:mt-2 text-xs text-gray-500">Enter your TikTok profile URL (e.g., https://www.tiktok.com/@username).</p>
                     </div>
 
                     <div>
-                        <label for="{{ tiktok_form.channel_screenshot.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">Channel Screenshot *</label>
-                        {% render_field tiktok_form.channel_screenshot data-required-field="true" %}
+                        <label for="{{ tiktok_form.channel_screenshot.id_for_label }}" class="block text-xs sm:text-sm font-semibold text-gray-800 mb-1.5 sm:mb-2">Channel Screenshot *</label>
+                        {% render_field tiktok_form.channel_screenshot class="mt-1 block w-full px-3 sm:px-4 py-2 sm:py-2.5 md:py-3 rounded-lg border-2 border-gray-300 bg-gray-50 text-sm sm:text-base text-gray-900 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 focus:bg-white transition-all duration-200" data-required-field="true" %}
                         {% if tiktok_form.channel_screenshot.errors %}
-                        <p class="mt-1 text-sm text-red-600">{{ tiktok_form.channel_screenshot.errors.0 }}</p>
+                        <p class="mt-1.5 sm:mt-2 text-xs sm:text-sm text-red-600 font-medium">{{ tiktok_form.channel_screenshot.errors.0 }}</p>
                         {% endif %}
-                        <p class="mt-1 text-xs text-gray-500">{{ tiktok_form.channel_screenshot.help_text }}</p>
+                        <p class="mt-1.5 sm:mt-2 text-xs text-gray-500">{{ tiktok_form.channel_screenshot.help_text }}</p>
                     </div>
 
                     <div>
-                        <label for="{{ tiktok_form.editing_area.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">Editing Area *</label>
-                        {% render_field tiktok_form.editing_area class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" data-required-field="true" %}
+                        <label for="{{ tiktok_form.editing_area.id_for_label }}" class="block text-xs sm:text-sm font-semibold text-gray-800 mb-1.5 sm:mb-2">Editing Area *</label>
+                        {% render_field tiktok_form.editing_area class="mt-1 block w-full px-3 sm:px-4 py-2 sm:py-2.5 md:py-3 rounded-lg border-2 border-gray-300 bg-gray-50 text-sm sm:text-base text-gray-900 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 focus:bg-white transition-all duration-200" data-required-field="true" %}
                         {% if tiktok_form.editing_area.errors %}
-                        <p class="mt-1 text-sm text-red-600">{{ tiktok_form.editing_area.errors.0 }}</p>
+                        <p class="mt-1.5 sm:mt-2 text-xs sm:text-sm text-red-600 font-medium">{{ tiktok_form.editing_area.errors.0 }}</p>
                         {% endif %}
                     </div>
 
                     <div id="tiktokEditingAreaOther" class="{% if tiktok_form.editing_area.value != 'others' %}hidden{% endif %}">
-                        <label for="{{ tiktok_form.editing_area_other.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">Specify Your Editing Area *</label>
-                        {% render_field tiktok_form.editing_area_other class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" data-required-field="true" %}
+                        <label for="{{ tiktok_form.editing_area_other.id_for_label }}" class="block text-xs sm:text-sm font-semibold text-gray-800 mb-1.5 sm:mb-2">Specify Your Editing Area *</label>
+                        {% render_field tiktok_form.editing_area_other class="mt-1 block w-full px-3 sm:px-4 py-2 sm:py-2.5 md:py-3 rounded-lg border-2 border-gray-300 bg-gray-50 text-sm sm:text-base text-gray-900 placeholder-gray-400 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 focus:bg-white transition-all duration-200" data-required-field="true" %}
                         {% if tiktok_form.editing_area_other.errors %}
-                        <p class="mt-1 text-sm text-red-600">{{ tiktok_form.editing_area_other.errors.0 }}</p>
+                        <p class="mt-1.5 sm:mt-2 text-xs sm:text-sm text-red-600 font-medium">{{ tiktok_form.editing_area_other.errors.0 }}</p>
                         {% endif %}
                     </div>
 
                     <div>
-                        <label for="{{ tiktok_form.editing_tool.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">Editing Software *</label>
-                        {% render_field tiktok_form.editing_tool data-required-field="true" %}
+                        <label for="{{ tiktok_form.editing_tool.id_for_label }}" class="block text-xs sm:text-sm font-semibold text-gray-800 mb-1.5 sm:mb-2">Editing Software *</label>
+                        {% render_field tiktok_form.editing_tool class="mt-1 block w-full px-3 sm:px-4 py-2 sm:py-2.5 md:py-3 rounded-lg border-2 border-gray-300 bg-gray-50 text-sm sm:text-base text-gray-900 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 focus:bg-white transition-all duration-200" data-required-field="true" %}
                         {% if tiktok_form.editing_tool.errors %}
-                        <p class="mt-1 text-sm text-red-600">{{ tiktok_form.editing_tool.errors.0 }}</p>
+                        <p class="mt-1.5 sm:mt-2 text-xs sm:text-sm text-red-600 font-medium">{{ tiktok_form.editing_tool.errors.0 }}</p>
                         {% endif %}
                     </div>
                 </section>
 
-                <section class="bg-white border border-gray-200 rounded-lg p-6">
-                    <div class="flex items-start gap-3">
-                        <input type="checkbox" name="data_consent" id="dataConsent" class="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500" {% if data_consent_checked %}checked{% endif %}>
-                        <label for="dataConsent" class="text-sm text-gray-700">I consent to my data being displayed on this website and confirm it will not be used for any misuse *</label>
+                <section class="bg-gradient-to-br from-gray-50 to-blue-50 border-2 border-gray-200 rounded-xl p-4 sm:p-5 md:p-6 shadow-sm">
+                    <div class="flex items-start gap-3 sm:gap-4">
+                        <input type="checkbox" name="data_consent" id="dataConsent" class="mt-0.5 sm:mt-1 h-4 w-4 sm:h-5 sm:w-5 rounded border-2 border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2" {% if data_consent_checked %}checked{% endif %}>
+                        <label for="dataConsent" class="text-xs sm:text-sm font-medium text-gray-800 leading-relaxed">I consent to my data being displayed on this website and confirm it will not be used for any misuse *</label>
                     </div>
                 </section>
 
-                <div class="pt-2">
-                    <button type="submit" class="w-full px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transform hover:scale-105 transition-all duration-300 shadow-lg">
+                <div class="pt-3 sm:pt-4">
+                    <button type="submit" class="w-full px-4 sm:px-6 py-3 sm:py-3.5 md:py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold text-sm sm:text-base hover:from-blue-700 hover:to-indigo-700 transform hover:scale-[1.02] transition-all duration-300 shadow-lg hover:shadow-xl">
                         Continue to Confirmation
                     </button>
                 </div>
@@ -221,16 +223,28 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function updateSections() {
         const selectedPlatform = document.querySelector('input[name="platform"]:checked')?.value;
+        const youtubeLabel = document.getElementById('youtubeLabel');
+        const tiktokLabel = document.getElementById('tiktokLabel');
         
         if (selectedPlatform === 'youtube') {
             youtubeSection.classList.remove('hidden');
             tiktokSection.classList.add('hidden');
+            // Update button styles
+            youtubeLabel.classList.remove('border-gray-300', 'bg-white', 'hover:border-red-300', 'hover:bg-red-50/50');
+            youtubeLabel.classList.add('border-red-500', 'bg-red-50', 'shadow-md');
+            tiktokLabel.classList.remove('border-purple-500', 'bg-purple-50', 'shadow-md');
+            tiktokLabel.classList.add('border-gray-300', 'bg-white', 'hover:border-purple-300', 'hover:bg-purple-50/50');
             // Set required fields
             youtubeSection.querySelectorAll('[data-required-field="true"]').forEach(field => field.required = true);
             tiktokSection.querySelectorAll('[data-required-field="true"]').forEach(field => field.required = false);
         } else if (selectedPlatform === 'tiktok') {
             youtubeSection.classList.add('hidden');
             tiktokSection.classList.remove('hidden');
+            // Update button styles
+            tiktokLabel.classList.remove('border-gray-300', 'bg-white', 'hover:border-purple-300', 'hover:bg-purple-50/50');
+            tiktokLabel.classList.add('border-purple-500', 'bg-purple-50', 'shadow-md');
+            youtubeLabel.classList.remove('border-red-500', 'bg-red-50', 'shadow-md');
+            youtubeLabel.classList.add('border-gray-300', 'bg-white', 'hover:border-red-300', 'hover:bg-red-50/50');
             // Set required fields
             youtubeSection.querySelectorAll('[data-required-field="true"]').forEach(field => field.required = false);
             tiktokSection.querySelectorAll('[data-required-field="true"]').forEach(field => field.required = true);
