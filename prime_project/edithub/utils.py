@@ -1767,7 +1767,8 @@ def calculate_tiktok_points(views: int, likes: int, comments: int, follower_coun
 
 def get_week_start_end(now: datetime = None) -> Tuple[datetime, datetime]:
     """
-    Get the current competition week's start (Monday 00:00) and end (Friday 23:59).
+    Get the current competition week's start (Monday 00:00 UTC) and end (Sunday 23:59 UTC).
+    This is the full display week (Mon-Sun).
     
     Args:
         now: Optional datetime to use as reference. Defaults to current time.
@@ -1782,10 +1783,34 @@ def get_week_start_end(now: datetime = None) -> Tuple[datetime, datetime]:
     days_since_monday = (now.weekday()) % 7
     week_start = (now - timedelta(days=days_since_monday)).replace(hour=0, minute=0, second=0, microsecond=0)
     
-    # Get Friday 23:59:59 of the same week
-    week_end = week_start + timedelta(days=4, hours=23, minutes=59, seconds=59)
+    # Get Sunday 23:59:59 of the same week (full week display)
+    week_end = week_start + timedelta(days=6, hours=23, minutes=59, seconds=59)
     
     return week_start, week_end
+
+
+def get_competition_end(now: datetime = None) -> datetime:
+    """
+    Get the competition end time (Friday 23:59 UTC).
+    Points are only calculated/updated Monday-Friday.
+    
+    Args:
+        now: Optional datetime to use as reference. Defaults to current time.
+    
+    Returns:
+        Competition end datetime (Friday 23:59:59)
+    """
+    if now is None:
+        now = datetime.now(timezone.utc)
+    
+    # Get Monday of current week
+    days_since_monday = (now.weekday()) % 7
+    week_start = (now - timedelta(days=days_since_monday)).replace(hour=0, minute=0, second=0, microsecond=0)
+    
+    # Get Friday 23:59:59 of the same week
+    competition_end = week_start + timedelta(days=4, hours=23, minutes=59, seconds=59)
+    
+    return competition_end
 
 
 def get_competition_state(now: datetime = None) -> Dict[str, any]:
@@ -1794,34 +1819,39 @@ def get_competition_state(now: datetime = None) -> Dict[str, any]:
     
     Returns:
         Dict with:
-        - 'state': 'live' (Mon-Fri) or 'winners' (Sat-Sun)
-        - 'week_start': datetime of Monday 00:00
-        - 'week_end': datetime of Friday 23:59
-        - 'time_remaining': timedelta until end (if live)
-        - 'next_week_start': datetime of next Monday 00:00 (if winners)
+        - 'state': 'live' (Mon-Fri, points updating) or 'results' (Sat-Sun, frozen rankings)
+        - 'week_start': datetime of Monday 00:00 UTC
+        - 'week_end': datetime of Sunday 23:59 UTC (full display week)
+        - 'competition_end': datetime of Friday 23:59 UTC (when points stop updating)
+        - 'time_remaining': timedelta until competition end (if live)
+        - 'next_week_start': datetime of next Monday 00:00 UTC
     """
     if now is None:
         now = datetime.now(timezone.utc)
     
-    week_start, week_end = get_week_start_end(now)
+    week_start, week_end = get_week_start_end(now)  # Full week (Mon-Sun)
+    competition_end = get_competition_end(now)  # Competition end (Fri)
     next_week_start = week_start + timedelta(days=7)
     
-    if now < week_end:
-        # Competition is live (Monday to Friday)
-        time_remaining = week_end - now
+    # Check if we're in the competition period (Mon-Fri) or results period (Sat-Sun)
+    if now <= competition_end:
+        # Competition is live (Monday to Friday) - points are updating
+        time_remaining = competition_end - now
         return {
             'state': 'live',
             'week_start': week_start,
-            'week_end': week_end,
+            'week_end': week_end,  # Full week end (Sunday)
+            'competition_end': competition_end,  # Competition end (Friday)
             'time_remaining': time_remaining,
             'next_week_start': next_week_start,
         }
     else:
-        # Showing winners (Saturday to Sunday)
+        # Showing results (Saturday to Sunday) - rankings are frozen
         return {
-            'state': 'winners',
+            'state': 'results',
             'week_start': week_start,
-            'week_end': week_end,
+            'week_end': week_end,  # Full week end (Sunday)
+            'competition_end': competition_end,  # Competition end (Friday)
             'next_week_start': next_week_start,
             'time_until_next': next_week_start - now,
         }

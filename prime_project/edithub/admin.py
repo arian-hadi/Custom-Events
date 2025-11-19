@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.utils.html import mark_safe
 
-from .models import EditorApplication
+from .models import EditorApplication, EditSubmission, EditUpvote, EditReport
 
 
 @admin.register(EditorApplication)
@@ -73,3 +73,33 @@ class EditorApplicationAdmin(admin.ModelAdmin):
             app.save()
         self.message_user(request, f'{updated} applications rejected.')
     reject_applications.short_description = "Reject selected applications"
+
+
+@admin.register(EditSubmission)
+class EditSubmissionAdmin(admin.ModelAdmin):
+    list_display = (
+        'id', 'user', 'channel_name', 'channel_type', 'scheduled_week',
+        'status', 'submitted_date', 'upvote_count', 'report_count', 'is_featured'
+    )
+    list_filter = (
+        'channel_type', 'status', 'scheduled_week', 'is_featured', 'week_rank'
+    )
+    search_fields = ('user__username', 'channel_name', 'video_url')
+    readonly_fields = ('submitted_date', 'updated_date', 'verified_date', 'upvote_count', 'report_count')
+    date_hierarchy = 'submitted_date'
+
+
+@admin.register(EditUpvote)
+class EditUpvoteAdmin(admin.ModelAdmin):
+    list_display = ('user', 'edit_submission', 'is_active', 'created_date')
+    list_filter = ('is_active', 'created_date')
+    search_fields = ('user__username', 'edit_submission__channel_name')
+    readonly_fields = ('created_date',)
+
+
+@admin.register(EditReport)
+class EditReportAdmin(admin.ModelAdmin):
+    list_display = ('edit_submission', 'user', 'reason', 'is_active', 'is_resolved', 'created_date')
+    list_filter = ('reason', 'is_active', 'is_resolved')
+    search_fields = ('edit_submission__channel_name', 'user__username', 'description')
+    readonly_fields = ('created_date', 'resolved_date')

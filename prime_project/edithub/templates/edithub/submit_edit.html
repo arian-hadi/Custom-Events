@@ -32,8 +32,8 @@
                             type="button"
                             id="youtubeTab"
                             onclick="switchPlatform('youtube')"
-                            class="platform-tab px-4 md:px-6 py-2 md:py-2.5 rounded-full font-semibold text-sm md:text-base transition-all duration-300 flex items-center gap-2 justify-center min-w-[100px] md:min-w-[120px] {% if youtube_app %}bg-white text-gray-900 shadow-sm{% else %}text-gray-600 hover:text-gray-900 hover:bg-gray-50{% endif %}">
-                            <svg class="w-4 h-4 md:w-5 md:h-5 text-red-600 platform-logo-active" fill="currentColor" viewBox="0 0 24 24">
+                            class="platform-tab px-4 md:px-6 py-2 md:py-2.5 rounded-full font-semibold text-sm md:text-base transition-all duration-300 flex items-center gap-2 justify-center min-w-[100px] md:min-w-[120px] {% if default_platform == 'youtube' %}bg-white text-gray-900 shadow-sm{% else %}text-gray-600 hover:text-gray-900 hover:bg-gray-50{% endif %}">
+                            <svg class="w-4 h-4 md:w-5 md:h-5 text-red-600 {% if default_platform == 'youtube' %}platform-logo-active{% else %}platform-logo-inactive{% endif %}" fill="currentColor" viewBox="0 0 24 24">
                                 <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
                             </svg>
                             <span class="hidden sm:inline">YouTube</span>
@@ -43,8 +43,8 @@
                             type="button"
                             id="tiktokTab"
                             onclick="switchPlatform('tiktok')"
-                            class="platform-tab px-4 md:px-6 py-2 md:py-2.5 rounded-full font-semibold text-sm md:text-base transition-all duration-300 flex items-center gap-2 justify-center min-w-[100px] md:min-w-[120px] {% if not youtube_app and tiktok_app %}bg-white text-gray-900 shadow-sm{% else %}text-gray-600 hover:text-gray-900 hover:bg-gray-50{% endif %}">
-                            <svg class="w-4 h-4 md:w-5 md:h-5 text-purple-600 {% if not youtube_app and tiktok_app %}platform-logo-active{% else %}platform-logo-inactive{% endif %}" fill="currentColor" viewBox="0 0 24 24">
+                            class="platform-tab px-4 md:px-6 py-2 md:py-2.5 rounded-full font-semibold text-sm md:text-base transition-all duration-300 flex items-center gap-2 justify-center min-w-[100px] md:min-w-[120px] {% if default_platform == 'tiktok' %}bg-white text-gray-900 shadow-sm{% else %}text-gray-600 hover:text-gray-900 hover:bg-gray-50{% endif %}">
+                            <svg class="w-4 h-4 md:w-5 md:h-5 text-purple-600 {% if default_platform == 'tiktok' %}platform-logo-active{% else %}platform-logo-inactive{% endif %}" fill="currentColor" viewBox="0 0 24 24">
                                 <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
                             </svg>
                             <span class="hidden sm:inline">TikTok</span>
@@ -54,7 +54,7 @@
                 </div>
 
                 <!-- YouTube Section -->
-                <div id="youtubeSection" class="platform-section {% if not youtube_app and tiktok_app %}hidden{% endif %}">
+                <div id="youtubeSection" class="platform-section {% if default_platform != 'youtube' %}hidden{% endif %}">
                     <div class="bg-white rounded-xl shadow-lg border-2 border-red-100 overflow-hidden">
                         <div class="bg-gradient-to-r from-red-600 to-red-700 px-6 py-4">
                             <div class="flex items-center gap-3">
@@ -65,6 +65,8 @@
                         
                         <div class="p-6">
                             {% if youtube_app %}
+                                <p class="text-xs text-gray-500 mb-4">You're submitting an edit for the week of <span class="font-semibold text-gray-800">{{ target_week_label }}</span>.</p>
+
                                 <!-- Approved Channel Info -->
                                 <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
                                     <div class="flex items-center gap-3 mb-3">
@@ -86,13 +88,13 @@
                                     </p>
                                 </div>
 
-                                {% if youtube_submitted_this_week %}
+                                {% if youtube_future_submission %}
                                 <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
                                     <div class="flex items-start gap-2">
                                         <i class="fas fa-info-circle text-yellow-600 mt-0.5"></i>
                                         <div>
                                             <p class="text-sm font-semibold text-yellow-800">Already Submitted</p>
-                                            <p class="text-xs text-yellow-700 mt-1">You have already submitted a YouTube edit for this week. You can submit again next week.</p>
+                                            <p class="text-xs text-yellow-700 mt-1">You have already submitted a YouTube edit for the week of {{ target_week_label }}.</p>
                                         </div>
                                     </div>
                                 </div>
@@ -132,15 +134,15 @@
                                         {% endif %}
                                     </div>
 
-                                    <button type="submit" {% if youtube_submitted_this_week %}disabled{% endif %} 
+                                    <button type="submit" 
                                             class="w-full px-6 py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                                        {% if youtube_submitted_this_week %}
-                                        Already Submitted
-                                        {% else %}
                                         Submit YouTube Edit
-                                        {% endif %}
                                     </button>
                                 </form>
+                                {% elif youtube_future_submission %}
+                                <div class="text-center py-6">
+                                    <p class="text-sm text-gray-600">Come back after results are announced to submit for the following week.</p>
+                                </div>
                                 {% endif %}
                             {% else %}
                                 <!-- Not Applied Message -->
@@ -164,7 +166,7 @@
                 </div>
 
                 <!-- TikTok Section -->
-                <div id="tiktokSection" class="platform-section {% if youtube_app or not tiktok_app %}hidden{% endif %}">
+                <div id="tiktokSection" class="platform-section {% if default_platform != 'tiktok' %}hidden{% endif %}">
                     <div class="bg-white rounded-xl shadow-lg border-2 border-purple-100 overflow-hidden">
                         <div class="bg-gradient-to-r from-gray-900 to-black px-6 py-4">
                             <div class="flex items-center gap-3">
@@ -175,6 +177,8 @@
                         
                         <div class="p-6">
                             {% if tiktok_app %}
+                                <p class="text-xs text-gray-500 mb-4">You're submitting an edit for the week of <span class="font-semibold text-gray-800">{{ target_week_label }}</span>.</p>
+
                                 <!-- Approved Channel Info -->
                                 <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
                                     <div class="flex items-center gap-3 mb-3">
@@ -196,13 +200,13 @@
                                     </p>
                                 </div>
 
-                                {% if tiktok_submitted_this_week %}
+                                {% if tiktok_future_submission %}
                                 <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
                                     <div class="flex items-start gap-2">
                                         <i class="fas fa-info-circle text-yellow-600 mt-0.5"></i>
                                         <div>
                                             <p class="text-sm font-semibold text-yellow-800">Already Submitted</p>
-                                            <p class="text-xs text-yellow-700 mt-1">You have already submitted a TikTok edit for this week. You can submit again next week.</p>
+                                            <p class="text-xs text-yellow-700 mt-1">You have already submitted a TikTok edit for the week of {{ target_week_label }}.</p>
                                         </div>
                                     </div>
                                 </div>
@@ -242,15 +246,15 @@
                                         {% endif %}
                                     </div>
 
-                                    <button type="submit" {% if tiktok_submitted_this_week %}disabled{% endif %} 
+                                    <button type="submit" 
                                             class="w-full px-6 py-3 bg-gray-900 text-white rounded-lg font-semibold hover:bg-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                                        {% if tiktok_submitted_this_week %}
-                                        Already Submitted
-                                        {% else %}
                                         Submit TikTok Edit
-                                        {% endif %}
                                     </button>
                                 </form>
+                                {% elif tiktok_future_submission %}
+                                <div class="text-center py-6">
+                                    <p class="text-sm text-gray-600">Come back after results are announced to submit for the following week.</p>
+                                </div>
                                 {% endif %}
                             {% else %}
                                 <!-- Not Applied Message -->
@@ -332,13 +336,10 @@ function switchPlatform(platform) {
 
 // Initialize on page load - set correct initial state
 document.addEventListener('DOMContentLoaded', function() {
-    {% if youtube_app %}
-        // If YouTube app exists, show YouTube by default
-        switchPlatform('youtube');
-    {% elif tiktok_app %}
-        // If only TikTok app exists, show TikTok
-        switchPlatform('tiktok');
-    {% endif %}
+    const defaultPlatform = '{{ default_platform }}';
+    if (defaultPlatform) {
+        switchPlatform(defaultPlatform);
+    }
 });
 </script>
 {% endblock %}

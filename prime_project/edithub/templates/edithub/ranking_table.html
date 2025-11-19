@@ -439,9 +439,9 @@
                         Ends in {{ countdown }}
                     </p>
                     {% endif %}
-                {% elif competition_state and competition_state.state == 'winners' %}
-                    <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-2">🏆 Winners of the Week</h2>
-                    <p class="text-gray-600">Top 3 winners from last week's competition</p>
+                {% elif competition_state and competition_state.state == 'results' %}
+                    <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-2">🏆 Results of the Week</h2>
+                    <p class="text-gray-600">Top 3 results from this week's competition (rankings are frozen)</p>
                     <p class="text-sm text-gray-500 mt-2">New competition starts Monday at 00:00</p>
                 {% else %}
                     <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-2">Edit of the Week</h2>
@@ -973,11 +973,11 @@
         const countdownElement = document.getElementById('countdown-timer');
         if (!countdownElement) return;
 
-        const weekEnd = new Date('{{ week_end_iso }}');
+        const competitionEnd = new Date('{{ competition_end_iso }}');
         
         function updateCountdown() {
             const now = new Date();
-            const diff = weekEnd - now;
+            const diff = competitionEnd - now;
             
             if (diff <= 0) {
                 countdownElement.textContent = 'Competition Ended';
@@ -1027,7 +1027,7 @@
             }
         });
     })();
-    {% elif competition_state and competition_state.state == 'winners' %}
+    {% elif competition_state and competition_state.state == 'results' %}
     (function() {
         // Auto-refresh on Monday at 00:00 to start new competition
         const nextWeekStart = new Date('{{ next_week_start_iso }}');

@@ -11,7 +11,14 @@ from django.db.models import Q
 from django.core.paginator import Paginator
 from .models import EditorApplication, EditSubmission, EditUpvote, EditReport
 from .forms import EditorApplicationForm, EditSubmissionForm, EditReportForm
-from .utils import fetch_youtube_channel_data, fetch_tiktok_channel_data, validate_channel_url
+from .utils import (
+    fetch_youtube_channel_data,
+    fetch_tiktok_channel_data,
+    validate_channel_url,
+    get_competition_state,
+    format_countdown,
+    get_week_start_end,
+)
 from accounts.models import CustomUser
 from datetime import datetime, timedelta, timezone
 import json
@@ -212,7 +219,6 @@ class RankingTableView(ListView):
         # Competition runs Monday 00:00 to Friday 23:59
         # Saturday-Sunday shows winners only
         try:
-            from .utils import get_competition_state, format_countdown, get_week_start_end
             competition_state = get_competition_state()
             week_start, week_end = get_week_start_end()
         except Exception as e:
@@ -235,15 +241,23 @@ class RankingTableView(ListView):
         if edit_platform not in ['youtube', 'tiktok']:
             edit_platform = 'youtube'
         
-        # Filter edits by current week
+        # Filter edits by previous week (full week Mon-Sun for display)
+        # Current week's submissions are queued for next week, so we show the previous week's competition
+        display_week_start = week_start - timedelta(days=7)  # Previous week
+        display_week_end = display_week_start + timedelta(days=6, hours=23, minutes=59, seconds=59)  # Previous week Sunday
+        display_week_start_date = display_week_start.date()
+        competition_end = competition_state.get('competition_end', week_start + timedelta(days=4, hours=23, minutes=59, seconds=59))
+        
         if competition_state['state'] == 'live':
-            # Show live rankings for current week
+            # Show live rankings for previous week (Mon-Fri: points updating, Sat-Sun: frozen)
+            # Display edits from the previous week (Mon-Sun)
             week_edits_qs = EditSubmission.objects.filter(
                 status='verified',
-                channel_type=edit_platform,
-                submitted_date__gte=week_start,
-                submitted_date__lte=week_end
-            ).order_by('-calculated_points', '-submitted_date')
+                channel_type=edit_platform
+            ).filter(
+                Q(scheduled_week=display_week_start_date) |
+                (Q(scheduled_week__isnull=True) & Q(submitted_date__gte=display_week_start) & Q(submitted_date__lte=display_week_end))
+            ).order_by('-calculated_points', 'submitted_date')
             
             # If we have fewer than 3 edits from this week, fill with top edits from all time
             week_edits = list(week_edits_qs[:3])
@@ -258,15 +272,15 @@ class RankingTableView(ListView):
             else:
                 top_three = week_edits
         else:
-            # Show winners from last week (the week that just ended)
-            last_week_start = week_start - timedelta(days=7)
-            last_week_end = week_end - timedelta(days=2)  # Friday of last week
+            # Show results from previous week (Sat-Sun: frozen rankings)
+            # Display edits from the previous week (Mon-Sun)
             top_edits_qs = EditSubmission.objects.filter(
                 status='verified',
-                channel_type=edit_platform,
-                submitted_date__gte=last_week_start,
-                submitted_date__lte=last_week_end
-            ).order_by('-calculated_points', '-submitted_date')
+                channel_type=edit_platform
+            ).filter(
+                Q(scheduled_week=display_week_start_date) |
+                (Q(scheduled_week__isnull=True) & Q(submitted_date__gte=display_week_start) & Q(submitted_date__lte=display_week_end))
+            ).order_by('-calculated_points', 'submitted_date')
             top_three = list(top_edits_qs[:3])
         # Attach thumbnails via oEmbed/ID extraction for custom cards
         from .utils import fetch_tiktok_oembed, youtube_thumbnail_from_url
@@ -308,19 +322,22 @@ class RankingTableView(ListView):
         # Convert datetime objects to ISO format for JavaScript
         try:
             if competition_state['state'] == 'live':
-                context['week_end_iso'] = week_end.isoformat()
+                # Show countdown to competition end (Friday)
+                context['competition_end_iso'] = competition_end.isoformat()
             else:
+                # Show countdown to next week start (Monday)
                 context['next_week_start_iso'] = competition_state.get('next_week_start', week_start + timedelta(days=7)).isoformat()
         except:
-            context['week_end_iso'] = week_end.isoformat() if 'week_end' in locals() else None
+            context['competition_end_iso'] = competition_end.isoformat() if 'competition_end' in locals() else None
         
-        # Check if user has already submitted an edit for the current week
+        # Check if user has already submitted an edit for the next week
+        # (submissions are queued for next week, so we check next week's start date)
         user_has_submitted_this_week = False
         if self.request.user.is_authenticated and competition_state['state'] == 'live':
+            next_week_start_date = (week_start + timedelta(days=7)).date()
             user_has_submitted_this_week = EditSubmission.objects.filter(
                 user=self.request.user,
-                submitted_date__gte=week_start,
-                submitted_date__lte=week_end
+                scheduled_week=next_week_start_date
             ).exists()
         context['user_has_submitted_this_week'] = user_has_submitted_this_week
         
@@ -710,11 +727,12 @@ def get_user_stats_ajax(request):
         user_edits = EditSubmission.objects.filter(
             user=edit_user,
             status='verified'
-        ).order_by('submitted_date')
+        ).order_by('scheduled_week', 'submitted_date')
         
         months_checked = set()
         for edit in user_edits:
-            year_month = (edit.submitted_date.year, edit.submitted_date.month)
+            reference_date = edit.scheduled_week or edit.submitted_date.date()
+            year_month = (reference_date.year, reference_date.month)
             if year_month in months_checked:
                 continue
             months_checked.add(year_month)
@@ -725,8 +743,8 @@ def get_user_stats_ajax(request):
             
             top_edit = EditSubmission.objects.filter(
                 status='verified',
-                submitted_date__gte=first_day,
-                submitted_date__lte=last_day
+                scheduled_week__gte=first_day.date(),
+                scheduled_week__lte=last_day.date()
             ).order_by('-calculated_points', 'submitted_date').first()
             
             if top_edit and top_edit.user == edit_user:
@@ -1041,14 +1059,12 @@ def submit_edit(request):
         messages.error(request, "Only regular users can submit edits.")
         return redirect('edithub:ranking_table')
     
-    # Check if user has approved EditorApplications for YouTube and TikTok separately
     youtube_app = EditorApplication.objects.filter(
         user=request.user,
         channel_type='youtube',
         status='accepted',
         removal_requested=False
     ).first()
-    
     tiktok_app = EditorApplication.objects.filter(
         user=request.user,
         channel_type='tiktok',
@@ -1056,35 +1072,37 @@ def submit_edit(request):
         removal_requested=False
     ).first()
     
-    # Check if user has at least one approved application
     if not youtube_app and not tiktok_app:
         messages.error(request, "You must have an approved channel application before submitting edits. Please apply first.")
         return redirect('edithub:apply')
     
-    # Get current week start and end for submission limit checking
     from .utils import get_week_start_end
     from django.utils import timezone
-    week_start, week_end = get_week_start_end()
     
-    # Check if user has already submitted for each platform this week
-    youtube_submitted_this_week = False
-    tiktok_submitted_this_week = False
+    week_start_dt, week_end_dt = get_week_start_end()
+    current_week_start = week_start_dt.date()
+    next_week_start = (week_start_dt + timedelta(days=7)).date()
+    next_week_end = next_week_start + timedelta(days=4)
+    next_week_label = f"{next_week_start.strftime('%b %d')} – {next_week_end.strftime('%b %d')}"
+    
+    youtube_future_submission = False
+    tiktok_future_submission = False
     
     if youtube_app:
-        youtube_submitted_this_week = EditSubmission.objects.filter(
+        youtube_future_submission = EditSubmission.objects.filter(
             user=request.user,
             channel_type='youtube',
-            submitted_date__gte=week_start,
-            submitted_date__lte=week_end
+            scheduled_week=next_week_start
         ).exists()
-    
     if tiktok_app:
-        tiktok_submitted_this_week = EditSubmission.objects.filter(
+        tiktok_future_submission = EditSubmission.objects.filter(
             user=request.user,
             channel_type='tiktok',
-            submitted_date__gte=week_start,
-            submitted_date__lte=week_end
+            scheduled_week=next_week_start
         ).exists()
+    
+    youtube_form = None
+    tiktok_form = None
     
     if request.method == 'POST':
         platform = request.POST.get('platform', '').lower()
@@ -1098,20 +1116,14 @@ def submit_edit(request):
             messages.error(request, "Invalid platform or you don't have an approved application for this platform.")
             return redirect('edithub:submit_edit')
         
-        # Check if user has already submitted for this platform this week
-        if platform == 'youtube' and youtube_submitted_this_week:
-            messages.warning(request, "You have already submitted a YouTube edit for this week. You can submit one edit per platform per week.")
-            return redirect('edithub:submit_edit')
-        elif platform == 'tiktok' and tiktok_submitted_this_week:
-            messages.warning(request, "You have already submitted a TikTok edit for this week. You can submit one edit per platform per week.")
+        if (platform == 'youtube' and youtube_future_submission) or (platform == 'tiktok' and tiktok_future_submission):
+            messages.warning(request, f"You have already submitted a {approved_app.get_channel_type_display()} edit for the week of {next_week_label}.")
             return redirect('edithub:submit_edit')
         
         form = EditSubmissionForm(data=request.POST, files=request.FILES, approved_application=approved_app)
         
         if form.is_valid():
             try:
-                # Extract direct video URL for TikTok videos (for clean HTML5 player)
-                # Also fetch title automatically for TikTok if user didn't provide one
                 direct_video_url = None
                 video_title = form.cleaned_data.get('title', '').strip()
                 
@@ -1120,12 +1132,10 @@ def submit_edit(request):
                     video_data = extract_tiktok_video_url(form.cleaned_data['video_url'])
                     if video_data.get('video_url') and not video_data.get('error'):
                         direct_video_url = video_data['video_url']
-                        logger.info(f"Extracted TikTok direct video URL for edit submission")
+                        logger.info("Extracted TikTok direct video URL for edit submission")
                     else:
                         logger.warning(f"Could not extract TikTok video URL: {video_data.get('error', 'Unknown error')}")
-                        # Continue anyway - will use TikTok embed as fallback
                     
-                    # Auto-fetch title from TikTok oEmbed if user didn't provide one
                     if not video_title:
                         fetched_title = fetch_tiktok_video_title(form.cleaned_data['video_url'])
                         if fetched_title:
@@ -1139,43 +1149,52 @@ def submit_edit(request):
                     channel_type=approved_app.channel_type,
                     channel_name=approved_app.channel_name,
                     channel_thumbnail=approved_app.channel_thumbnail,
+                    scheduled_week=next_week_start,
                     video_url=form.cleaned_data['video_url'],
                     direct_video_url=direct_video_url,
-                    title=video_title,  # Use auto-fetched title for TikTok if available
+                    title=video_title,
                     description=form.cleaned_data.get('description', ''),
-                    status='verified'  # Auto-verified since channel is already approved
+                    status='verified'
                 )
                 submission.save()
                 
                 submission.verified_date = timezone.now()
-                submission.save()
+                submission.save(update_fields=['verified_date'])
                 
-                messages.success(request, f"Edit submitted successfully for {approved_app.get_channel_type_display()}! It will be visible in the Edit of the Week section.")
+                messages.success(request, f"Edit submitted successfully for {approved_app.get_channel_type_display()}! It will participate in the week of {next_week_label}.")
                 return redirect('edithub:view_all_edits')
             
             except Exception as error:
                 logger.error("Error creating edit submission", exc_info=True)
                 messages.error(request, f"An error occurred: {error}")
         
-        # Re-initialize forms - keep the submitted form with errors, initialize the other one fresh
         if platform == 'youtube':
             youtube_form = form
-            tiktok_form = EditSubmissionForm(approved_application=tiktok_app) if tiktok_app else None
-        else:  # tiktok
-            youtube_form = EditSubmissionForm(approved_application=youtube_app) if youtube_app else None
+            tiktok_form = EditSubmissionForm(approved_application=tiktok_app) if tiktok_app and not tiktok_future_submission else None
+        else:
             tiktok_form = form
+            youtube_form = EditSubmissionForm(approved_application=youtube_app) if youtube_app and not youtube_future_submission else None
     else:
-        # Initialize forms for both platforms (will be used conditionally in template)
-        youtube_form = EditSubmissionForm(approved_application=youtube_app) if youtube_app else None
-        tiktok_form = EditSubmissionForm(approved_application=tiktok_app) if tiktok_app else None
+        if youtube_app and not youtube_future_submission:
+            youtube_form = EditSubmissionForm(approved_application=youtube_app)
+        if tiktok_app and not tiktok_future_submission:
+            tiktok_form = EditSubmissionForm(approved_application=tiktok_app)
+    
+    default_platform = 'youtube' if youtube_app else 'tiktok'
+    if not youtube_app and tiktok_app:
+        default_platform = 'tiktok'
     
     return render(request, 'edithub/submit_edit.html', {
         'youtube_form': youtube_form,
         'tiktok_form': tiktok_form,
         'youtube_app': youtube_app,
         'tiktok_app': tiktok_app,
-        'youtube_submitted_this_week': youtube_submitted_this_week,
-        'tiktok_submitted_this_week': tiktok_submitted_this_week,
+        'youtube_future_submission': youtube_future_submission,
+        'tiktok_future_submission': tiktok_future_submission,
+        'target_week_label': next_week_label,
+        'target_week_start': next_week_start,
+        'target_week_end': next_week_end,
+        'default_platform': default_platform,
     })
 
 
@@ -1232,11 +1251,25 @@ def view_all_edits(request):
     if platform not in ['youtube', 'tiktok']:
         platform = 'youtube'
     
+    week_start_dt, week_end_dt = get_week_start_end()  # Current week (Mon-Sun)
+    competition_state = get_competition_state()
+    
+    # Show previous week's edits (Mon-Sun)
+    # Current week's submissions are queued for next week, so we show the previous week's competition
+    display_week_start_dt = week_start_dt - timedelta(days=7)  # Previous week Monday
+    display_week_end_dt = display_week_start_dt + timedelta(days=6, hours=23, minutes=59, seconds=59)  # Previous week Sunday
+    display_week_date = display_week_start_dt.date()
+    display_week_label = f"{display_week_start_dt.strftime('%b %d')} – {display_week_end_dt.strftime('%b %d')}"
+    
     # Get verified edits filtered by platform and ordered by calculated points
+    # Show edits from the full week (Mon-Sun)
     edits_qs = EditSubmission.objects.filter(
         status='verified',
         channel_type=platform
-    ).order_by('-calculated_points', '-submitted_date')
+    ).filter(
+        Q(scheduled_week=display_week_date) |
+        (Q(scheduled_week__isnull=True) & Q(submitted_date__gte=display_week_start_dt) & Q(submitted_date__lte=display_week_end_dt))
+    ).order_by('-calculated_points', 'submitted_date')
     
     # Pagination: 1 video per page (to avoid multiple videos playing simultaneously)
     paginator = Paginator(edits_qs, 1)
@@ -1282,10 +1315,14 @@ def view_all_edits(request):
         })
 
     # Get all edits for ranking panel filtered by platform (with channel thumbnails)
+    # Show edits from the full week (Mon-Sun)
     all_edits_ranking = list(EditSubmission.objects.filter(
         status='verified',
         channel_type=platform
-    ).order_by('-calculated_points', '-submitted_date').values('id', 'title', 'channel_name', 'calculated_points', 'upvote_count', 'channel_type', 'channel_thumbnail')[:50])  # Limit to top 50 for performance
+    ).filter(
+        Q(scheduled_week=display_week_date) |
+        (Q(scheduled_week__isnull=True) & Q(submitted_date__gte=display_week_start_dt) & Q(submitted_date__lte=display_week_end_dt))
+    ).order_by('-calculated_points', 'submitted_date').values('id', 'title', 'channel_name', 'calculated_points', 'upvote_count', 'channel_type', 'channel_thumbnail')[:50])  # Limit to top 50 for performance
     
     # Get channel statistics for banner (if viewing a specific edit)
     channel_stats = None
@@ -1309,8 +1346,7 @@ def view_all_edits(request):
         
         # Count Edit of the Month wins (top edit in a calendar month)
         from django.utils import timezone
-        from datetime import datetime, timedelta
-        from django.db.models import Max, Q
+        from datetime import datetime
         from calendar import monthrange
         
         edit_of_month_wins = 0
@@ -1318,12 +1354,13 @@ def view_all_edits(request):
         user_edits = EditSubmission.objects.filter(
             user=edit_user,
             status='verified'
-        ).order_by('submitted_date')
+        ).order_by('scheduled_week', 'submitted_date')
         
         # Group edits by year-month
         months_checked = set()
         for edit in user_edits:
-            year_month = (edit.submitted_date.year, edit.submitted_date.month)
+            reference_date = edit.scheduled_week or edit.submitted_date.date()
+            year_month = (reference_date.year, reference_date.month)
             if year_month in months_checked:
                 continue
             months_checked.add(year_month)
@@ -1336,8 +1373,8 @@ def view_all_edits(request):
             # Get the highest points edit in that month (across all users)
             top_edit = EditSubmission.objects.filter(
                 status='verified',
-                submitted_date__gte=first_day,
-                submitted_date__lte=last_day
+                scheduled_week__gte=first_day.date(),
+                scheduled_week__lte=last_day.date()
             ).order_by('-calculated_points', 'submitted_date').first()
             
             # If this user's edit is the top edit of the month, count it as a win
@@ -1394,6 +1431,9 @@ def view_all_edits(request):
         'max_upvotes': 3,
         'all_edits_ranking': all_edits_ranking,  # For side panel
         'current_platform': platform,  # Current selected platform
+        'display_week_label': display_week_label,
+        'display_week_start': display_week_date,
+        'competition_state': competition_state,  # Competition state (live/results)
         'channel_stats': channel_stats,  # Channel statistics for banner (YouTube/TikTok profile)
     }
     

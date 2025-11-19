@@ -256,6 +256,11 @@ class EditSubmission(models.Model):
     channel_type = models.CharField(max_length=20, choices=CHANNEL_TYPE_CHOICES)
     channel_name = models.CharField(max_length=200, blank=True)
     channel_thumbnail = models.URLField(max_length=500, blank=True)
+    scheduled_week = models.DateField(
+        null=True,
+        blank=True,
+        help_text="Monday (UTC) of the competition week this edit participates in"
+    )
     
     # Edit information
     video_url = models.URLField(max_length=500, help_text="YouTube Shorts or TikTok video URL")

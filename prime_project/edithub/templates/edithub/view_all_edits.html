@@ -246,6 +246,9 @@
                         </a>
                     </div>
                 </div>
+                {% if display_week_label %}
+                <p class="text-center text-xs text-gray-500 pb-2">Showing submissions scheduled for <span class="font-semibold text-gray-700">{{ display_week_label }}</span>.</p>
+                {% endif %}
                 
                 <!-- Channel Banner - Compact Card Style -->
                 {% if channel_stats and current_edit %}

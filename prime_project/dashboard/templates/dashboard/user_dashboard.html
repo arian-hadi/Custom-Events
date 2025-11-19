@@ -3,225 +3,443 @@
 {% block title %}User Dashboard - Event Platform{% endblock %}
 
 {% block content %}
-<main class="pt-16">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <!-- Profile Header -->
-        <div class="flex flex-col items-center text-center mb-10">
-            <div class="relative">
-                {% if user.profile_picture %}
-                <img src="{{ user.profile_picture.url }}" alt="{{ user.username }}" class="w-24 h-24 sm:w-28 sm:h-28 rounded-full object-cover ring-2 ring-gray-200" />
-                {% else %}
-                <div class="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-gray-100 flex items-center justify-center ring-2 ring-gray-200">
-                    <svg class="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
+<main class="pt-16 bg-gradient-to-br from-gray-50 via-white to-gray-50 min-h-screen">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Profile Header with Rank -->
+        <div class="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 rounded-2xl shadow-xl p-8 mb-8 text-white relative overflow-hidden">
+            <div class="absolute inset-0 bg-black opacity-10"></div>
+            <div class="relative z-10">
+                <div class="flex flex-col md:flex-row items-center md:items-start gap-6">
+                    <!-- Profile Picture -->
+                    <div class="relative">
+                        {% if user.profile_picture %}
+                        <img src="{{ user.profile_picture.url }}" alt="{{ user.username }}" 
+                             class="w-24 h-24 sm:w-32 sm:h-32 rounded-full object-cover ring-4 ring-white/30 shadow-2xl" />
+                        {% else %}
+                        <div class="w-24 h-24 sm:w-32 sm:h-32 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center ring-4 ring-white/30 shadow-2xl">
+                            <svg class="w-12 h-12 sm:w-16 sm:h-16 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- User Info and Rank -->
+                    <div class="flex-1 text-center md:text-left">
+                        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                            <div>
+                                <h1 class="text-3xl sm:text-4xl font-bold mb-2">{{ user.username }}</h1>
+                                <p class="text-blue-100 text-lg">Welcome back to your dashboard</p>
+                            </div>
+                            
+                            <!-- Rank Badge (only if user has applied for ranking) -->
+                            {% if has_rank %}
+                            <div class="flex flex-col items-center md:items-end">
+                                <div class="bg-white/20 backdrop-blur-md rounded-xl px-6 py-4 border border-white/30 shadow-lg">
+                                    <p class="text-sm text-blue-100 mb-1">Your Ranking</p>
+                                    <div class="flex items-center gap-2">
+                                        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                        </svg>
+                                        <span class="text-3xl font-bold">#{{ user_rank }}</span>
+                                    </div>
+                                    {% if youtube_rank and tiktok_rank %}
+                                    <p class="text-xs text-blue-100 mt-2">
+                                        YouTube: #{{ youtube_rank }} • TikTok: #{{ tiktok_rank }}
+                                    </p>
+                                    {% elif youtube_rank %}
+                                    <p class="text-xs text-blue-100 mt-2">YouTube Platform</p>
+                                    {% elif tiktok_rank %}
+                                    <p class="text-xs text-blue-100 mt-2">TikTok Platform</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- Main Dashboard Sections -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            
+            <!-- Edit Apply Section -->
+            <div class="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden border border-gray-100">
+                <div class="bg-gradient-to-r from-red-500 to-pink-500 p-6 text-white">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="bg-white/20 backdrop-blur-sm rounded-lg p-3">
+                                <i class="fab fa-youtube text-2xl"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-xl font-bold">Edit Apply</h2>
+                                <p class="text-red-100 text-sm">Apply to join the rankings</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="p-6">
+                    <p class="text-gray-600 mb-4 text-sm leading-relaxed">
+                        Apply to join the EditingHub rankings by submitting your YouTube or TikTok channel. 
+                        Once accepted, you'll be ranked based on your follower count and can participate in weekly edit competitions.
+                    </p>
+                    
+                    <div class="space-y-4 mb-6">
+                        <!-- YouTube Application Status -->
+                        <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                            <div class="flex items-center justify-between mb-2">
+                                <div class="flex items-center gap-2">
+                                    <i class="fab fa-youtube text-red-600"></i>
+                                    <span class="font-semibold text-gray-900">YouTube</span>
+                                </div>
+                                {% if has_youtube_application %}
+                                <span class="px-3 py-1 text-xs font-semibold rounded-full
+                                    {% if youtube_application.status == 'accepted' %}bg-green-100 text-green-800
+                                    {% elif youtube_application.status == 'rejected' %}bg-red-100 text-red-800
+                                    {% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                                    {{ youtube_application.get_status_display }}
+                                </span>
+                                {% else %}
+                                <span class="text-xs text-gray-500">Not Applied</span>
+                                {% endif %}
+                            </div>
+                            {% if has_youtube_application %}
+                            <p class="text-sm text-gray-600">{{ youtube_application.channel_name|default:"Channel" }}</p>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- TikTok Application Status -->
+                        <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                            <div class="flex items-center justify-between mb-2">
+                                <div class="flex items-center gap-2">
+                                    <i class="fab fa-tiktok text-gray-900"></i>
+                                    <span class="font-semibold text-gray-900">TikTok</span>
+                                </div>
+                                {% if has_tiktok_application %}
+                                <span class="px-3 py-1 text-xs font-semibold rounded-full
+                                    {% if tiktok_application.status == 'accepted' %}bg-green-100 text-green-800
+                                    {% elif tiktok_application.status == 'rejected' %}bg-red-100 text-red-800
+                                    {% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                                    {{ tiktok_application.get_status_display }}
+                                </span>
+                                {% else %}
+                                <span class="text-xs text-gray-500">Not Applied</span>
+                                {% endif %}
+                            </div>
+                            {% if has_tiktok_application %}
+                            <p class="text-sm text-gray-600">{{ tiktok_application.channel_name|default:"Channel" }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <a href="{% url 'edithub:apply' %}" 
+                       class="block w-full text-center px-4 py-3 bg-gradient-to-r from-red-500 to-pink-500 text-white font-semibold rounded-lg hover:from-red-600 hover:to-pink-600 transition-all duration-300 transform hover:scale-105 shadow-md">
+                        <span>View All Details</span>
+                        <i class="fas fa-arrow-right ml-2"></i>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Ranking Section -->
+            <div class="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden border border-gray-100">
+                <div class="bg-gradient-to-r from-indigo-500 to-purple-500 p-6 text-white">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="bg-white/20 backdrop-blur-sm rounded-lg p-3">
+                                <i class="fas fa-trophy text-2xl"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-xl font-bold">Rankings</h2>
+                                <p class="text-indigo-100 text-sm">View your position & leaderboard</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="p-6">
+                    <p class="text-gray-600 mb-4 text-sm leading-relaxed">
+                        Check your ranking position and see how you compare with other editors. Rankings are based on follower count 
+                        and are updated regularly. Climb the leaderboard by growing your channel!
+                    </p>
+                    
+                    {% if has_rank %}
+                    <!-- Ranking Tabs -->
+                    <div class="flex gap-2 mb-4 bg-gray-100 rounded-lg p-1">
+                        <a href="?ranking_tab=mix" 
+                           class="flex-1 text-center px-3 py-2 rounded-md text-sm font-semibold transition-all duration-200
+                           {% if ranking_tab == 'mix' %}bg-white text-indigo-600 shadow-sm{% else %}text-gray-600 hover:text-gray-900{% endif %}">
+                            Mix
+                        </a>
+                        <a href="?ranking_tab=youtube" 
+                           class="flex-1 text-center px-3 py-2 rounded-md text-sm font-semibold transition-all duration-200
+                           {% if ranking_tab == 'youtube' %}bg-white text-red-600 shadow-sm{% else %}text-gray-600 hover:text-gray-900{% endif %}">
+                            <i class="fab fa-youtube mr-1"></i>YouTube
+                        </a>
+                        <a href="?ranking_tab=tiktok" 
+                           class="flex-1 text-center px-3 py-2 rounded-md text-sm font-semibold transition-all duration-200
+                           {% if ranking_tab == 'tiktok' %}bg-white text-gray-900 shadow-sm{% else %}text-gray-600 hover:text-gray-900{% endif %}">
+                            <i class="fab fa-tiktok mr-1"></i>TikTok
+                        </a>
+                    </div>
+                    
+                    <!-- Ranking Preview: Above, Current, Below -->
+                    <div class="space-y-3 mb-6">
+                        <!-- User Above -->
+                        {% if rank_above %}
+                        <div class="bg-gray-50 rounded-lg p-4 border border-gray-200 hover:border-indigo-300 transition-colors">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <div class="relative flex-shrink-0">
+                                        <div class="absolute -top-1 -left-1 w-6 h-6 rounded-full bg-indigo-500 flex items-center justify-center z-10">
+                                            <span class="text-xs font-bold text-white">#{{ rank_above.rank }}</span>
+                                        </div>
+                                        {% if rank_above.channel_thumbnail %}
+                                        <img src="{{ rank_above.channel_thumbnail }}" 
+                                             alt="{{ rank_above.channel_name }}" 
+                                             class="w-12 h-12 rounded-full object-cover border-2 border-gray-200">
+                                        {% elif rank_above.profile_picture %}
+                                        <img src="{{ rank_above.profile_picture }}" 
+                                             alt="{{ rank_above.channel_name }}" 
+                                             class="w-12 h-12 rounded-full object-cover border-2 border-gray-200">
+                                        {% else %}
+                                        <div class="w-12 h-12 rounded-full {% if rank_above.channel_type == 'youtube' %}bg-gradient-to-br from-red-400 to-orange-400{% else %}bg-gradient-to-br from-purple-400 via-pink-400 to-blue-400{% endif %} flex items-center justify-center border-2 border-gray-200">
+                                            <span class="text-white font-bold text-sm">{{ rank_above.channel_name|first|upper }}</span>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="font-semibold text-gray-900 truncate">{{ rank_above.channel_name }}</p>
+                                        <p class="text-xs text-gray-500">
+                                            <i class="fab fa-{{ rank_above.channel_type }} mr-1"></i>
+                                            {{ rank_above.follower_count|floatformat:0 }} followers
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Current User (Highlighted) -->
+                        <div class="bg-gradient-to-br from-indigo-100 to-purple-100 rounded-lg p-4 border-2 border-indigo-400 shadow-md">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <div class="relative flex-shrink-0">
+                                        <div class="absolute -top-1 -left-1 w-7 h-7 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center z-10 shadow-lg">
+                                            <span class="text-xs font-bold text-white">#{{ user_rank }}</span>
+                                        </div>
+                                        {% if current_user_image %}
+                                        <img src="{{ current_user_image }}" 
+                                             alt="{{ user_rank_app.channel_name|default:user.username }}" 
+                                             class="w-14 h-14 rounded-full object-cover border-2 border-indigo-400 shadow-md">
+                                        {% else %}
+                                        <div class="w-14 h-14 rounded-full {% if user_rank_app.channel_type == 'youtube' %}bg-gradient-to-br from-red-400 to-orange-400{% else %}bg-gradient-to-br from-purple-400 via-pink-400 to-blue-400{% endif %} flex items-center justify-center border-2 border-indigo-400 shadow-md">
+                                            <span class="text-white font-bold">{{ user_rank_app.channel_name|default:user.username|first|upper }}</span>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex items-center gap-2 mb-1">
+                                            <p class="font-bold text-gray-900 truncate">{{ user_rank_app.channel_name|default:user.username }}</p>
+                                            <span class="px-2 py-0.5 bg-indigo-500 text-white text-xs font-semibold rounded-full flex-shrink-0">You</span>
+                                        </div>
+                                        <p class="text-xs text-gray-600">
+                                            <i class="fab fa-{{ user_rank_app.channel_type }} mr-1"></i>
+                                            {{ user_rank_app.follower_count|floatformat:0 }} followers
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- User Below -->
+                        {% if rank_below %}
+                        <div class="bg-gray-50 rounded-lg p-4 border border-gray-200 hover:border-indigo-300 transition-colors">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <div class="relative flex-shrink-0">
+                                        <div class="absolute -top-1 -left-1 w-6 h-6 rounded-full bg-indigo-500 flex items-center justify-center z-10">
+                                            <span class="text-xs font-bold text-white">#{{ rank_below.rank }}</span>
+                                        </div>
+                                        {% if rank_below.channel_thumbnail %}
+                                        <img src="{{ rank_below.channel_thumbnail }}" 
+                                             alt="{{ rank_below.channel_name }}" 
+                                             class="w-12 h-12 rounded-full object-cover border-2 border-gray-200">
+                                        {% elif rank_below.profile_picture %}
+                                        <img src="{{ rank_below.profile_picture }}" 
+                                             alt="{{ rank_below.channel_name }}" 
+                                             class="w-12 h-12 rounded-full object-cover border-2 border-gray-200">
+                                        {% else %}
+                                        <div class="w-12 h-12 rounded-full {% if rank_below.channel_type == 'youtube' %}bg-gradient-to-br from-red-400 to-orange-400{% else %}bg-gradient-to-br from-purple-400 via-pink-400 to-blue-400{% endif %} flex items-center justify-center border-2 border-gray-200">
+                                            <span class="text-white font-bold text-sm">{{ rank_below.channel_name|first|upper }}</span>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="font-semibold text-gray-900 truncate">{{ rank_below.channel_name }}</p>
+                                        <p class="text-xs text-gray-500">
+                                            <i class="fab fa-{{ rank_below.channel_type }} mr-1"></i>
+                                            {{ rank_below.follower_count|floatformat:0 }} followers
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% else %}
+                    <div class="bg-yellow-50 rounded-lg p-4 mb-6 border border-yellow-200">
+                        <p class="text-sm text-yellow-800">
+                            <i class="fas fa-info-circle mr-2"></i>
+                            Apply to join rankings to see your position here.
+                        </p>
+                    </div>
+                    {% endif %}
+                    
+                    <a href="{% url 'edithub:ranking_table' %}{% if ranking_tab != 'mix' %}?channel_filter={{ ranking_tab }}{% endif %}" 
+                       class="block w-full text-center px-4 py-3 bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-semibold rounded-lg hover:from-indigo-600 hover:to-purple-600 transition-all duration-300 transform hover:scale-105 shadow-md">
+                        <span>View All Rankings</span>
+                        <i class="fas fa-arrow-right ml-2"></i>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Events Section -->
+            <div class="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden border border-gray-100">
+                <div class="bg-gradient-to-r from-blue-500 to-cyan-500 p-6 text-white">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="bg-white/20 backdrop-blur-sm rounded-lg p-3">
+                                <i class="fas fa-calendar-alt text-2xl"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-xl font-bold">Events</h2>
+                                <p class="text-blue-100 text-sm">Your event applications</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="p-6">
+                    <p class="text-gray-600 mb-4 text-sm leading-relaxed">
+                        Track your event applications and see their status. Apply to participate in various events 
+                        and competitions organized on the platform.
+                    </p>
+                    
+                    <div class="grid grid-cols-3 gap-4 mb-6">
+                        <div class="bg-blue-50 rounded-lg p-4 text-center border border-blue-100">
+                            <p class="text-2xl font-bold text-blue-600">{{ total_applications }}</p>
+                            <p class="text-xs text-gray-600 mt-1">Total</p>
+                        </div>
+                        <div class="bg-yellow-50 rounded-lg p-4 text-center border border-yellow-100">
+                            <p class="text-2xl font-bold text-yellow-600">{{ pending_applications }}</p>
+                            <p class="text-xs text-gray-600 mt-1">Pending</p>
+                        </div>
+                        <div class="bg-green-50 rounded-lg p-4 text-center border border-green-100">
+                            <p class="text-2xl font-bold text-green-600">{{ accepted_applications }}</p>
+                            <p class="text-xs text-gray-600 mt-1">Approved</p>
+                        </div>
+                    </div>
+                    
+                    <a href="{% url 'dashboard:user_applications' %}" 
+                       class="block w-full text-center px-4 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-semibold rounded-lg hover:from-blue-600 hover:to-cyan-600 transition-all duration-300 transform hover:scale-105 shadow-md">
+                        <span>View All Details</span>
+                        <i class="fas fa-arrow-right ml-2"></i>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Edit Submissions Section -->
+            <div class="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden border border-gray-100">
+                <div class="bg-gradient-to-r from-green-500 to-emerald-500 p-6 text-white">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="bg-white/20 backdrop-blur-sm rounded-lg p-3">
+                                <i class="fas fa-video text-2xl"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-xl font-bold">Edit Submissions</h2>
+                                <p class="text-green-100 text-sm">Edit of the Week</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="p-6">
+                    <p class="text-gray-600 mb-4 text-sm leading-relaxed">
+                        Submit your edits for the weekly competition. Get upvoted by the community and compete 
+                        for the top 3 spots. Winners are featured prominently on the platform!
+                    </p>
+                    
+                    <div class="grid grid-cols-2 gap-4 mb-6">
+                        <div class="bg-green-50 rounded-lg p-4 text-center border border-green-100">
+                            <p class="text-2xl font-bold text-green-600">{{ total_edit_submissions }}</p>
+                            <p class="text-xs text-gray-600 mt-1">Total Submissions</p>
+                        </div>
+                        <div class="bg-emerald-50 rounded-lg p-4 text-center border border-emerald-100">
+                            <p class="text-2xl font-bold text-emerald-600">{{ verified_edit_submissions }}</p>
+                            <p class="text-xs text-gray-600 mt-1">Verified</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex gap-3">
+                        <a href="{% url 'edithub:submit_edit' %}" 
+                           class="flex-1 text-center px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white font-semibold rounded-lg hover:from-green-600 hover:to-emerald-600 transition-all duration-300 transform hover:scale-105 shadow-md">
+                            <span>Submit Edit</span>
+                        </a>
+                        <a href="{% url 'edithub:view_all_edits' %}" 
+                           class="flex-1 text-center px-4 py-3 bg-gray-100 text-gray-700 font-semibold rounded-lg hover:bg-gray-200 transition-all duration-300 shadow-md">
+                            <span>View All</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Additional Quick Actions -->
+        <div class="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <a href="{% url 'shop:favorites_list' %}" 
+                   class="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors border border-gray-200">
+                    <div class="bg-red-100 rounded-lg p-3">
+                        <i class="fas fa-heart text-red-600"></i>
+                    </div>
+                    <div class="flex-1">
+                        <p class="font-semibold text-gray-900">Favorites</p>
+                        <p class="text-sm text-gray-600">View saved products</p>
+                    </div>
+                    <i class="fas fa-chevron-right text-gray-400"></i>
+                </a>
+                
+                {% if has_youtube_application %}
+                <a href="{% url 'edithub:application_detail' pk=youtube_application.pk %}" 
+                   class="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors border border-gray-200">
+                    <div class="bg-red-100 rounded-lg p-3">
+                        <i class="fab fa-youtube text-red-600"></i>
+                    </div>
+                    <div class="flex-1">
+                        <p class="font-semibold text-gray-900">YouTube Application</p>
+                        <p class="text-sm text-gray-600">View details</p>
+                    </div>
+                    <i class="fas fa-chevron-right text-gray-400"></i>
+                </a>
+                {% endif %}
+                
+                {% if has_tiktok_application %}
+                <a href="{% url 'edithub:application_detail' pk=tiktok_application.pk %}" 
+                   class="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors border border-gray-200">
+                    <div class="bg-gray-100 rounded-lg p-3">
+                        <i class="fab fa-tiktok text-gray-900"></i>
+                    </div>
+                    <div class="flex-1">
+                        <p class="font-semibold text-gray-900">TikTok Application</p>
+                        <p class="text-sm text-gray-600">View details</p>
+                    </div>
+                    <i class="fas fa-chevron-right text-gray-400"></i>
+                </a>
                 {% endif %}
             </div>
-            <h1 class="mt-4 text-2xl sm:text-3xl font-semibold text-gray-900">{{ user.username }}</h1>
         </div>
-
-        <!-- Quick Actions -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
-            <!-- Favorites CTA -->
-            <div class="bg-white rounded-lg border border-gray-200 p-6">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <h2 class="text-lg font-semibold text-gray-900">Your Favorites</h2>
-                        <p class="text-sm text-gray-500 mt-1">View and manage products you saved.</p>
-                    </div>
-                    {% if user.favorite_products.count > 0 %}
-                    <span class="ml-2 px-2 py-0.5 text-xs font-semibold text-white bg-red-500 rounded-full inline-flex items-center">
-                        <svg class="w-3.5 h-3.5 mr-1" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                            <path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                        </svg>
-                        {{ user.favorite_products.count }}
-                    </span>
-                    {% endif %}
-                </div>
-                <div class="mt-4">
-                    <a href="{% url 'shop:favorites_list' %}" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors">
-                        <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                            <path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
-                        </svg>
-                        <span>View all your favorites</span>
-                        <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-                    </a>
-                </div>
-            </div>
-
-            <!-- Events Summary -->
-            <div class="bg-white rounded-lg border border-gray-200 p-6">
-                <h2 class="text-lg font-semibold text-gray-900">Event Applications</h2>
-                <div class="mt-4 grid grid-cols-2 md:grid-cols-3 gap-6">
-                    <div class="flex items-center p-3 rounded-lg bg-gray-50">
-                        <div class="p-2 rounded-full bg-blue-100 text-blue-600">
-                            <i class="fas fa-calendar-alt"></i>
-                        </div>
-                        <div class="ml-3">
-                            <div class="text-base font-semibold">{{ total_applications }}</div>
-                            <div class="text-xs text-gray-500 mt-0.5">Total</div>
-                        </div>
-                    </div>
-                    <div class="flex items-center p-3 rounded-lg bg-gray-50">
-                        <div class="p-2 rounded-full bg-yellow-100 text-yellow-600">
-                            <i class="fas fa-hourglass-half"></i>
-                        </div>
-                        <div class="ml-3">
-                            <div class="text-base font-semibold">{{ pending_applications }}</div>
-                            <div class="text-xs text-gray-500 mt-0.5">Pending</div>
-                        </div>
-                    </div>
-                    <div class="flex items-center p-3 rounded-lg bg-gray-50">
-                        <div class="p-2 rounded-full bg-green-100 text-green-600">
-                            <i class="fas fa-check-circle"></i>
-                        </div>
-                        <div class="ml-3">
-                            <div class="text-base font-semibold">{{ accepted_applications }}</div>
-                            <div class="text-xs text-gray-500 mt-0.5">Approved</div>
-                        </div>
-                    </div>
-                </div>
-                <div class="mt-6">
-                    <a href="{% url 'dashboard:user_applications' %}"
-                       class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors">
-                        View your event applications
-                        <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-                    </a>
-                </div>
-            </div>
-
-            
-            <!-- EditingHub Application Status -->
-            <div class="bg-white rounded-lg border border-gray-200 p-6">
-                <h2 class="text-lg font-semibold text-gray-900 mb-4">EditingHub Applications</h2>
-                
-                <!-- YouTube Application -->
-                <div class="mb-6">
-                    <div class="flex items-center gap-2 mb-3">
-                        <i class="fab fa-youtube text-red-600 text-lg"></i>
-                        <h3 class="font-semibold text-gray-900">YouTube</h3>
-                    </div>
-                    {% if has_youtube_application %}
-                    <div class="space-y-3">
-                        <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                            <div class="flex items-center gap-4">
-                                {% if youtube_application.channel_thumbnail %}
-                                <img src="{{ youtube_application.channel_thumbnail }}" 
-                                     alt="{{ youtube_application.channel_name }}" 
-                                     class="h-12 w-12 rounded-full">
-                                {% endif %}
-                                <div>
-                                    <p class="font-medium text-gray-900 flex items-center gap-2">
-                                        {{ youtube_application.channel_name|default:"Unknown" }}
-                                        <span class="inline-flex items-center justify-center" title="{{ youtube_application.get_editing_tool_display }}" aria-hidden="true">
-                                            {{ youtube_application.editing_tool_icon|safe }}
-                                        </span>
-                                    </p>
-                                    <p class="text-sm text-gray-500">{{ youtube_application.get_status_display }}</p>
-                                </div>
-                            </div>
-                            <span class="px-3 py-1 text-xs font-semibold rounded-full
-                                {% if youtube_application.status == 'accepted' %}bg-green-100 text-green-800
-                                {% elif youtube_application.status == 'rejected' %}bg-red-100 text-red-800
-                                {% else %}bg-yellow-100 text-yellow-800{% endif %}">
-                                {{ youtube_application.get_status_display }}
-                            </span>
-                        </div>
-                        <div class="flex gap-3">
-                            <a href="{% url 'edithub:application_detail' pk=youtube_application.pk %}" 
-                               class="flex-1 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors text-center">
-                                View Details
-                            </a>
-                            {% if youtube_application.status == 'accepted' %}
-                            <a href="{% url 'edithub:ranking_table' %}?channel_filter=youtube" 
-                               class="flex-1 px-4 py-2 bg-gray-200 text-gray-800 text-sm font-medium rounded-md hover:bg-gray-300 transition-colors text-center">
-                                View Rankings
-                            </a>
-                            {% endif %}
-                        </div>
-                    </div>
-                    {% else %}
-                    <div class="text-center py-4 bg-gray-50 rounded-lg">
-                        <p class="text-sm text-gray-500 mb-3">You haven't applied for YouTube yet.</p>
-                        <a href="{% url 'edithub:apply' %}?edit_platform=youtube" 
-                           class="inline-flex items-center px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 transition-colors">
-                            Apply for YouTube
-                            <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-                        </a>
-                    </div>
-                    {% endif %}
-                </div>
-
-                <!-- TikTok Application -->
-                <div>
-                    <div class="flex items-center gap-2 mb-3">
-                        <i class="fab fa-tiktok text-gray-900 text-lg"></i>
-                        <h3 class="font-semibold text-gray-900">TikTok</h3>
-                    </div>
-                    {% if has_tiktok_application %}
-                    <div class="space-y-3">
-                        <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                            <div class="flex items-center gap-4">
-                                {% if tiktok_application.channel_thumbnail %}
-                                <img src="{{ tiktok_application.channel_thumbnail }}" 
-                                     alt="{{ tiktok_application.channel_name }}" 
-                                     class="h-12 w-12 rounded-full">
-                                {% endif %}
-                                <div>
-                                    <p class="font-medium text-gray-900 flex items-center gap-2">
-                                        {{ tiktok_application.channel_name|default:"Unknown" }}
-                                        <span class="inline-flex items-center justify-center" title="{{ tiktok_application.get_editing_tool_display }}" aria-hidden="true">
-                                            {{ tiktok_application.editing_tool_icon|safe }}
-                                        </span>
-                                    </p>
-                                    <p class="text-sm text-gray-500">{{ tiktok_application.get_status_display }}</p>
-                                </div>
-                            </div>
-                            <span class="px-3 py-1 text-xs font-semibold rounded-full
-                                {% if tiktok_application.status == 'accepted' %}bg-green-100 text-green-800
-                                {% elif tiktok_application.status == 'rejected' %}bg-red-100 text-red-800
-                                {% else %}bg-yellow-100 text-yellow-800{% endif %}">
-                                {{ tiktok_application.get_status_display }}
-                            </span>
-                        </div>
-                        <div class="flex gap-3">
-                            <a href="{% url 'edithub:application_detail' pk=tiktok_application.pk %}" 
-                               class="flex-1 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors text-center">
-                                View Details
-                            </a>
-                            {% if tiktok_application.status == 'accepted' %}
-                            <a href="{% url 'edithub:ranking_table' %}?channel_filter=tiktok" 
-                               class="flex-1 px-4 py-2 bg-gray-200 text-gray-800 text-sm font-medium rounded-md hover:bg-gray-300 transition-colors text-center">
-                                View Rankings
-                            </a>
-                            {% endif %}
-                        </div>
-                    </div>
-                    {% else %}
-                    <div class="text-center py-4 bg-gray-50 rounded-lg">
-                        <p class="text-sm text-gray-500 mb-3">You haven't applied for TikTok yet.</p>
-                        <a href="{% url 'edithub:apply' %}?edit_platform=tiktok" 
-                           class="inline-flex items-center px-4 py-2 bg-gray-900 text-white text-sm font-medium rounded-md hover:bg-gray-800 transition-colors">
-                            Apply for TikTok
-                            <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-                        </a>
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
-            
-        </div>
-
-        <!-- Applications moved to dedicated page -->
-
-        <script>
-        function confirmWithdraw(applicationId) {
-            if (confirm('Are you sure you want to withdraw from this event? This action cannot be undone.')) {
-                document.getElementById(`withdraw-form-${applicationId}`).submit();
-            }
-        }
-        </script>
     </div>
 </main>
+
 {% endblock %}
