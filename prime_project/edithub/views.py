@@ -341,6 +341,36 @@ class RankingTableView(ListView):
             ).exists()
         context['user_has_submitted_this_week'] = user_has_submitted_this_week
         
+        # Tournament participants - Get from active tournament
+        from .models import Tournament
+        active_tournament = Tournament.get_active_tournament()
+        
+        tournament_participants = []
+        if active_tournament:
+            participants = active_tournament.get_participants()
+            for app in participants:
+                if app:
+                    tournament_participants.append({
+                        'user': app.user,
+                        'app': app,
+                        'channel_name': app.channel_name or app.user.username,
+                        'username': app.user.username,
+                        'profile_picture': app.user.profile_picture.url if app.user.profile_picture else None,
+                        'channel_thumbnail': app.channel_thumbnail or '',
+                        'channel_type': app.channel_type,
+                    })
+                else:
+                    tournament_participants.append(None)
+        else:
+            # No active tournament, show empty slots
+            tournament_participants = [None, None, None, None]
+        
+        # Ensure we have exactly 4 participants (pad with None if needed)
+        while len(tournament_participants) < 4:
+            tournament_participants.append(None)
+        
+        context['tournament_participants'] = tournament_participants[:4]
+        
         return context
 
     def _build_mix_entries(self):

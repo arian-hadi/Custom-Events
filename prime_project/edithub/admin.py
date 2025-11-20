@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.utils.html import mark_safe
 
-from .models import EditorApplication, EditSubmission, EditUpvote, EditReport
+from .models import EditorApplication, EditSubmission, EditUpvote, EditReport, Tournament
 
 
 @admin.register(EditorApplication)
@@ -103,3 +103,32 @@ class EditReportAdmin(admin.ModelAdmin):
     list_filter = ('reason', 'is_active', 'is_resolved')
     search_fields = ('edit_submission__channel_name', 'user__username', 'description')
     readonly_fields = ('created_date', 'resolved_date')
+
+
+@admin.register(Tournament)
+class TournamentAdmin(admin.ModelAdmin):
+    list_display = ('name', 'is_active', 'participant_1', 'participant_2', 'participant_3', 'participant_4', 'created_date')
+    list_filter = ('is_active', 'created_date')
+    readonly_fields = ('created_date', 'updated_date')
+    fieldsets = (
+        ('Tournament Information', {
+            'fields': ('name', 'is_active')
+        }),
+        ('Semi-Final 1', {
+            'fields': ('participant_1', 'participant_2'),
+            'description': 'Select the two participants for Semi-Final 1 (left side of bracket)'
+        }),
+        ('Semi-Final 2', {
+            'fields': ('participant_3', 'participant_4'),
+            'description': 'Select the two participants for Semi-Final 2 (right side of bracket)'
+        }),
+        ('Timestamps', {
+            'fields': ('created_date', 'updated_date'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.select_related('participant_1', 'participant_2', 'participant_3', 'participant_4',
+                                 'participant_1__user', 'participant_2__user', 'participant_3__user', 'participant_4__user')

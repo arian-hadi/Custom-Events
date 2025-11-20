@@ -480,3 +480,81 @@ def update_edit_submission_thumbnails_signal(sender, instance, **kwargs):
 
 # Connect the signal after EditSubmission is defined
 post_save.connect(update_edit_submission_thumbnails_signal, sender=EditorApplication)
+
+
+class Tournament(models.Model):
+    """Model for Tournament of Editors - Semi-Finals"""
+    
+    name = models.CharField(max_length=200, default="Tournament of Editors", help_text="Tournament name")
+    is_active = models.BooleanField(default=True, help_text="Only one active tournament should exist")
+    
+    # Semi-Final 1 participants
+    participant_1 = models.ForeignKey(
+        EditorApplication,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='tournament_participant_1',
+        help_text="Semi-Final 1 - First participant",
+        limit_choices_to={'status': 'accepted', 'removal_requested': False}
+    )
+    participant_2 = models.ForeignKey(
+        EditorApplication,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='tournament_participant_2',
+        help_text="Semi-Final 1 - Second participant",
+        limit_choices_to={'status': 'accepted', 'removal_requested': False}
+    )
+    
+    # Semi-Final 2 participants
+    participant_3 = models.ForeignKey(
+        EditorApplication,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='tournament_participant_3',
+        help_text="Semi-Final 2 - First participant",
+        limit_choices_to={'status': 'accepted', 'removal_requested': False}
+    )
+    participant_4 = models.ForeignKey(
+        EditorApplication,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='tournament_participant_4',
+        help_text="Semi-Final 2 - Second participant",
+        limit_choices_to={'status': 'accepted', 'removal_requested': False}
+    )
+    
+    created_date = models.DateTimeField(auto_now_add=True)
+    updated_date = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-is_active', '-created_date']
+        verbose_name = "Tournament"
+        verbose_name_plural = "Tournaments"
+    
+    def __str__(self):
+        return f"{self.name} ({'Active' if self.is_active else 'Inactive'})"
+    
+    def get_participants(self):
+        """Return list of participants in order"""
+        return [
+            self.participant_1,
+            self.participant_2,
+            self.participant_3,
+            self.participant_4,
+        ]
+    
+    def save(self, *args, **kwargs):
+        # If this tournament is being set as active, deactivate all others
+        if self.is_active:
+            Tournament.objects.filter(is_active=True).exclude(pk=self.pk).update(is_active=False)
+        super().save(*args, **kwargs)
+    
+    @classmethod
+    def get_active_tournament(cls):
+        """Get the currently active tournament"""
+        return cls.objects.filter(is_active=True).first()

@@ -50,6 +50,247 @@
         </div>
     </section>
 
+    <!-- Tournament of Editors Section -->
+    {% if not show_all %}
+    <section class="py-12 bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 border-b-4 border-yellow-500 relative overflow-hidden">
+        <!-- Geometric Pattern Background -->
+        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.05) 10px, rgba(255,255,255,0.05) 20px);"></div>
+        
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <!-- Title -->
+            <div class="text-center mb-12">
+                <h2 class="text-5xl md:text-6xl font-bold mb-2">
+                    <span class="text-white">TOURNAMENT</span>
+                    <span class="text-yellow-500"> OF </span>
+                    <span class="text-orange-500">EDITORS</span>
+                </h2>
+            </div>
+            
+            <!-- Tournament Bracket Structure -->
+            <div class="max-w-6xl mx-auto">
+                <div class="relative flex flex-col md:flex-row items-center justify-between gap-8 md:gap-4">
+                    <!-- Left Side - Semi-Final 1 -->
+                    <div class="flex-1 w-full md:w-auto">
+                        <div class="space-y-4">
+                            <!-- Match 1 - Editor 1 vs Editor 2 -->
+                            <div class="relative">
+                                <!-- Editor 1 Box -->
+                                {% if tournament_participants.0 %}
+                                <div class="bg-white/10 backdrop-blur-sm rounded-lg border border-white/20 p-4 mb-2 relative group hover:bg-white/15 transition-all">
+                                    <div class="absolute left-0 top-0 bottom-0 w-1 bg-green-500 rounded-l-lg"></div>
+                                    <div class="flex items-center gap-3 pl-4">
+                                        <!-- User Image -->
+                                        {% if tournament_participants.0.profile_picture %}
+                                        <img src="{{ tournament_participants.0.profile_picture }}" 
+                                             alt="{{ tournament_participants.0.channel_name }}" 
+                                             class="w-12 h-12 rounded-full object-cover border-2 border-green-400 flex-shrink-0">
+                                        {% elif tournament_participants.0.channel_thumbnail %}
+                                        <img src="{{ tournament_participants.0.channel_thumbnail }}" 
+                                             alt="{{ tournament_participants.0.channel_name }}" 
+                                             class="w-12 h-12 rounded-full object-cover border-2 border-green-400 flex-shrink-0">
+                                        {% else %}
+                                        <div class="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0 border-2 border-green-400">
+                                            <span class="text-white font-bold text-sm">{{ tournament_participants.0.channel_name|first|upper }}</span>
+                                        </div>
+                                        {% endif %}
+                                        <div class="flex-1 min-w-0">
+                                            <p class="font-semibold text-white truncate">{{ tournament_participants.0.channel_name }}</p>
+                                            <p class="text-xs text-gray-300 truncate">@{{ tournament_participants.0.username }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% else %}
+                                <div class="bg-white/10 backdrop-blur-sm rounded-lg border border-white/20 p-4 mb-2 relative group hover:bg-white/15 transition-all">
+                                    <div class="absolute left-0 top-0 bottom-0 w-1 bg-green-500 rounded-l-lg"></div>
+                                    <div class="flex items-center gap-3 pl-4">
+                                        <div class="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0 border-2 border-green-400">
+                                            <span class="text-white font-bold text-sm">?</span>
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <p class="font-semibold text-white truncate">TBD</p>
+                                            <p class="text-xs text-gray-300 truncate">To be announced</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endif %}
+                                <!-- Connecting line from Editor 1 -->
+                                <div class="hidden md:block absolute top-1/2 right-0 w-16 h-0.5 bg-white/30 transform translate-x-full"></div>
+                                
+                                <!-- Editor 2 Box -->
+                                {% if tournament_participants.1 %}
+                                <div class="bg-white/10 backdrop-blur-sm rounded-lg border border-white/20 p-4 relative group hover:bg-white/15 transition-all">
+                                    <div class="absolute left-0 top-0 bottom-0 w-1 bg-green-500 rounded-l-lg"></div>
+                                    <div class="flex items-center gap-3 pl-4">
+                                        <!-- User Image -->
+                                        {% if tournament_participants.1.profile_picture %}
+                                        <img src="{{ tournament_participants.1.profile_picture }}" 
+                                             alt="{{ tournament_participants.1.channel_name }}" 
+                                             class="w-12 h-12 rounded-full object-cover border-2 border-green-400 flex-shrink-0">
+                                        {% elif tournament_participants.1.channel_thumbnail %}
+                                        <img src="{{ tournament_participants.1.channel_thumbnail }}" 
+                                             alt="{{ tournament_participants.1.channel_name }}" 
+                                             class="w-12 h-12 rounded-full object-cover border-2 border-green-400 flex-shrink-0">
+                                        {% else %}
+                                        <div class="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0 border-2 border-green-400">
+                                            <span class="text-white font-bold text-sm">{{ tournament_participants.1.channel_name|first|upper }}</span>
+                                        </div>
+                                        {% endif %}
+                                        <div class="flex-1 min-w-0">
+                                            <p class="font-semibold text-white truncate">{{ tournament_participants.1.channel_name }}</p>
+                                            <p class="text-xs text-gray-300 truncate">@{{ tournament_participants.1.username }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% else %}
+                                <div class="bg-white/10 backdrop-blur-sm rounded-lg border border-white/20 p-4 relative group hover:bg-white/15 transition-all">
+                                    <div class="absolute left-0 top-0 bottom-0 w-1 bg-green-500 rounded-l-lg"></div>
+                                    <div class="flex items-center gap-3 pl-4">
+                                        <div class="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0 border-2 border-green-400">
+                                            <span class="text-white font-bold text-sm">?</span>
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <p class="font-semibold text-white truncate">TBD</p>
+                                            <p class="text-xs text-gray-300 truncate">To be announced</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endif %}
+                                <!-- Connecting line from Editor 2 -->
+                                <div class="hidden md:block absolute bottom-1/2 right-0 w-16 h-0.5 bg-white/30 transform translate-x-full"></div>
+                                
+                                <!-- Horizontal line to center -->
+                                <div class="hidden md:block absolute top-1/2 right-16 w-32 h-0.5 bg-white/30 transform translate-y-1/2"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Center - Trophy -->
+                    <div class="flex-shrink-0 flex flex-col items-center justify-center my-8 md:my-0">
+                        <!-- Connecting lines from left and right -->
+                        <div class="hidden md:block absolute left-1/2 top-1/2 w-0.5 h-32 bg-white/30 transform -translate-x-1/2 -translate-y-1/2"></div>
+                        
+                        <!-- Trophy -->
+                        <div class="relative z-10 flex flex-col items-center">
+                            <div class="relative mb-4">
+                                <!-- Trophy Icon -->
+                                <div class="text-6xl md:text-7xl text-yellow-400 drop-shadow-lg">
+                                    <i class="fas fa-trophy"></i>
+                                </div>
+                                <!-- Laurel Wreaths -->
+                                <div class="absolute -left-8 top-1/2 transform -translate-y-1/2 text-3xl text-yellow-400/60">
+                                    <i class="fas fa-leaf"></i>
+                                </div>
+                                <div class="absolute -right-8 top-1/2 transform -translate-y-1/2 text-3xl text-yellow-400/60">
+                                    <i class="fas fa-leaf"></i>
+                                </div>
+                            </div>
+                            <!-- Champion Label -->
+                            <div class="bg-gradient-to-r from-orange-500 to-yellow-500 rounded-lg px-8 py-3 shadow-xl">
+                                <span class="font-bold text-gray-900 text-lg md:text-xl">CHAMPION</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Right Side - Semi-Final 2 -->
+                    <div class="flex-1 w-full md:w-auto">
+                        <div class="space-y-4">
+                            <!-- Match 2 - Editor 3 vs Editor 4 -->
+                            <div class="relative">
+                                <!-- Editor 3 Box -->
+                                {% if tournament_participants.2 %}
+                                <div class="bg-white/10 backdrop-blur-sm rounded-lg border border-white/20 p-4 mb-2 relative group hover:bg-white/15 transition-all">
+                                    <div class="absolute left-0 top-0 bottom-0 w-1 bg-green-500 rounded-l-lg"></div>
+                                    <div class="flex items-center gap-3 pl-4">
+                                        <!-- User Image -->
+                                        {% if tournament_participants.2.profile_picture %}
+                                        <img src="{{ tournament_participants.2.profile_picture }}" 
+                                             alt="{{ tournament_participants.2.channel_name }}" 
+                                             class="w-12 h-12 rounded-full object-cover border-2 border-green-400 flex-shrink-0">
+                                        {% elif tournament_participants.2.channel_thumbnail %}
+                                        <img src="{{ tournament_participants.2.channel_thumbnail }}" 
+                                             alt="{{ tournament_participants.2.channel_name }}" 
+                                             class="w-12 h-12 rounded-full object-cover border-2 border-green-400 flex-shrink-0">
+                                        {% else %}
+                                        <div class="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0 border-2 border-green-400">
+                                            <span class="text-white font-bold text-sm">{{ tournament_participants.2.channel_name|first|upper }}</span>
+                                        </div>
+                                        {% endif %}
+                                        <div class="flex-1 min-w-0">
+                                            <p class="font-semibold text-white truncate">{{ tournament_participants.2.channel_name }}</p>
+                                            <p class="text-xs text-gray-300 truncate">@{{ tournament_participants.2.username }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% else %}
+                                <div class="bg-white/10 backdrop-blur-sm rounded-lg border border-white/20 p-4 mb-2 relative group hover:bg-white/15 transition-all">
+                                    <div class="absolute left-0 top-0 bottom-0 w-1 bg-green-500 rounded-l-lg"></div>
+                                    <div class="flex items-center gap-3 pl-4">
+                                        <div class="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0 border-2 border-green-400">
+                                            <span class="text-white font-bold text-sm">?</span>
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <p class="font-semibold text-white truncate">TBD</p>
+                                            <p class="text-xs text-gray-300 truncate">To be announced</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endif %}
+                                <!-- Connecting line from Editor 3 -->
+                                <div class="hidden md:block absolute top-1/2 left-0 w-16 h-0.5 bg-white/30 transform -translate-x-full"></div>
+                                
+                                <!-- Editor 4 Box -->
+                                {% if tournament_participants.3 %}
+                                <div class="bg-white/10 backdrop-blur-sm rounded-lg border border-white/20 p-4 relative group hover:bg-white/15 transition-all">
+                                    <div class="absolute left-0 top-0 bottom-0 w-1 bg-green-500 rounded-l-lg"></div>
+                                    <div class="flex items-center gap-3 pl-4">
+                                        <!-- User Image -->
+                                        {% if tournament_participants.3.profile_picture %}
+                                        <img src="{{ tournament_participants.3.profile_picture }}" 
+                                             alt="{{ tournament_participants.3.channel_name }}" 
+                                             class="w-12 h-12 rounded-full object-cover border-2 border-green-400 flex-shrink-0">
+                                        {% elif tournament_participants.3.channel_thumbnail %}
+                                        <img src="{{ tournament_participants.3.channel_thumbnail }}" 
+                                             alt="{{ tournament_participants.3.channel_name }}" 
+                                             class="w-12 h-12 rounded-full object-cover border-2 border-green-400 flex-shrink-0">
+                                        {% else %}
+                                        <div class="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0 border-2 border-green-400">
+                                            <span class="text-white font-bold text-sm">{{ tournament_participants.3.channel_name|first|upper }}</span>
+                                        </div>
+                                        {% endif %}
+                                        <div class="flex-1 min-w-0">
+                                            <p class="font-semibold text-white truncate">{{ tournament_participants.3.channel_name }}</p>
+                                            <p class="text-xs text-gray-300 truncate">@{{ tournament_participants.3.username }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% else %}
+                                <div class="bg-white/10 backdrop-blur-sm rounded-lg border border-white/20 p-4 relative group hover:bg-white/15 transition-all">
+                                    <div class="absolute left-0 top-0 bottom-0 w-1 bg-green-500 rounded-l-lg"></div>
+                                    <div class="flex items-center gap-3 pl-4">
+                                        <div class="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0 border-2 border-green-400">
+                                            <span class="text-white font-bold text-sm">?</span>
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <p class="font-semibold text-white truncate">TBD</p>
+                                            <p class="text-xs text-gray-300 truncate">To be announced</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endif %}
+                                <!-- Connecting line from Editor 4 -->
+                                <div class="hidden md:block absolute bottom-1/2 left-0 w-16 h-0.5 bg-white/30 transform -translate-x-full"></div>
+                                
+                                <!-- Horizontal line to center -->
+                                <div class="hidden md:block absolute top-1/2 left-16 w-32 h-0.5 bg-white/30 transform -translate-x-full translate-y-1/2"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    {% endif %}
+
     {% if not show_all %}
     <!-- Platform Tabs (visible in summary/highlight view) -->
     <section class="py-4 bg-white border-b">
