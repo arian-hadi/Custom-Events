@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.utils.html import mark_safe
 
-from .models import EditorApplication, EditSubmission, EditUpvote, EditReport, Tournament
+from .models import EditorApplication, EditSubmission, EditUpvote, EditReport, Tournament, WeekWinner
 
 
 @admin.register(EditorApplication)
@@ -132,3 +132,42 @@ class TournamentAdmin(admin.ModelAdmin):
         qs = super().get_queryset(request)
         return qs.select_related('participant_1', 'participant_2', 'participant_3', 'participant_4',
                                  'participant_1__user', 'participant_2__user', 'participant_3__user', 'participant_4__user')
+
+
+@admin.register(WeekWinner)
+class WeekWinnerAdmin(admin.ModelAdmin):
+    list_display = ('week_start', 'week_rank', 'channel_name', 'user', 'channel_type', 'calculated_points', 'created_date')
+    list_filter = ('week_rank', 'channel_type', 'week_start', 'created_date')
+    search_fields = ('user__username', 'channel_name', 'video_url', 'title')
+    readonly_fields = ('edit_submission', 'user', 'video_url', 'week_start', 'week_rank', 'channel_type', 
+                      'channel_name', 'title', 'calculated_points', 'created_date')
+    date_hierarchy = 'week_start'
+    ordering = ('-week_start', 'week_rank')
+    
+    fieldsets = (
+        ('Winner Information', {
+            'fields': ('week_start', 'week_rank', 'calculated_points')
+        }),
+        ('User & Channel', {
+            'fields': ('user', 'channel_name', 'channel_type')
+        }),
+        ('Edit Details', {
+            'fields': ('edit_submission', 'video_url', 'title')
+        }),
+        ('Timestamps', {
+            'fields': ('created_date',),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def has_add_permission(self, request):
+        # Prevent manual creation - winners are created automatically via signal
+        return False
+    
+    def has_delete_permission(self, request, obj=None):
+        # Allow deletion for admin purposes (e.g., correcting mistakes)
+        return request.user.is_superuser
+    
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.select_related('user', 'edit_submission')

@@ -83,11 +83,19 @@
                                         {% if tournament_participants.0.profile_picture %}
                                         <img src="{{ tournament_participants.0.profile_picture }}" 
                                              alt="{{ tournament_participants.0.channel_name }}" 
-                                             class="w-12 h-12 rounded-full object-cover border-2 border-green-400 flex-shrink-0">
+                                             class="w-12 h-12 rounded-full object-cover border-2 border-green-400 flex-shrink-0"
+                                             onerror="this.onerror=null; this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                        <div class="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0 border-2 border-green-400" style="display: none;">
+                                            <span class="text-white font-bold text-sm">{{ tournament_participants.0.channel_name|first|upper }}</span>
+                                        </div>
                                         {% elif tournament_participants.0.channel_thumbnail %}
                                         <img src="{{ tournament_participants.0.channel_thumbnail }}" 
                                              alt="{{ tournament_participants.0.channel_name }}" 
-                                             class="w-12 h-12 rounded-full object-cover border-2 border-green-400 flex-shrink-0">
+                                             class="w-12 h-12 rounded-full object-cover border-2 border-green-400 flex-shrink-0"
+                                             onerror="this.onerror=null; this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                        <div class="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0 border-2 border-green-400" style="display: none;">
+                                            <span class="text-white font-bold text-sm">{{ tournament_participants.0.channel_name|first|upper }}</span>
+                                        </div>
                                         {% else %}
                                         <div class="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0 border-2 border-green-400">
                                             <span class="text-white font-bold text-sm">{{ tournament_participants.0.channel_name|first|upper }}</span>
@@ -125,11 +133,19 @@
                                         {% if tournament_participants.1.profile_picture %}
                                         <img src="{{ tournament_participants.1.profile_picture }}" 
                                              alt="{{ tournament_participants.1.channel_name }}" 
-                                             class="w-12 h-12 rounded-full object-cover border-2 border-green-400 flex-shrink-0">
+                                             class="w-12 h-12 rounded-full object-cover border-2 border-green-400 flex-shrink-0"
+                                             onerror="this.onerror=null; this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                        <div class="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0 border-2 border-green-400" style="display: none;">
+                                            <span class="text-white font-bold text-sm">{{ tournament_participants.1.channel_name|first|upper }}</span>
+                                        </div>
                                         {% elif tournament_participants.1.channel_thumbnail %}
                                         <img src="{{ tournament_participants.1.channel_thumbnail }}" 
                                              alt="{{ tournament_participants.1.channel_name }}" 
-                                             class="w-12 h-12 rounded-full object-cover border-2 border-green-400 flex-shrink-0">
+                                             class="w-12 h-12 rounded-full object-cover border-2 border-green-400 flex-shrink-0"
+                                             onerror="this.onerror=null; this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                        <div class="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0 border-2 border-green-400" style="display: none;">
+                                            <span class="text-white font-bold text-sm">{{ tournament_participants.1.channel_name|first|upper }}</span>
+                                        </div>
                                         {% else %}
                                         <div class="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0 border-2 border-green-400">
                                             <span class="text-white font-bold text-sm">{{ tournament_participants.1.channel_name|first|upper }}</span>
@@ -205,11 +221,19 @@
                                         {% if tournament_participants.2.profile_picture %}
                                         <img src="{{ tournament_participants.2.profile_picture }}" 
                                              alt="{{ tournament_participants.2.channel_name }}" 
-                                             class="w-12 h-12 rounded-full object-cover border-2 border-green-400 flex-shrink-0">
+                                             class="w-12 h-12 rounded-full object-cover border-2 border-green-400 flex-shrink-0"
+                                             onerror="this.onerror=null; this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                        <div class="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0 border-2 border-green-400" style="display: none;">
+                                            <span class="text-white font-bold text-sm">{{ tournament_participants.2.channel_name|first|upper }}</span>
+                                        </div>
                                         {% elif tournament_participants.2.channel_thumbnail %}
                                         <img src="{{ tournament_participants.2.channel_thumbnail }}" 
                                              alt="{{ tournament_participants.2.channel_name }}" 
-                                             class="w-12 h-12 rounded-full object-cover border-2 border-green-400 flex-shrink-0">
+                                             class="w-12 h-12 rounded-full object-cover border-2 border-green-400 flex-shrink-0"
+                                             onerror="this.onerror=null; this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                        <div class="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0 border-2 border-green-400" style="display: none;">
+                                            <span class="text-white font-bold text-sm">{{ tournament_participants.2.channel_name|first|upper }}</span>
+                                        </div>
                                         {% else %}
                                         <div class="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0 border-2 border-green-400">
                                             <span class="text-white font-bold text-sm">{{ tournament_participants.2.channel_name|first|upper }}</span>
@@ -247,11 +271,19 @@
                                         {% if tournament_participants.3.profile_picture %}
                                         <img src="{{ tournament_participants.3.profile_picture }}" 
                                              alt="{{ tournament_participants.3.channel_name }}" 
-                                             class="w-12 h-12 rounded-full object-cover border-2 border-green-400 flex-shrink-0">
+                                             class="w-12 h-12 rounded-full object-cover border-2 border-green-400 flex-shrink-0"
+                                             onerror="this.onerror=null; this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                        <div class="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0 border-2 border-green-400" style="display: none;">
+                                            <span class="text-white font-bold text-sm">{{ tournament_participants.3.channel_name|first|upper }}</span>
+                                        </div>
                                         {% elif tournament_participants.3.channel_thumbnail %}
                                         <img src="{{ tournament_participants.3.channel_thumbnail }}" 
                                              alt="{{ tournament_participants.3.channel_name }}" 
-                                             class="w-12 h-12 rounded-full object-cover border-2 border-green-400 flex-shrink-0">
+                                             class="w-12 h-12 rounded-full object-cover border-2 border-green-400 flex-shrink-0"
+                                             onerror="this.onerror=null; this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                        <div class="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0 border-2 border-green-400" style="display: none;">
+                                            <span class="text-white font-bold text-sm">{{ tournament_participants.3.channel_name|first|upper }}</span>
+                                        </div>
                                         {% else %}
                                         <div class="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0 border-2 border-green-400">
                                             <span class="text-white font-bold text-sm">{{ tournament_participants.3.channel_name|first|upper }}</span>
@@ -409,7 +441,13 @@
                                 <td class="px-6 py-4">
                                     <div class="flex items-center gap-3">
                                         {% if ranking.display_thumbnail %}
-                                        <img src="{{ ranking.display_thumbnail }}" alt="{{ ranking.display_user_name }}" class="h-12 w-12 rounded-full object-cover shadow-sm">
+                                        <img src="{{ ranking.display_thumbnail }}" 
+                                             alt="{{ ranking.display_user_name }}" 
+                                             class="h-12 w-12 rounded-full object-cover shadow-sm"
+                                             onerror="this.onerror=null; this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                        <div class="h-12 w-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-semibold shadow-sm" style="display: none;">
+                                            {{ ranking.display_user_name|first|upper }}
+                                        </div>
                                         {% else %}
                                         <div class="h-12 w-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-semibold shadow-sm">
                                             {{ ranking.display_user_name|first|upper }}
@@ -501,7 +539,7 @@
                                 </td>
                                 {% else %}
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    {% if ranking.actual_rank %}
+                                    {% if ranking.actual_rank is not None %}
                                         {% with position=ranking.actual_rank %}
                                         <div class="flex items-center">
                                             {% if position <= 3 %}
@@ -544,7 +582,11 @@
                                         {% if ranking.channel_thumbnail %}
                                         <img src="{{ ranking.channel_thumbnail }}" 
                                              alt="{{ ranking.channel_name }}" 
-                                             class="h-10 w-10 rounded-full mr-3 object-cover">
+                                             class="h-10 w-10 rounded-full mr-3 object-cover"
+                                             onerror="this.onerror=null; this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                        <div class="h-10 w-10 rounded-full mr-3 bg-gradient-to-br {% if ranking.channel_type == 'youtube' %}from-red-400 to-orange-400{% else %}from-purple-400 via-pink-400 to-blue-400{% endif %} flex items-center justify-center" style="display: none;">
+                                            <span class="text-white font-bold text-sm">{{ ranking.channel_name|first|upper|default:"U" }}</span>
+                                        </div>
                                         {% else %}
                                         <div class="h-10 w-10 rounded-full mr-3 bg-gradient-to-br {% if ranking.channel_type == 'youtube' %}from-red-400 to-orange-400{% else %}from-purple-400 via-pink-400 to-blue-400{% endif %} flex items-center justify-center">
                                             <span class="text-white font-bold text-sm">{{ ranking.channel_name|first|upper|default:"U" }}</span>
@@ -788,7 +830,11 @@
                                 <div class="flex items-center gap-3 flex-1 min-w-0">
                                     {% if edit.channel_thumbnail %}
                                     <img src="{{ edit.channel_thumbnail }}" alt="{{ edit.channel_name }}" 
-                                         class="h-12 w-12 rounded-full object-cover ring-2 ring-gray-200 shadow-sm flex-shrink-0">
+                                         class="h-12 w-12 rounded-full object-cover ring-2 ring-gray-200 shadow-sm flex-shrink-0"
+                                         onerror="this.onerror=null; this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                    <div class="h-12 w-12 rounded-full bg-gradient-to-br {% if edit.channel_type == 'youtube' %}from-red-400 to-orange-400{% else %}from-purple-400 via-pink-400 to-blue-400{% endif %} flex items-center justify-center ring-2 ring-gray-200 shadow-sm flex-shrink-0" style="display: none;">
+                                        <span class="text-white font-bold text-sm">{{ edit.channel_name|first|upper|default:"E" }}</span>
+                                    </div>
                                     {% else %}
                                     <div class="h-12 w-12 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center ring-2 ring-gray-200 shadow-sm flex-shrink-0">
                                         <span class="text-white font-bold text-lg">{{ edit.channel_name|first|upper }}</span>

@@ -177,6 +177,15 @@ class EditSubmissionForm(forms.ModelForm):
         if not self.approved_application:
             raise forms.ValidationError('No approved application found. Please apply and get approved first.')
         
+        # Check if this video URL was already a winner (cannot resubmit winner videos)
+        from .models import WeekWinner
+        existing_winner = WeekWinner.objects.filter(video_url=video_url).first()
+        if existing_winner:
+            raise forms.ValidationError(
+                f'This video was already a winner (Rank #{existing_winner.week_rank} for week of {existing_winner.week_start.strftime("%B %d, %Y")}). '
+                'Winner videos cannot be resubmitted. Please submit a different video.'
+            )
+        
         # Verify video belongs to the approved channel
         from .utils import verify_video_belongs_to_channel
         is_valid, error_message = verify_video_belongs_to_channel(

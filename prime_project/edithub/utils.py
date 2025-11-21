@@ -1253,6 +1253,94 @@ def fetch_tiktok_oembed(video_url: str) -> Dict[str, Optional[str]]:
         return result
 
 
+def is_valid_thumbnail_url(thumbnail_url: str) -> bool:
+    """
+    Check if a thumbnail URL is valid and not a placeholder/empty value.
+    
+    Args:
+        thumbnail_url: The thumbnail URL to validate
+        
+    Returns:
+        True if the URL is valid, False otherwise
+    """
+    if not thumbnail_url:
+        return False
+    
+    # Convert to string and strip whitespace
+    url = str(thumbnail_url).strip()
+    
+    # Check for empty strings
+    if not url:
+        return False
+    
+    # List of invalid/placeholder values to check for
+    invalid_patterns = [
+        'no-image',
+        'no-image.jpg',
+        'no-image.png',
+        'no-thumbnail',
+        'no-thumbnail.jpg',
+        'no-thumbnail.png',
+        'placeholder',
+        'placeholder.jpg',
+        'placeholder.png',
+        'default',
+        'default.jpg',
+        'default.png',
+        'none',
+        'null',
+        'undefined',
+        'missing',
+        'missing.jpg',
+        'missing.png',
+    ]
+    
+    # Check if URL contains any invalid patterns (case-insensitive)
+    url_lower = url.lower()
+    for pattern in invalid_patterns:
+        if pattern in url_lower:
+            return False
+    
+    # Check if it's a valid URL format (starts with http:// or https://)
+    if not (url.startswith('http://') or url.startswith('https://')):
+        return False
+    
+    # Additional check: if URL is too short, it's likely invalid
+    if len(url) < 10:
+        return False
+    
+    return True
+
+
+def get_fallback_thumbnail(existing_thumbnail: str, new_thumbnail: str, *additional_fallbacks: str) -> str:
+    """
+    Get the best available thumbnail from multiple options, preferring existing valid ones.
+    
+    Args:
+        existing_thumbnail: The current/existing thumbnail URL
+        new_thumbnail: The new thumbnail URL to potentially use
+        *additional_fallbacks: Additional thumbnail URLs to check as fallbacks
+        
+    Returns:
+        The best valid thumbnail URL, or empty string if none are valid
+    """
+    # First, prefer existing thumbnail if it's valid
+    if is_valid_thumbnail_url(existing_thumbnail):
+        return existing_thumbnail.strip()
+    
+    # Then check new thumbnail
+    if is_valid_thumbnail_url(new_thumbnail):
+        return new_thumbnail.strip()
+    
+    # Finally check additional fallbacks
+    for fallback in additional_fallbacks:
+        if is_valid_thumbnail_url(fallback):
+            return fallback.strip()
+    
+    # Return empty string if no valid thumbnail found
+    return ''
+
+
 def fetch_tiktok_video_title(video_url: str) -> Optional[str]:
     """
     Fetch TikTok video title using oEmbed API (simplest method)

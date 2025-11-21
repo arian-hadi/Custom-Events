@@ -159,11 +159,13 @@ class RankingTableView(ListView):
                     Q(editing_area=editing_area) | Q(editing_area='all')
                 )
             
-            # Build list with actual ranks
+            # Build list with actual ranks - THIS IS THE SOURCE OF TRUTH
             unfiltered_list = list(unfiltered_base)
             user_rank_map = {}
             for index, app in enumerate(unfiltered_list, start=1):
                 user_rank_map[app.user_id] = index
+                # Set actual_rank directly on the app object for immediate use
+                app.actual_rank = index
             
             # Now get the filtered queryset
             queryset = getattr(self, 'full_queryset', super().get_queryset())
@@ -173,7 +175,8 @@ class RankingTableView(ListView):
                 # For filtered results, we need to add rank attribute to each object
                 queryset_list = list(queryset)
                 for app in queryset_list:
-                    app.actual_rank = user_rank_map.get(app.user_id, None)
+                    # Always get from user_rank_map to ensure accuracy
+                    app.actual_rank = user_rank_map.get(app.user_id)
                 queryset = queryset_list
             
             # current user rank (platform)
@@ -185,6 +188,13 @@ class RankingTableView(ListView):
             if show_all:
                 # If we have a list (from search), use it directly; otherwise paginate
                 if isinstance(queryset, list):
+                    # Ensure actual_rank is set for all items in the list
+                    for app in queryset:
+                        app.actual_rank = user_rank_map.get(app.user_id)
+                        # If somehow not in map, this shouldn't happen but ensure it's set
+                        if app.actual_rank is None:
+                            logger.warning(f"User {app.user_id} not found in rank map for {channel_filter}")
+                            app.actual_rank = 999  # Fallback to high number
                     paginator = Paginator(queryset, self.paginate_by)
                     page_number = self.request.GET.get('page')
                     page_obj = paginator.get_page(page_number)
@@ -197,19 +207,27 @@ class RankingTableView(ListView):
                     paginator = Paginator(queryset, self.paginate_by)
                     page_number = self.request.GET.get('page')
                     page_obj = paginator.get_page(page_number)
-                    # Add actual ranks to paginated results
+                    # Add actual ranks to paginated results - CRITICAL: Always use user_rank_map
                     for app in page_obj.object_list:
-                        app.actual_rank = user_rank_map.get(app.user_id, None)
+                        # Get actual rank from user_rank_map (source of truth)
+                        app.actual_rank = user_rank_map.get(app.user_id)
                     context['rankings'] = page_obj.object_list
                     context['object_list'] = page_obj.object_list
                     context['page_obj'] = page_obj
                     context['is_paginated'] = page_obj.has_other_pages()
                     context['paginator'] = paginator
             else:
-                top5 = list(queryset[:5])
-                # Add actual ranks to top 5
-                for app in top5:
-                    app.actual_rank = user_rank_map.get(app.user_id, None)
+                # For top 5, use unfiltered_list to ensure correct ranking order
+                # This ensures ranks are always accurate even when follower counts change
+                top5 = unfiltered_list[:5]
+                # actual_rank is already set when we built unfiltered_list above
+                # Double-check to ensure it's set correctly (should match index)
+                for index, app in enumerate(top5, start=1):
+                    expected_rank = user_rank_map.get(app.user_id)
+                    app.actual_rank = expected_rank if expected_rank is not None else index
+                    # Verify it matches (debugging)
+                    if app.actual_rank != index:
+                        logger.warning(f"Rank mismatch for user {app.user_id}: expected {index}, got {app.actual_rank}")
                 context['rankings'] = top5
                 context['object_list'] = top5
                 context['is_paginated'] = False
@@ -356,7 +374,7 @@ class RankingTableView(ListView):
                         'channel_name': app.channel_name or app.user.username,
                         'username': app.user.username,
                         'profile_picture': app.user.profile_picture.url if app.user.profile_picture else None,
-                        'channel_thumbnail': app.channel_thumbnail or '',
+                        'channel_thumbnail': (app.channel_thumbnail or '').strip(),
                         'channel_type': app.channel_type,
                     })
                 else:
@@ -419,19 +437,24 @@ class RankingTableView(ListView):
                 })
             display_user_name = apps[0].user.get_full_name() or apps[0].user.username
             # Get thumbnail - prefer primary app, but fallback to other platform if primary has no thumbnail
+            from .utils import get_fallback_thumbnail
             display_thumbnail = ''
             if primary_app:
-                display_thumbnail = (primary_app.channel_thumbnail or '').strip()
-                # If primary app has no thumbnail, try the other platform
-                if not display_thumbnail and youtube_app and tiktok_app:
-                    other_app = tiktok_app if primary_app == youtube_app else youtube_app
-                    display_thumbnail = (other_app.channel_thumbnail or '').strip()
-                # If still no thumbnail and user only has one platform, use that one
-                elif not display_thumbnail:
-                    if tiktok_app and not youtube_app:
-                        display_thumbnail = (tiktok_app.channel_thumbnail or '').strip()
-                    elif youtube_app and not tiktok_app:
-                        display_thumbnail = (youtube_app.channel_thumbnail or '').strip()
+                primary_thumb = (primary_app.channel_thumbnail or '').strip()
+                youtube_thumb = (youtube_app.channel_thumbnail or '').strip() if youtube_app else ''
+                tiktok_thumb = (tiktok_app.channel_thumbnail or '').strip() if tiktok_app else ''
+                
+                # Use fallback helper to get the best available thumbnail
+                if youtube_app and tiktok_app:
+                    # User has both platforms - prefer primary, then other platform
+                    other_app_thumb = tiktok_thumb if primary_app == youtube_app else youtube_thumb
+                    display_thumbnail = get_fallback_thumbnail(primary_thumb, other_app_thumb)
+                elif youtube_app:
+                    display_thumbnail = get_fallback_thumbnail(primary_thumb, youtube_thumb)
+                elif tiktok_app:
+                    display_thumbnail = get_fallback_thumbnail(primary_thumb, tiktok_thumb)
+                else:
+                    display_thumbnail = primary_thumb if primary_thumb else ''
             all_entries.append({
                 'user': apps[0].user,
                 'apps': apps,
@@ -619,17 +642,21 @@ def apply_view(request):
                 return render_apply_form(youtube_form, tiktok_form, apply_youtube, apply_tiktok, data_consent)
 
             channel_link = form.cleaned_data['channel_link'].strip()
+            # Only check for active applications (pending or accepted, not removal_requested)
+            # This allows re-application if the previous application was deleted/rejected/removed
             duplicate_link = EditorApplication.objects.filter(
                 user=request.user,
-                channel_link=channel_link
-            ).exclude(status='rejected')
+                channel_link=channel_link,
+                status__in=['pending', 'accepted']
+            ).exclude(removal_requested=True)
             if duplicate_link.exists():
-                messages.error(request, "You have already submitted this channel link.")
+                messages.error(request, "You have already submitted this channel link with an active application.")
                 return render_apply_form(youtube_form, tiktok_form, apply_youtube, apply_tiktok, data_consent)
 
         created_applications = []
 
         try:
+            from django.db import IntegrityError
             for platform, form in forms_to_process:
                 channel_link = form.cleaned_data['channel_link'].strip()
 
@@ -673,6 +700,22 @@ def apply_view(request):
                     request.user.username
                 )
 
+        except IntegrityError as error:
+            # Handle unique_together constraint violation
+            # This can happen if a deleted application still exists in the database
+            logger.warning("Integrity error while creating application: %s", error)
+            for app in created_applications:
+                app.delete()
+            # Check if it's a duplicate channel_link issue
+            if 'channel_link' in str(error) or 'unique' in str(error).lower():
+                messages.error(
+                    request, 
+                    "An application with this channel link already exists. "
+                    "If your previous application was deleted, please contact support or try again in a few moments."
+                )
+            else:
+                messages.error(request, f"Database error: {error}")
+            return render_apply_form(youtube_form, tiktok_form, apply_youtube, apply_tiktok, data_consent)
         except ValueError as error:
             logger.warning("Application processing error: %s", error)
             for app in created_applications:
@@ -793,7 +836,7 @@ def get_user_stats_ajax(request):
         return JsonResponse({
             'success': True,
             'username': primary_app.channel_name or edit_user.username,
-            'profile_picture': primary_app.channel_thumbnail or '',
+            'profile_picture': (primary_app.channel_thumbnail or '').strip(),
             'channel_type': primary_app.channel_type,
             'channel_link': primary_app.channel_link,
             'editor_title': editor_title,
@@ -1172,13 +1215,19 @@ def submit_edit(request):
                             video_title = fetched_title
                             logger.info(f"Auto-fetched TikTok video title: {video_title}")
                 
+                from .utils import get_fallback_thumbnail
+                # Use fallback to ensure we have a valid thumbnail
+                existing_thumb = ''  # No existing thumbnail for new submission
+                new_thumb = (approved_app.channel_thumbnail or '').strip()
+                best_thumb = get_fallback_thumbnail(existing_thumb, new_thumb)
+                
                 submission = EditSubmission(
                     user=request.user,
                     approved_application=approved_app,
                     channel_link=approved_app.channel_link,
                     channel_type=approved_app.channel_type,
                     channel_name=approved_app.channel_name,
-                    channel_thumbnail=approved_app.channel_thumbnail,
+                    channel_thumbnail=best_thumb,
                     scheduled_week=next_week_start,
                     video_url=form.cleaned_data['video_url'],
                     direct_video_url=direct_video_url,

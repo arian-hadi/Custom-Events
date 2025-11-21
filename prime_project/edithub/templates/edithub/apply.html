@@ -284,6 +284,52 @@
     </div>
 </main>
 
+<!-- Loading Modal -->
+<div id="loadingModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
+    <div class="bg-white rounded-xl shadow-2xl p-8 max-w-md w-full mx-4 transform transition-all">
+        <div class="text-center">
+            <!-- Loading Spinner -->
+            <div class="mb-6 flex justify-center">
+                <div class="relative w-16 h-16">
+                    <div class="absolute inset-0 border-4 border-blue-200 rounded-full"></div>
+                    <div class="absolute inset-0 border-4 border-blue-600 rounded-full border-t-transparent animate-spin"></div>
+                </div>
+            </div>
+            
+            <!-- Loading Title -->
+            <h3 class="text-xl font-bold text-gray-900 mb-2" id="loadingTitle">Processing Your Application</h3>
+            
+            <!-- Loading Message -->
+            <p class="text-gray-600 mb-4" id="loadingMessage">Please wait while we fetch and verify your channel data...</p>
+            
+            <!-- Progress Steps -->
+            <div class="mt-6 space-y-2 text-left">
+                <div class="flex items-center gap-3 text-sm" id="step1">
+                    <div class="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
+                        <svg class="w-3 h-3 text-gray-400 hidden" id="check1" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                        </svg>
+                        <div class="w-2 h-2 bg-gray-400 rounded-full animate-pulse" id="dot1"></div>
+                    </div>
+                    <span class="text-gray-600" id="step1Text">Fetching channel information...</span>
+                </div>
+                <div class="flex items-center gap-3 text-sm opacity-50" id="step2">
+                    <div class="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
+                        <div class="w-2 h-2 bg-gray-300 rounded-full" id="dot2"></div>
+                    </div>
+                    <span class="text-gray-500" id="step2Text">Verifying channel ownership...</span>
+                </div>
+                <div class="flex items-center gap-3 text-sm opacity-50" id="step3">
+                    <div class="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
+                        <div class="w-2 h-2 bg-gray-300 rounded-full" id="dot3"></div>
+                    </div>
+                    <span class="text-gray-500" id="step3Text">Preparing your application...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const platformRadios = document.querySelectorAll('input[name="platform"]');
@@ -444,6 +490,69 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
+    // Loading modal functions
+    const loadingModal = document.getElementById('loadingModal');
+    const loadingTitle = document.getElementById('loadingTitle');
+    const loadingMessage = document.getElementById('loadingMessage');
+    
+    function showLoadingModal() {
+        if (loadingModal) {
+            loadingModal.classList.remove('hidden');
+            // Reset steps
+            resetLoadingSteps();
+            // Start showing progress
+            setTimeout(() => updateLoadingStep(1), 500);
+            setTimeout(() => updateLoadingStep(2), 2000);
+            setTimeout(() => updateLoadingStep(3), 4000);
+        }
+    }
+    
+    function hideLoadingModal() {
+        if (loadingModal) {
+            loadingModal.classList.add('hidden');
+        }
+    }
+    
+    function resetLoadingSteps() {
+        // Reset all steps to inactive state
+        for (let i = 1; i <= 3; i++) {
+            const step = document.getElementById(`step${i}`);
+            const check = document.getElementById(`check${i}`);
+            const dot = document.getElementById(`dot${i}`);
+            if (step) step.classList.add('opacity-50');
+            if (check) check.classList.add('hidden');
+            if (dot) {
+                dot.classList.remove('hidden');
+                dot.classList.remove('bg-blue-600');
+                dot.classList.add('bg-gray-300');
+            }
+        }
+    }
+    
+    function updateLoadingStep(stepNumber) {
+        const step = document.getElementById(`step${stepNumber}`);
+        const check = document.getElementById(`check${stepNumber}`);
+        const dot = document.getElementById(`dot${stepNumber}`);
+        
+        if (step) {
+            step.classList.remove('opacity-50');
+            step.classList.add('opacity-100');
+        }
+        if (check) check.classList.remove('hidden');
+        if (dot) {
+            dot.classList.add('hidden');
+        }
+        
+        // Update next step to show pulse animation
+        if (stepNumber < 3) {
+            const nextDot = document.getElementById(`dot${stepNumber + 1}`);
+            if (nextDot) {
+                nextDot.classList.remove('bg-gray-300');
+                nextDot.classList.add('bg-blue-600', 'animate-pulse');
+            }
+        }
+    }
+    
     // Prevent form submission if trying to submit for a platform already applied
     const form = document.getElementById('applicationForm');
     if (form) {
@@ -454,6 +563,51 @@ document.addEventListener('DOMContentLoaded', function() {
                 e.preventDefault();
                 alert('You have already applied for this platform. Please switch to the other platform or wait for your application to be reviewed.');
                 return false;
+            }
+            
+            // Show loading modal when form is valid and being submitted
+            // Only show if not already applied and form is valid
+            if (!((selectedPlatform === 'youtube' && youtubeAlreadyApplied) || 
+                  (selectedPlatform === 'tiktok' && tiktokAlreadyApplied))) {
+                
+                // Basic client-side validation
+                let isValid = true;
+                const dataConsent = document.getElementById('dataConsent');
+                
+                if (!dataConsent || !dataConsent.checked) {
+                    isValid = false;
+                }
+                
+                // Check required fields for selected platform
+                if (selectedPlatform === 'youtube') {
+                    const channelLink = document.getElementById('id_youtube-channel_link');
+                    const screenshot = document.getElementById('id_youtube-channel_screenshot');
+                    if (!channelLink || !channelLink.value.trim()) isValid = false;
+                    if (!screenshot || !screenshot.files || screenshot.files.length === 0) isValid = false;
+                } else if (selectedPlatform === 'tiktok') {
+                    const channelLink = document.getElementById('id_tiktok-channel_link');
+                    const screenshot = document.getElementById('id_tiktok-channel_screenshot');
+                    if (!channelLink || !channelLink.value.trim()) isValid = false;
+                    if (!screenshot || !screenshot.files || screenshot.files.length === 0) isValid = false;
+                }
+                
+                // Only show modal if form is valid
+                if (isValid) {
+                    showLoadingModal();
+                    
+                    // Update loading message based on platform
+                    if (selectedPlatform === 'youtube') {
+                        loadingTitle.textContent = 'Processing YouTube Application';
+                        loadingMessage.textContent = 'Fetching your YouTube channel data and verifying ownership...';
+                        document.getElementById('step1Text').textContent = 'Fetching YouTube channel information...';
+                        document.getElementById('step2Text').textContent = 'Verifying channel ownership...';
+                    } else if (selectedPlatform === 'tiktok') {
+                        loadingTitle.textContent = 'Processing TikTok Application';
+                        loadingMessage.textContent = 'Fetching your TikTok channel data and verifying ownership...';
+                        document.getElementById('step1Text').textContent = 'Fetching TikTok channel information...';
+                        document.getElementById('step2Text').textContent = 'Verifying channel ownership...';
+                    }
+                }
             }
         });
     }
