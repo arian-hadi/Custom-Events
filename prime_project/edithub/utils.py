@@ -371,18 +371,27 @@ def fetch_tiktok_channel_data(channel_url: str) -> Dict[str, any]:
                         continue
         
         if not result['channel_name']:
+            # Try to extract display name (nickname) - the styled name with custom fonts
+            # This is different from the unique username
             patterns = [
                 r'"nickname"\s*:\s*"([^"]+)"',
                 r'"nickname":"([^"]+)"',
                 r'"displayName"\s*:\s*"([^"]+)"',
+                r'"uniqueId"\s*:\s*"([^"]+)"',  # This is the unique username, we want to avoid this
                 r'nickname["\']?\s*:\s*"([^"]+)"',
+                r'<h1[^>]*data-e2e="user-title"[^>]*>([^<]+)</h1>',
+                r'<h1[^>]*>([^<]+)</h1>',  # Last resort - any h1
             ]
             for pattern in patterns:
                 match = re.search(pattern, html_content)
                 if match:
-                    result['channel_name'] = match.group(1)
-                    logger.info(f"Extracted channel name via regex: {result['channel_name']}")
-                    break
+                    extracted_name = match.group(1)
+                    # Make sure we're not getting the unique username instead of display name
+                    # Display names can have spaces, emojis, special chars - usernames usually don't
+                    if extracted_name and extracted_name != username:
+                        result['channel_name'] = extracted_name
+                        logger.info(f"Extracted display name via regex: {result['channel_name']}")
+                        break
         
         if not result['thumbnail']:
             patterns = [
@@ -539,11 +548,46 @@ def fetch_tiktok_channel_data(channel_url: str) -> Dict[str, any]:
                             }
                         }
                         
-                        // Try DOM elements
+                        // Try DOM elements - prioritize display name (the styled name with custom fonts)
                         try {
                             if (!data.nickname) {
-                                const h1 = document.querySelector('h1[data-e2e="user-title"], h1');
-                                if (h1) data.nickname = h1.textContent.trim();
+                                // Try multiple selectors for the display name (styled name)
+                                const selectors = [
+                                    'h1[data-e2e="user-title"]',
+                                    'h1[data-e2e="user-subtitle"]',
+                                    'h1.epjbyn1',
+                                    'h1[class*="user-title"]',
+                                    'h1[class*="user-subtitle"]',
+                                    'h1',
+                                    '[data-e2e="user-title"]',
+                                    '.user-title',
+                                    'h2[data-e2e="user-title"]',
+                                ];
+                                
+                                for (const selector of selectors) {
+                                    const el = document.querySelector(selector);
+                                    if (el) {
+                                        const text = el.textContent.trim();
+                                        // Make sure it's not the unique username (which usually doesn't have special characters)
+                                        // Display names can have emojis, special characters, etc.
+                                        if (text && text !== username) {
+                                            data.nickname = text;
+                                            break;
+                                        }
+                                    }
+                                }
+                                
+                                // If still not found, try to find the main heading that's not the username
+                                if (!data.nickname) {
+                                    const headings = document.querySelectorAll('h1, h2');
+                                    for (const h of headings) {
+                                        const text = h.textContent.trim();
+                                        if (text && text !== username && text.length > 0) {
+                                            data.nickname = text;
+                                            break;
+                                        }
+                                    }
+                                }
                             }
                             
                             if (!data.followerCount) {
@@ -622,6 +666,34 @@ def fetch_tiktok_channel_data(channel_url: str) -> Dict[str, any]:
                 except Exception:
                     pass
                 
+                # Try additional DOM extraction if we still don't have the display name
+                if not result['channel_name']:
+                    try:
+                        # Wait a bit for page to fully render
+                        page.wait_for_timeout(2000)
+                        
+                        # Try to get display name from various DOM selectors
+                        display_name_selectors = [
+                            'h1[data-e2e="user-title"]',
+                            'h1[data-e2e="user-subtitle"]',
+                            'h1',
+                            '[data-e2e="user-title"]',
+                        ]
+                        
+                        for selector in display_name_selectors:
+                            try:
+                                element = page.query_selector(selector)
+                                if element:
+                                    text = element.inner_text().strip()
+                                    if text and text != username:
+                                        result['channel_name'] = text
+                                        logger.info(f"Extracted display name from DOM selector '{selector}': {result['channel_name']}")
+                                        break
+                            except Exception:
+                                continue
+                    except Exception as e:
+                        logger.debug(f"Additional DOM extraction failed: {str(e)}")
+                
                 # Only set error if we got nothing
                 if not result['channel_name'] and not result['follower_count']:
                     result['error'] = f'Error loading TikTok profile: {error_msg}'
@@ -635,8 +707,10 @@ def fetch_tiktok_channel_data(channel_url: str) -> Dict[str, any]:
         logger.error(f"Playwright setup error: {str(e)}", exc_info=True)
         result['error'] = f'Playwright error: {str(e)}'
     
-    # Ensure we have at least username
+    # Only use username as last resort - prefer to leave empty if we can't get display name
+    # This way the user knows we couldn't fetch the display name
     if not result['channel_name']:
+        logger.warning(f"Could not extract display name for TikTok user {username}, using username as fallback")
         result['channel_name'] = username
     
     logger.info(f"TikTok extraction result for {username}: name={result['channel_name']}, followers={result['follower_count']}, thumbnail={'yes' if result['thumbnail'] else 'no'}")
