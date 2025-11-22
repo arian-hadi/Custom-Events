@@ -797,7 +797,7 @@
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="flex items-center gap-3" title="Editing Tools">
-                                        {% for app in ranking.apps %}
+                                        {% for app in ranking.unique_tools %}
                                         <span class="inline-flex items-center justify-center" aria-hidden="true" title="{{ app.get_editing_tool_display }}">
                                             {{ app.editing_tool_icon|safe }}
                                         </span>

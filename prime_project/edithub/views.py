@@ -471,6 +471,13 @@ class RankingTableView(ListView):
                     'label': app.get_editing_area_display(),
                     'extra': app.editing_area_other if app.editing_area == 'others' else '',
                 })
+            # Deduplicate editing tools - only show unique tools
+            seen_tools = set()
+            unique_tools = []
+            for app in apps:
+                if app.editing_tool not in seen_tools:
+                    seen_tools.add(app.editing_tool)
+                    unique_tools.append(app)
             display_user_name = apps[0].user.get_full_name() or apps[0].user.username
             # Get thumbnail - prefer primary app, but fallback to other platform if primary has no thumbnail
             from .utils import get_fallback_thumbnail
@@ -494,6 +501,7 @@ class RankingTableView(ListView):
             all_entries.append({
                 'user': apps[0].user,
                 'apps': apps,
+                'unique_tools': unique_tools,  # Deduplicated list of apps with unique editing tools
                 'youtube': youtube_app,
                 'tiktok': tiktok_app,
                 'primary': primary_app,
