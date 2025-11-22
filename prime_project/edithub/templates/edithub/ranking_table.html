@@ -1583,11 +1583,11 @@
                         }
                     </div>
                     
-                    <!-- Editor Title (at the top) -->
-                    <h3 class="text-2xl font-bold text-gray-900 mb-2">${data.editor_title || 'Editor'}</h3>
+                    <!-- Username (at the top, bold) -->
+                    <h3 class="text-2xl font-bold text-gray-900 mb-2">${data.username || 'Unknown'}</h3>
                     
-                    <!-- Username -->
-                    <p class="text-lg text-gray-600 mb-6">${data.username || 'Unknown'}</p>
+                    <!-- Editor Title (below username, lighter font) -->
+                    <p class="text-lg text-gray-600 mb-6">${data.editor_title || 'Editor'}</p>
                     
                     <!-- Statistics Grid -->
                     <div class="grid grid-cols-2 gap-4 mb-6">
