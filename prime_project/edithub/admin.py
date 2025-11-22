@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.utils.html import mark_safe
 
-from .models import EditorApplication, EditSubmission, EditUpvote, EditReport, Tournament, WeekWinner
+from .models import EditorApplication, EditSubmission, EditUpvote, EditReport, Tournament, TournamentMatchVote, WeekWinner
 
 
 @admin.register(EditorApplication)
@@ -107,20 +107,28 @@ class EditReportAdmin(admin.ModelAdmin):
 
 @admin.register(Tournament)
 class TournamentAdmin(admin.ModelAdmin):
-    list_display = ('name', 'is_active', 'participant_1', 'participant_2', 'participant_3', 'participant_4', 'created_date')
-    list_filter = ('is_active', 'created_date')
+    list_display = ('name', 'is_active', 'semi_finals_active', 'finals_active', 'participant_1', 'participant_2', 'participant_3', 'participant_4', 'created_date')
+    list_filter = ('is_active', 'semi_finals_active', 'finals_active', 'created_date')
     readonly_fields = ('created_date', 'updated_date')
     fieldsets = (
         ('Tournament Information', {
             'fields': ('name', 'is_active')
         }),
+        ('Phase Status', {
+            'fields': ('semi_finals_active', 'finals_active'),
+            'description': 'Control which phases are currently active. Semi-finals should be active first, then activate finals when ready.'
+        }),
         ('Semi-Final 1', {
-            'fields': ('participant_1', 'participant_2'),
-            'description': 'Select the two participants for Semi-Final 1 (left side of bracket)'
+            'fields': ('participant_1', 'participant_1_edit_link', 'participant_2', 'participant_2_edit_link'),
+            'description': 'Select the two participants for Semi-Final 1 (left side of bracket) and add their edit links (YouTube or TikTok URLs)'
         }),
         ('Semi-Final 2', {
-            'fields': ('participant_3', 'participant_4'),
-            'description': 'Select the two participants for Semi-Final 2 (right side of bracket)'
+            'fields': ('participant_3', 'participant_3_edit_link', 'participant_4', 'participant_4_edit_link'),
+            'description': 'Select the two participants for Semi-Final 2 (right side of bracket) and add their edit links (YouTube or TikTok URLs)'
+        }),
+        ('Finals', {
+            'fields': ('finalist_1', 'finalist_1_edit_link', 'finalist_2', 'finalist_2_edit_link'),
+            'description': 'Select the winners from semi-finals and add their edit links. Finalist 1 should be the winner from Semi-Final 1 (left side), Finalist 2 should be the winner from Semi-Final 2 (right side). Only fill these when finals phase is active.'
         }),
         ('Timestamps', {
             'fields': ('created_date', 'updated_date'),
@@ -131,7 +139,18 @@ class TournamentAdmin(admin.ModelAdmin):
     def get_queryset(self, request):
         qs = super().get_queryset(request)
         return qs.select_related('participant_1', 'participant_2', 'participant_3', 'participant_4',
-                                 'participant_1__user', 'participant_2__user', 'participant_3__user', 'participant_4__user')
+                                 'finalist_1', 'finalist_2',
+                                 'participant_1__user', 'participant_2__user', 'participant_3__user', 'participant_4__user',
+                                 'finalist_1__user', 'finalist_2__user')
+
+
+@admin.register(TournamentMatchVote)
+class TournamentMatchVoteAdmin(admin.ModelAdmin):
+    list_display = ('tournament', 'match_type', 'voter', 'voted_for', 'created_date')
+    list_filter = ('tournament', 'match_type', 'created_date')
+    readonly_fields = ('created_date',)
+    search_fields = ('voter__username', 'voted_for__channel_name', 'tournament__name')
+    raw_id_fields = ('tournament', 'voter', 'voted_for')
 
 
 @admin.register(WeekWinner)

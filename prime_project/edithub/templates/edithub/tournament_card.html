@@ -1,0 +1,52 @@
+{% comment %}
+Reusable Tournament Card Component
+
+Parameters:
+- participant: The participant object (can be None/empty for placeholder)
+- side: 'left' or 'right' - determines card alignment
+- role: 'Player' or 'Finalist' - the role text to display
+- extra_classes: Optional additional CSS classes (e.g., 'mt-6' for spacing)
+{% endcomment %}
+
+{% if participant %}
+<div class="tournament-card {{ side }} {% if extra_classes %}{{ extra_classes }}{% endif %}">
+    <div class="tournament-card__body">
+        <div class="tournament-card__info">
+            <p class="tournament-card__name">{{ participant.channel_name|upper }}</p>
+        </div>
+    </div>
+    <div class="tournament-card__avatar-group">
+        <div class="hexagon-avatar">
+            {% if participant.profile_picture %}
+            <img src="{{ participant.profile_picture }}"
+                 alt="{{ participant.channel_name }}"
+                 onerror="this.onerror=null; this.style.display='none'; this.nextElementSibling.style.display='flex';">
+            <span class="hexagon-avatar__fallback" style="display: none;">{{ participant.channel_name|first|upper }}</span>
+            {% elif participant.channel_thumbnail %}
+            <img src="{{ participant.channel_thumbnail }}"
+                 alt="{{ participant.channel_name }}"
+                 onerror="this.onerror=null; this.style.display='none'; this.nextElementSibling.style.display='flex';">
+            <span class="hexagon-avatar__fallback" style="display: none;">{{ participant.channel_name|first|upper }}</span>
+            {% else %}
+            <span class="hexagon-avatar__fallback">{{ participant.channel_name|first|upper }}</span>
+            {% endif %}
+            <span class="tournament-card__badge">{{ participant.editor_title }}</span>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="tournament-card {{ side }} is-placeholder {% if extra_classes %}{{ extra_classes }}{% endif %}">
+    <div class="tournament-card__body">
+        <div class="tournament-card__info">
+            <p class="tournament-card__name">TBD</p>
+        </div>
+    </div>
+    <div class="tournament-card__avatar-group">
+        <div class="hexagon-avatar">
+            <span class="hexagon-avatar__fallback">?</span>
+            <span class="tournament-card__badge">Soon</span>
+        </div>
+    </div>
+</div>
+{% endif %}
+

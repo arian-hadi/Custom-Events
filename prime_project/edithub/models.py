@@ -506,10 +506,14 @@ post_save.connect(update_edit_submission_thumbnails_signal, sender=EditorApplica
 
 
 class Tournament(models.Model):
-    """Model for Tournament of Editors - Semi-Finals"""
+    """Model for Tournament of Editors - Semi-Finals and Finals"""
     
     name = models.CharField(max_length=200, default="Tournament of Editors", help_text="Tournament name")
     is_active = models.BooleanField(default=True, help_text="Only one active tournament should exist")
+    
+    # Phase status
+    semi_finals_active = models.BooleanField(default=True, help_text="Semi-finals phase is active")
+    finals_active = models.BooleanField(default=False, help_text="Finals phase is active")
     
     # Semi-Final 1 participants
     participant_1 = models.ForeignKey(
@@ -521,6 +525,12 @@ class Tournament(models.Model):
         help_text="Semi-Final 1 - First participant",
         limit_choices_to={'status': 'accepted', 'removal_requested': False}
     )
+    participant_1_edit_link = models.URLField(
+        max_length=500,
+        blank=True,
+        null=True,
+        help_text="Edit link for participant 1 (YouTube or TikTok URL)"
+    )
     participant_2 = models.ForeignKey(
         EditorApplication,
         on_delete=models.SET_NULL,
@@ -529,6 +539,12 @@ class Tournament(models.Model):
         related_name='tournament_participant_2',
         help_text="Semi-Final 1 - Second participant",
         limit_choices_to={'status': 'accepted', 'removal_requested': False}
+    )
+    participant_2_edit_link = models.URLField(
+        max_length=500,
+        blank=True,
+        null=True,
+        help_text="Edit link for participant 2 (YouTube or TikTok URL)"
     )
     
     # Semi-Final 2 participants
@@ -541,6 +557,12 @@ class Tournament(models.Model):
         help_text="Semi-Final 2 - First participant",
         limit_choices_to={'status': 'accepted', 'removal_requested': False}
     )
+    participant_3_edit_link = models.URLField(
+        max_length=500,
+        blank=True,
+        null=True,
+        help_text="Edit link for participant 3 (YouTube or TikTok URL)"
+    )
     participant_4 = models.ForeignKey(
         EditorApplication,
         on_delete=models.SET_NULL,
@@ -549,6 +571,44 @@ class Tournament(models.Model):
         related_name='tournament_participant_4',
         help_text="Semi-Final 2 - Second participant",
         limit_choices_to={'status': 'accepted', 'removal_requested': False}
+    )
+    participant_4_edit_link = models.URLField(
+        max_length=500,
+        blank=True,
+        null=True,
+        help_text="Edit link for participant 4 (YouTube or TikTok URL)"
+    )
+    
+    # Finals participants (winners from semi-finals)
+    finalist_1 = models.ForeignKey(
+        EditorApplication,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='tournament_finalist_1',
+        help_text="Finalist 1 - Winner from Semi-Final 1 (left side)",
+        limit_choices_to={'status': 'accepted', 'removal_requested': False}
+    )
+    finalist_1_edit_link = models.URLField(
+        max_length=500,
+        blank=True,
+        null=True,
+        help_text="Edit link for finalist 1 (YouTube or TikTok URL)"
+    )
+    finalist_2 = models.ForeignKey(
+        EditorApplication,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='tournament_finalist_2',
+        help_text="Finalist 2 - Winner from Semi-Final 2 (right side)",
+        limit_choices_to={'status': 'accepted', 'removal_requested': False}
+    )
+    finalist_2_edit_link = models.URLField(
+        max_length=500,
+        blank=True,
+        null=True,
+        help_text="Edit link for finalist 2 (YouTube or TikTok URL)"
     )
     
     created_date = models.DateTimeField(auto_now_add=True)
@@ -563,12 +623,19 @@ class Tournament(models.Model):
         return f"{self.name} ({'Active' if self.is_active else 'Inactive'})"
     
     def get_participants(self):
-        """Return list of participants in order"""
+        """Return list of semi-final participants in order"""
         return [
             self.participant_1,
             self.participant_2,
             self.participant_3,
             self.participant_4,
+        ]
+    
+    def get_finalists(self):
+        """Return list of finalists in order"""
+        return [
+            self.finalist_1,
+            self.finalist_2,
         ]
     
     def save(self, *args, **kwargs):
@@ -581,6 +648,75 @@ class Tournament(models.Model):
     def get_active_tournament(cls):
         """Get the currently active tournament"""
         return cls.objects.filter(is_active=True).first()
+    
+    def get_match_pairs(self):
+        """Get match pairs for voting: [(participant_1, participant_2), (participant_3, participant_4), (finalist_1, finalist_2)]"""
+        matches = []
+        if self.semi_finals_active:
+            if self.participant_1 and self.participant_2:
+                matches.append({
+                    'type': 'semi_final_1',
+                    'participant_1': self.participant_1,
+                    'participant_1_edit_link': self.participant_1_edit_link,
+                    'participant_2': self.participant_2,
+                    'participant_2_edit_link': self.participant_2_edit_link,
+                })
+            if self.participant_3 and self.participant_4:
+                matches.append({
+                    'type': 'semi_final_2',
+                    'participant_1': self.participant_3,
+                    'participant_1_edit_link': self.participant_3_edit_link,
+                    'participant_2': self.participant_4,
+                    'participant_2_edit_link': self.participant_4_edit_link,
+                })
+        if self.finals_active:
+            if self.finalist_1 and self.finalist_2:
+                matches.append({
+                    'type': 'final',
+                    'participant_1': self.finalist_1,
+                    'participant_1_edit_link': self.finalist_1_edit_link,
+                    'participant_2': self.finalist_2,
+                    'participant_2_edit_link': self.finalist_2_edit_link,
+                })
+        return matches
+
+
+class TournamentMatchVote(models.Model):
+    """Model to track votes for tournament matches"""
+    
+    MATCH_TYPES = [
+        ('semi_final_1', 'Semi-Final 1'),
+        ('semi_final_2', 'Semi-Final 2'),
+        ('final', 'Final'),
+    ]
+    
+    tournament = models.ForeignKey(
+        Tournament,
+        on_delete=models.CASCADE,
+        related_name='votes'
+    )
+    match_type = models.CharField(max_length=20, choices=MATCH_TYPES)
+    voter = models.ForeignKey(
+        CustomUser,
+        on_delete=models.CASCADE,
+        related_name='tournament_votes'
+    )
+    voted_for = models.ForeignKey(
+        EditorApplication,
+        on_delete=models.CASCADE,
+        related_name='tournament_votes_received',
+        help_text="The participant that received this vote"
+    )
+    created_date = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        unique_together = [('tournament', 'match_type', 'voter')]
+        verbose_name = "Tournament Match Vote"
+        verbose_name_plural = "Tournament Match Votes"
+        ordering = ['-created_date']
+    
+    def __str__(self):
+        return f"{self.voter.username} voted for {self.voted_for.channel_name} in {self.get_match_type_display()}"
 
 
 class WeekWinner(models.Model):

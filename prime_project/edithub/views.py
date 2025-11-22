@@ -9,7 +9,7 @@ from django.views.decorators.http import require_http_methods
 from django.views.generic import ListView, DetailView
 from django.db.models import Q
 from django.core.paginator import Paginator
-from .models import EditorApplication, EditSubmission, EditUpvote, EditReport
+from .models import EditorApplication, EditSubmission, EditUpvote, EditReport, Tournament, TournamentMatchVote
 from .forms import EditorApplicationForm, EditSubmissionForm, EditReportForm
 from .utils import (
     fetch_youtube_channel_data,
@@ -363,31 +363,86 @@ class RankingTableView(ListView):
         from .models import Tournament
         active_tournament = Tournament.get_active_tournament()
         
+        # Phase status
+        context['semi_finals_active'] = False
+        context['finals_active'] = False
+        
         tournament_participants = []
+        tournament_finalists = []
+        
         if active_tournament:
-            participants = active_tournament.get_participants()
-            for app in participants:
-                if app:
-                    tournament_participants.append({
-                        'user': app.user,
-                        'app': app,
-                        'channel_name': app.channel_name or app.user.username,
-                        'username': app.user.username,
-                        'profile_picture': app.user.profile_picture.url if app.user.profile_picture else None,
-                        'channel_thumbnail': (app.channel_thumbnail or '').strip(),
-                        'channel_type': app.channel_type,
-                    })
-                else:
-                    tournament_participants.append(None)
+            # Get phase status
+            context['semi_finals_active'] = active_tournament.semi_finals_active
+            context['finals_active'] = active_tournament.finals_active
+            
+            # Get semi-final participants
+            if active_tournament.semi_finals_active:
+                participants = active_tournament.get_participants()
+                for app in participants:
+                    if app:
+                        channel_type_label = (app.channel_type or '').strip()
+                        if channel_type_label:
+                            channel_type_label = f"{channel_type_label.title()} Editor"
+                        else:
+                            channel_type_label = "Editor"
+                        
+                        tournament_participants.append({
+                            'user': app.user,
+                            'app': app,
+                            'channel_name': app.channel_name or app.user.username,
+                            'username': app.user.username,
+                            'profile_picture': app.user.profile_picture.url if app.user.profile_picture else None,
+                            'channel_thumbnail': (app.channel_thumbnail or '').strip(),
+                            'channel_type': app.channel_type,
+                            'editor_title': channel_type_label,
+                        })
+                    else:
+                        tournament_participants.append(None)
+            else:
+                # Semi-finals not active, show empty slots
+                tournament_participants = [None, None, None, None]
+            
+            # Get finalists
+            if active_tournament.finals_active:
+                finalists = active_tournament.get_finalists()
+                for app in finalists:
+                    if app:
+                        channel_type_label = (app.channel_type or '').strip()
+                        if channel_type_label:
+                            channel_type_label = f"{channel_type_label.title()} Editor"
+                        else:
+                            channel_type_label = "Editor"
+                        
+                        tournament_finalists.append({
+                            'user': app.user,
+                            'app': app,
+                            'channel_name': app.channel_name or app.user.username,
+                            'username': app.user.username,
+                            'profile_picture': app.user.profile_picture.url if app.user.profile_picture else None,
+                            'channel_thumbnail': (app.channel_thumbnail or '').strip(),
+                            'channel_type': app.channel_type,
+                            'editor_title': channel_type_label,
+                        })
+                    else:
+                        tournament_finalists.append(None)
+            else:
+                # Finals not active, show empty slots
+                tournament_finalists = [None, None]
         else:
             # No active tournament, show empty slots
             tournament_participants = [None, None, None, None]
+            tournament_finalists = [None, None]
         
         # Ensure we have exactly 4 participants (pad with None if needed)
         while len(tournament_participants) < 4:
             tournament_participants.append(None)
         
+        # Ensure we have exactly 2 finalists (pad with None if needed)
+        while len(tournament_finalists) < 2:
+            tournament_finalists.append(None)
+        
         context['tournament_participants'] = tournament_participants[:4]
+        context['tournament_finalists'] = tournament_finalists[:2]
         
         return context
 
@@ -1700,3 +1755,288 @@ def admin_resolve_report(request, pk):
         return JsonResponse({'success': True})
     
     return redirect('edithub:admin_reported_edits')
+
+
+def tournament_matches(request):
+    """View to list all tournament matches"""
+    active_tournament = Tournament.get_active_tournament()
+    matches = []
+    
+    if active_tournament:
+        raw_matches = active_tournament.get_match_pairs()
+        # Add display names for match types
+        match_type_display = {
+            'semi_final_1': 'Semi-Final 1',
+            'semi_final_2': 'Semi-Final 2',
+            'final': 'Final',
+        }
+        for match in raw_matches:
+            match['type_display'] = match_type_display.get(match['type'], match['type'].replace('_', ' ').title())
+            # Prepare participant data for display
+            def prepare_participant_data(participant):
+                if not participant:
+                    return None
+                channel_type_label = (participant.channel_type or '').strip()
+                if channel_type_label:
+                    channel_type_label = f"{channel_type_label.title()} Editor"
+                else:
+                    channel_type_label = "Editor"
+                
+                return {
+                    'user': participant.user,
+                    'app': participant,
+                    'channel_name': participant.channel_name or participant.user.username,
+                    'username': participant.user.username,
+                    'profile_picture': participant.user.profile_picture.url if participant.user.profile_picture else None,
+                    'channel_thumbnail': (participant.channel_thumbnail or '').strip(),
+                    'channel_type': participant.channel_type,
+                    'editor_title': channel_type_label,
+                }
+            
+            match['participant_1'] = prepare_participant_data(match['participant_1'])
+            match['participant_2'] = prepare_participant_data(match['participant_2'])
+            matches.append(match)
+    
+    context = {
+        'tournament': active_tournament,
+        'matches': matches,
+    }
+    
+    return render(request, 'edithub/tournament_matches.html', context)
+
+
+def tournament_match_detail(request, match_type):
+    """View to show a specific tournament match (The Fish Food Show)"""
+    active_tournament = Tournament.get_active_tournament()
+    
+    if not active_tournament:
+        messages.error(request, 'No active tournament found.')
+        return redirect('edithub:ranking_table')
+    
+    # Get match data based on match_type
+    match_data = None
+    if match_type == 'semi_final_1' and active_tournament.semi_finals_active:
+        if active_tournament.participant_1 and active_tournament.participant_2:
+            match_data = {
+                'type': 'semi_final_1',
+                'type_display': 'Semi-Final 1',
+                'participant_1': active_tournament.participant_1,
+                'participant_1_edit_link': active_tournament.participant_1_edit_link,
+                'participant_2': active_tournament.participant_2,
+                'participant_2_edit_link': active_tournament.participant_2_edit_link,
+            }
+    elif match_type == 'semi_final_2' and active_tournament.semi_finals_active:
+        if active_tournament.participant_3 and active_tournament.participant_4:
+            match_data = {
+                'type': 'semi_final_2',
+                'type_display': 'Semi-Final 2',
+                'participant_1': active_tournament.participant_3,
+                'participant_1_edit_link': active_tournament.participant_3_edit_link,
+                'participant_2': active_tournament.participant_4,
+                'participant_2_edit_link': active_tournament.participant_4_edit_link,
+            }
+    elif match_type == 'final' and active_tournament.finals_active:
+        if active_tournament.finalist_1 and active_tournament.finalist_2:
+            match_data = {
+                'type': 'final',
+                'type_display': 'Final',
+                'participant_1': active_tournament.finalist_1,
+                'participant_1_edit_link': active_tournament.finalist_1_edit_link,
+                'participant_2': active_tournament.finalist_2,
+                'participant_2_edit_link': active_tournament.finalist_2_edit_link,
+            }
+    
+    if not match_data:
+        messages.error(request, 'Match not found or not available.')
+        return redirect('edithub:ranking_table')
+    
+    # Get vote counts
+    votes_participant_1 = TournamentMatchVote.objects.filter(
+        tournament=active_tournament,
+        match_type=match_type,
+        voted_for=match_data['participant_1']
+    ).count()
+    
+    votes_participant_2 = TournamentMatchVote.objects.filter(
+        tournament=active_tournament,
+        match_type=match_type,
+        voted_for=match_data['participant_2']
+    ).count()
+    
+    # Check if user has already voted
+    user_vote = None
+    if request.user.is_authenticated:
+        try:
+            user_vote = TournamentMatchVote.objects.get(
+                tournament=active_tournament,
+                match_type=match_type,
+                voter=request.user
+            )
+        except TournamentMatchVote.DoesNotExist:
+            pass
+    
+    # Prepare participant data
+    def prepare_participant_data(participant, edit_link):
+        if not participant:
+            return None
+        channel_type_label = (participant.channel_type or '').strip()
+        if channel_type_label:
+            channel_type_label = f"{channel_type_label.title()} Editor"
+        else:
+            channel_type_label = "Editor"
+        
+        # Determine if edit link is YouTube or TikTok
+        is_youtube = False
+        is_tiktok = False
+        if edit_link:
+            if 'youtube.com' in edit_link or 'youtu.be' in edit_link:
+                is_youtube = True
+            elif 'tiktok.com' in edit_link:
+                is_tiktok = True
+        
+        return {
+            'user': participant.user,
+            'app': participant,
+            'channel_name': participant.channel_name or participant.user.username,
+            'username': participant.user.username,
+            'profile_picture': participant.user.profile_picture.url if participant.user.profile_picture else None,
+            'channel_thumbnail': (participant.channel_thumbnail or '').strip(),
+            'channel_type': participant.channel_type,
+            'editor_title': channel_type_label,
+            'edit_link': edit_link,
+            'is_youtube': is_youtube,
+            'is_tiktok': is_tiktok,
+        }
+    
+    participant_1_data = prepare_participant_data(match_data['participant_1'], match_data['participant_1_edit_link'])
+    participant_2_data = prepare_participant_data(match_data['participant_2'], match_data['participant_2_edit_link'])
+    
+    # Determine next and previous matches (circular navigation)
+    all_matches = active_tournament.get_match_pairs()
+    next_match = None
+    previous_match = None
+    current_match_index = -1
+    
+    # Find current match index
+    for idx, match in enumerate(all_matches):
+        if match['type'] == match_type:
+            current_match_index = idx
+            break
+    
+    # Get next and previous matches (circular - wraps around)
+    if current_match_index >= 0 and len(all_matches) > 0:
+        # Next match (wraps to first if on last)
+        next_match = all_matches[(current_match_index + 1) % len(all_matches)]
+        # Previous match (wraps to last if on first)
+        previous_match = all_matches[(current_match_index - 1) % len(all_matches)]
+    
+    context = {
+        'tournament': active_tournament,
+        'match_type': match_type,
+        'match_type_display': match_data['type_display'],
+        'participant_1': participant_1_data,
+        'participant_2': participant_2_data,
+        'votes_participant_1': votes_participant_1,
+        'votes_participant_2': votes_participant_2,
+        'user_vote': user_vote,
+        'user_has_voted': user_vote is not None,
+        'next_match': next_match,
+        'previous_match': previous_match,
+    }
+    
+    return render(request, 'edithub/tournament_match_detail.html', context)
+
+
+@login_required
+@require_http_methods(["POST"])
+def vote_tournament_match(request, match_type):
+    """AJAX endpoint to vote for a tournament match"""
+    active_tournament = Tournament.get_active_tournament()
+    
+    if not active_tournament:
+        return JsonResponse({'success': False, 'error': 'No active tournament found.'}, status=404)
+    
+    # Validate match_type
+    valid_match_types = ['semi_final_1', 'semi_final_2', 'final']
+    if match_type not in valid_match_types:
+        return JsonResponse({'success': False, 'error': 'Invalid match type.'}, status=400)
+    
+    # Check if match is active
+    if match_type in ['semi_final_1', 'semi_final_2'] and not active_tournament.semi_finals_active:
+        return JsonResponse({'success': False, 'error': 'Semi-finals are not active.'}, status=400)
+    if match_type == 'final' and not active_tournament.finals_active:
+        return JsonResponse({'success': False, 'error': 'Finals are not active.'}, status=400)
+    
+    # Get the participant being voted for
+    participant_id = request.POST.get('participant_id')
+    if not participant_id:
+        return JsonResponse({'success': False, 'error': 'Participant ID is required.'}, status=400)
+    
+    try:
+        participant = EditorApplication.objects.get(pk=participant_id)
+    except EditorApplication.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Participant not found.'}, status=404)
+    
+    # Check if user has already voted
+    existing_vote = TournamentMatchVote.objects.filter(
+        tournament=active_tournament,
+        match_type=match_type,
+        voter=request.user
+    ).first()
+    
+    if existing_vote:
+        return JsonResponse({'success': False, 'error': 'You have already voted for this match.'}, status=400)
+    
+    # Verify participant is in this match
+    valid_participants = []
+    if match_type == 'semi_final_1':
+        valid_participants = [active_tournament.participant_1, active_tournament.participant_2]
+    elif match_type == 'semi_final_2':
+        valid_participants = [active_tournament.participant_3, active_tournament.participant_4]
+    elif match_type == 'final':
+        valid_participants = [active_tournament.finalist_1, active_tournament.finalist_2]
+    
+    if participant not in valid_participants:
+        return JsonResponse({'success': False, 'error': 'Invalid participant for this match.'}, status=400)
+    
+    # Create vote
+    try:
+        vote = TournamentMatchVote.objects.create(
+            tournament=active_tournament,
+            match_type=match_type,
+            voter=request.user,
+            voted_for=participant
+        )
+    except Exception as e:
+        logger.error(f"Error creating vote: {str(e)}")
+        return JsonResponse({
+            'success': False, 
+            'error': f'Failed to record vote: {str(e)}'
+        }, status=500)
+    
+    # Get updated vote counts
+    try:
+        votes_participant_1 = TournamentMatchVote.objects.filter(
+            tournament=active_tournament,
+            match_type=match_type,
+            voted_for=valid_participants[0]
+        ).count()
+        
+        votes_participant_2 = TournamentMatchVote.objects.filter(
+            tournament=active_tournament,
+            match_type=match_type,
+            voted_for=valid_participants[1]
+        ).count()
+    except Exception as e:
+        logger.error(f"Error getting vote counts: {str(e)}")
+        # Still return success but with error in counts
+        votes_participant_1 = 0
+        votes_participant_2 = 0
+    
+    return JsonResponse({
+        'success': True,
+        'message': 'Vote recorded successfully!',
+        'votes_participant_1': votes_participant_1,
+        'votes_participant_2': votes_participant_2,
+        'voted_for_id': participant.id,
+    })
