@@ -259,47 +259,25 @@ class RankingTableView(ListView):
         if edit_platform not in ['youtube', 'tiktok']:
             edit_platform = 'youtube'
         
-        # Filter edits by previous week (full week Mon-Sun for display)
-        # Current week's submissions are queued for next week, so we show the previous week's competition
-        display_week_start = week_start - timedelta(days=7)  # Previous week
-        display_week_end = display_week_start + timedelta(days=6, hours=23, minutes=59, seconds=59)  # Previous week Sunday
+        # Filter edits by CURRENT week (full week Mon-Sun for display)
+        # Show edits scheduled for the current week (Mon-Sun)
+        display_week_start = week_start  # Current week Monday
+        display_week_end = week_start + timedelta(days=6, hours=23, minutes=59, seconds=59)  # Current week Sunday
         display_week_start_date = display_week_start.date()
         competition_end = competition_state.get('competition_end', week_start + timedelta(days=4, hours=23, minutes=59, seconds=59))
         
-        if competition_state['state'] == 'live':
-            # Show live rankings for previous week (Mon-Fri: points updating, Sat-Sun: frozen)
-            # Display edits from the previous week (Mon-Sun)
-            week_edits_qs = EditSubmission.objects.filter(
-                status='verified',
-                channel_type=edit_platform
-            ).filter(
-                Q(scheduled_week=display_week_start_date) |
-                (Q(scheduled_week__isnull=True) & Q(submitted_date__gte=display_week_start) & Q(submitted_date__lte=display_week_end))
-            ).order_by('-calculated_points', 'submitted_date')
-            
-            # If we have fewer than 3 edits from this week, fill with top edits from all time
-            week_edits = list(week_edits_qs[:3])
-            if len(week_edits) < 3:
-                all_time_edits = EditSubmission.objects.filter(
-                    status='verified',
-                    channel_type=edit_platform
-                ).exclude(
-                    id__in=[e.id for e in week_edits]
-                ).order_by('-calculated_points', '-submitted_date')[:3 - len(week_edits)]
-                top_three = week_edits + list(all_time_edits)
-            else:
-                top_three = week_edits
-        else:
-            # Show results from previous week (Sat-Sun: frozen rankings)
-            # Display edits from the previous week (Mon-Sun)
-            top_edits_qs = EditSubmission.objects.filter(
-                status='verified',
-                channel_type=edit_platform
-            ).filter(
-                Q(scheduled_week=display_week_start_date) |
-                (Q(scheduled_week__isnull=True) & Q(submitted_date__gte=display_week_start) & Q(submitted_date__lte=display_week_end))
-            ).order_by('-calculated_points', 'submitted_date')
-            top_three = list(top_edits_qs[:3])
+        # Show top 3 edits from current week (Mon-Sun) - same logic for both live and results states
+        # Display edits from the current week (Mon-Sun)
+        week_edits_qs = EditSubmission.objects.filter(
+            status='verified',
+            channel_type=edit_platform
+        ).filter(
+            Q(scheduled_week=display_week_start_date) |
+            (Q(scheduled_week__isnull=True) & Q(submitted_date__gte=display_week_start) & Q(submitted_date__lte=display_week_end))
+        ).order_by('-calculated_points', 'submitted_date')
+        
+        # Get top 3 from current week
+        top_three = list(week_edits_qs[:3])
         # Attach thumbnails via oEmbed/ID extraction for custom cards
         from .utils import fetch_tiktok_oembed, youtube_thumbnail_from_url
         enriched = []
@@ -1391,10 +1369,10 @@ def view_all_edits(request):
     week_start_dt, week_end_dt = get_week_start_end()  # Current week (Mon-Sun)
     competition_state = get_competition_state()
     
-    # Show previous week's edits (Mon-Sun)
-    # Current week's submissions are queued for next week, so we show the previous week's competition
-    display_week_start_dt = week_start_dt - timedelta(days=7)  # Previous week Monday
-    display_week_end_dt = display_week_start_dt + timedelta(days=6, hours=23, minutes=59, seconds=59)  # Previous week Sunday
+    # Show CURRENT week's edits (Mon-Sun)
+    # Display edits scheduled for the current week
+    display_week_start_dt = week_start_dt  # Current week Monday
+    display_week_end_dt = week_start_dt + timedelta(days=6, hours=23, minutes=59, seconds=59)  # Current week Sunday
     display_week_date = display_week_start_dt.date()
     display_week_label = f"{display_week_start_dt.strftime('%b %d')} – {display_week_end_dt.strftime('%b %d')}"
     
@@ -1451,15 +1429,15 @@ def view_all_edits(request):
             'thumbnail_url': thumb,
         })
 
-    # Get all edits for ranking panel filtered by platform (with channel thumbnails)
-    # Show edits from the full week (Mon-Sun)
+    # Get ALL edits for ranking panel filtered by platform (with channel thumbnails)
+    # Show ALL edits from the current week (Mon-Sun) - no limit, show complete rankings
     all_edits_ranking = list(EditSubmission.objects.filter(
         status='verified',
         channel_type=platform
     ).filter(
         Q(scheduled_week=display_week_date) |
         (Q(scheduled_week__isnull=True) & Q(submitted_date__gte=display_week_start_dt) & Q(submitted_date__lte=display_week_end_dt))
-    ).order_by('-calculated_points', 'submitted_date').values('id', 'title', 'channel_name', 'calculated_points', 'upvote_count', 'channel_type', 'channel_thumbnail')[:50])  # Limit to top 50 for performance
+    ).order_by('-calculated_points', 'submitted_date').values('id', 'title', 'channel_name', 'calculated_points', 'upvote_count', 'channel_type', 'channel_thumbnail'))  # Show all edits, no limit
     
     # Get channel statistics for banner (if viewing a specific edit)
     channel_stats = None
