@@ -6,6 +6,10 @@ import logging
 import json
 import math
 from datetime import datetime, timedelta, timezone
+from django.core.files.base import ContentFile
+from django.core.files.images import ImageFile
+from io import BytesIO
+from PIL import Image
 
 logger = logging.getLogger(__name__)
 
@@ -1339,6 +1343,75 @@ def get_fallback_thumbnail(existing_thumbnail: str, new_thumbnail: str, *additio
     
     # Return empty string if no valid thumbnail found
     return ''
+
+
+def download_image_from_url(image_url: str) -> Optional[ContentFile]:
+    """
+    Download an image from a URL and return it as a Django ContentFile.
+    
+    Args:
+        image_url: URL of the image to download
+        
+    Returns:
+        ContentFile object with the image data, or None if download fails
+    """
+    if not image_url or not is_valid_thumbnail_url(image_url):
+        return None
+    
+    try:
+        # Download the image
+        response = requests.get(image_url, timeout=10, stream=True)
+        response.raise_for_status()
+        
+        # Check content type
+        content_type = response.headers.get('content-type', '')
+        if not content_type.startswith('image/'):
+            logger.warning(f"URL {image_url} does not return an image (content-type: {content_type})")
+            return None
+        
+        # Read image data
+        image_data = BytesIO(response.content)
+        
+        # Verify it's a valid image by opening with PIL
+        try:
+            img = Image.open(image_data)
+            img.verify()  # Verify it's a valid image
+        except Exception as e:
+            logger.warning(f"Invalid image data from {image_url}: {e}")
+            return None
+        
+        # Reset BytesIO position after verify
+        image_data.seek(0)
+        
+        # Get file extension from URL or content type
+        ext = 'jpg'  # default
+        if '.jpg' in image_url.lower() or '.jpeg' in image_url.lower():
+            ext = 'jpg'
+        elif '.png' in image_url.lower():
+            ext = 'png'
+        elif '.gif' in image_url.lower():
+            ext = 'gif'
+        elif '.webp' in image_url.lower():
+            ext = 'webp'
+        elif 'png' in content_type.lower():
+            ext = 'png'
+        elif 'gif' in content_type.lower():
+            ext = 'gif'
+        elif 'webp' in content_type.lower():
+            ext = 'webp'
+        
+        # Create filename
+        filename = f"profile_picture_{datetime.now().strftime('%Y%m%d_%H%M%S')}.{ext}"
+        
+        # Create ContentFile
+        return ContentFile(image_data.read(), name=filename)
+        
+    except requests.RequestException as e:
+        logger.error(f"Error downloading image from {image_url}: {e}")
+        return None
+    except Exception as e:
+        logger.error(f"Unexpected error downloading image from {image_url}: {e}")
+        return None
 
 
 def fetch_tiktok_video_title(video_url: str) -> Optional[str]:

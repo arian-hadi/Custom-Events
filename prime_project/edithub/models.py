@@ -179,6 +179,20 @@ class EditorApplication(models.Model):
         # Update rankings if status changed to accepted or if this is a new accepted application
         if self.status == 'accepted' and (is_new or old_status != 'accepted'):
             EditorApplication.update_rank_positions()
+            
+            # Set user's profile picture from channel thumbnail if they don't have one
+            if self.channel_thumbnail and not self.user.profile_picture:
+                from .utils import download_image_from_url
+                try:
+                    downloaded_image = download_image_from_url(self.channel_thumbnail)
+                    if downloaded_image:
+                        self.user.profile_picture = downloaded_image
+                        self.user.save(update_fields=['profile_picture'])
+                except Exception as e:
+                    # Log error but don't fail the save
+                    import logging
+                    logger = logging.getLogger(__name__)
+                    logger.warning(f"Failed to download profile picture from {self.channel_thumbnail}: {e}")
         elif old_status == 'accepted' and self.status != 'accepted':
             # Recalculate all rankings if an accepted application changed status
             EditorApplication.update_rank_positions()
