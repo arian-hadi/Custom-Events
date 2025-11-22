@@ -1202,21 +1202,28 @@ def submit_edit(request):
     next_week_end = next_week_start + timedelta(days=4)
     next_week_label = f"{next_week_start.strftime('%b %d')} – {next_week_end.strftime('%b %d')}"
     
-    youtube_future_submission = False
-    tiktok_future_submission = False
+    # Get existing submissions for next week
+    youtube_future_submission = None
+    tiktok_future_submission = None
     
     if youtube_app:
         youtube_future_submission = EditSubmission.objects.filter(
             user=request.user,
             channel_type='youtube',
             scheduled_week=next_week_start
-        ).exists()
+        ).first()
     if tiktok_app:
         tiktok_future_submission = EditSubmission.objects.filter(
             user=request.user,
             channel_type='tiktok',
             scheduled_week=next_week_start
-        ).exists()
+        ).first()
+    
+    # Check if we're before the deadline (before Monday 00:00 of next week)
+    from datetime import datetime, timezone
+    now = datetime.now(timezone.utc)
+    deadline = datetime.combine(next_week_start, datetime.min.time()).replace(tzinfo=timezone.utc)
+    can_edit_delete = now < deadline
     
     youtube_form = None
     tiktok_form = None
@@ -1233,9 +1240,14 @@ def submit_edit(request):
             messages.error(request, "Invalid platform or you don't have an approved application for this platform.")
             return redirect('edithub:submit_edit')
         
-        if (platform == 'youtube' and youtube_future_submission) or (platform == 'tiktok' and tiktok_future_submission):
-            messages.warning(request, f"You have already submitted a {approved_app.get_channel_type_display()} edit for the week of {next_week_label}.")
-            return redirect('edithub:submit_edit')
+        # Check if submission exists and if we can still edit it
+        existing_submission = youtube_future_submission if platform == 'youtube' else tiktok_future_submission
+        if existing_submission:
+            if not can_edit_delete:
+                messages.warning(request, f"You have already submitted a {approved_app.get_channel_type_display()} edit for the week of {next_week_label}. The deadline has passed, so you cannot modify it.")
+                return redirect('edithub:submit_edit')
+            # If we can edit, redirect to edit view instead
+            return redirect('edithub:edit_submission', pk=existing_submission.pk)
         
         form = EditSubmissionForm(data=request.POST, files=request.FILES, approved_application=approved_app)
         
@@ -1285,7 +1297,7 @@ def submit_edit(request):
                 submission.save(update_fields=['verified_date'])
                 
                 messages.success(request, f"Edit submitted successfully for {approved_app.get_channel_type_display()}! It will participate in the week of {next_week_label}.")
-                return redirect('edithub:view_all_edits')
+                return redirect('edithub:submit_edit')
             
             except Exception as error:
                 logger.error("Error creating edit submission", exc_info=True)
@@ -1318,7 +1330,130 @@ def submit_edit(request):
         'target_week_start': next_week_start,
         'target_week_end': next_week_end,
         'default_platform': default_platform,
+        'can_edit_delete': can_edit_delete,
+        'deadline': deadline,
     })
+
+
+@login_required
+def edit_submission(request, pk):
+    """Edit an existing edit submission before the deadline"""
+    if request.user.role != 'user':
+        messages.error(request, "Only regular users can edit submissions.")
+        return redirect('edithub:ranking_table')
+    
+    try:
+        submission = EditSubmission.objects.get(pk=pk, user=request.user)
+    except EditSubmission.DoesNotExist:
+        messages.error(request, "Submission not found.")
+        return redirect('edithub:submit_edit')
+    
+    # Check if we're before the deadline
+    from datetime import datetime, timezone
+    from .utils import get_week_start_end
+    now = datetime.now(timezone.utc)
+    if submission.scheduled_week:
+        deadline = datetime.combine(submission.scheduled_week, datetime.min.time()).replace(tzinfo=timezone.utc)
+    else:
+        # Fallback: use next week start
+        week_start_dt, _ = get_week_start_end()
+        deadline = (week_start_dt + timedelta(days=7)).replace(hour=0, minute=0, second=0, microsecond=0)
+    
+    if now >= deadline:
+        messages.error(request, "The deadline has passed. You can no longer edit this submission.")
+        return redirect('edithub:submit_edit')
+    
+    approved_app = submission.approved_application
+    if not approved_app:
+        messages.error(request, "Cannot edit submission without an approved application.")
+        return redirect('edithub:submit_edit')
+    
+    if request.method == 'POST':
+        form = EditSubmissionForm(data=request.POST, files=request.FILES, approved_application=approved_app, instance=submission)
+        
+        if form.is_valid():
+            try:
+                direct_video_url = submission.direct_video_url
+                video_title = form.cleaned_data.get('title', '').strip()
+                
+                if approved_app.channel_type == 'tiktok':
+                    from .utils import extract_tiktok_video_url, fetch_tiktok_video_title
+                    video_data = extract_tiktok_video_url(form.cleaned_data['video_url'])
+                    if video_data.get('video_url') and not video_data.get('error'):
+                        direct_video_url = video_data['video_url']
+                    if not video_title:
+                        fetched_title = fetch_tiktok_video_title(form.cleaned_data['video_url'])
+                        if fetched_title:
+                            video_title = fetched_title
+                
+                submission.video_url = form.cleaned_data['video_url']
+                submission.direct_video_url = direct_video_url
+                submission.title = video_title
+                submission.description = form.cleaned_data.get('description', '')
+                # Update channel thumbnail if needed
+                from .utils import get_fallback_thumbnail
+                existing_thumb = (submission.channel_thumbnail or '').strip()
+                new_thumb = (approved_app.channel_thumbnail or '').strip()
+                best_thumb = get_fallback_thumbnail(existing_thumb, new_thumb)
+                submission.channel_thumbnail = best_thumb
+                
+                submission.save()
+                
+                messages.success(request, f"Edit updated successfully for {approved_app.get_channel_type_display()}!")
+                return redirect('edithub:submit_edit')
+            
+            except Exception as error:
+                logger.error("Error updating edit submission", exc_info=True)
+                messages.error(request, f"An error occurred: {error}")
+    else:
+        form = EditSubmissionForm(approved_application=approved_app, instance=submission)
+    
+    week_start_dt, _ = get_week_start_end()
+    next_week_start = (week_start_dt + timedelta(days=7)).date()
+    next_week_end = next_week_start + timedelta(days=4)
+    next_week_label = f"{next_week_start.strftime('%b %d')} – {next_week_end.strftime('%b %d')}"
+    
+    return render(request, 'edithub/edit_submission.html', {
+        'form': form,
+        'submission': submission,
+        'approved_app': approved_app,
+        'target_week_label': next_week_label,
+        'deadline': deadline,
+    })
+
+
+@login_required
+@require_http_methods(["POST"])
+def delete_submission(request, pk):
+    """Delete an edit submission before the deadline"""
+    if request.user.role != 'user':
+        messages.error(request, "Only regular users can delete submissions.")
+        return redirect('edithub:ranking_table')
+    
+    try:
+        submission = EditSubmission.objects.get(pk=pk, user=request.user)
+    except EditSubmission.DoesNotExist:
+        messages.error(request, "Submission not found.")
+        return redirect('edithub:submit_edit')
+    
+    # Check if we're before the deadline
+    from datetime import datetime, timezone
+    from .utils import get_week_start_end
+    now = datetime.now(timezone.utc)
+    if submission.scheduled_week:
+        deadline = datetime.combine(submission.scheduled_week, datetime.min.time()).replace(tzinfo=timezone.utc)
+    else:
+        week_start_dt, _ = get_week_start_end()
+        deadline = (week_start_dt + timedelta(days=7)).replace(hour=0, minute=0, second=0, microsecond=0)
+    
+    if now >= deadline:
+        messages.error(request, "The deadline has passed. You can no longer delete this submission.")
+        return redirect('edithub:submit_edit')
+    
+    platform = submission.channel_type
+    submission.delete()
+    messages.success(request, f"Your {platform.title()} edit submission has been deleted.")
+    return redirect('edithub:submit_edit')
 
 
 @login_required

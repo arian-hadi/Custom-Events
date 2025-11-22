@@ -5,6 +5,7 @@ from events.models import Event, EventApplication,EventFieldResponse
 from django.contrib.auth import get_user_model
 from events.forms import EventApplicationForm
 from django.db.models import Case, When, Value, IntegerField
+from datetime import datetime, timedelta, timezone
 
 
 
@@ -195,6 +196,20 @@ def user_dashboard(request):
     edit_submissions = EditSubmission.objects.filter(user=request.user)
     total_edit_submissions = edit_submissions.count()
     verified_edit_submissions = edit_submissions.filter(status='verified').count()
+    
+    # Get upcoming week submissions (submissions scheduled for next week)
+    from edithub.utils import get_week_start_end
+    from datetime import datetime, timezone
+    week_start_dt, _ = get_week_start_end()
+    next_week_start = (week_start_dt + timedelta(days=7)).date()
+    deadline = datetime.combine(next_week_start, datetime.min.time()).replace(tzinfo=timezone.utc)
+    now = datetime.now(timezone.utc)
+    can_edit_delete = now < deadline
+    
+    upcoming_submissions = EditSubmission.objects.filter(
+        user=request.user,
+        scheduled_week=next_week_start
+    ).order_by('channel_type')
 
     # Prepare current user's image data
     current_user_image = ''
@@ -225,6 +240,10 @@ def user_dashboard(request):
         'ranking_tab': ranking_tab,
         'total_edit_submissions': total_edit_submissions,
         'verified_edit_submissions': verified_edit_submissions,
+        'upcoming_submissions': upcoming_submissions,
+        'can_edit_delete': can_edit_delete,
+        'deadline': deadline,
+        'next_week_start': next_week_start,
     }
     return render(request, 'dashboard/user_dashboard.html', context)
 

@@ -1,0 +1,223 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+
+{% block title %}Edit Submission - Edit of the Week - 2.0Transformers{% endblock %}
+
+{% block content %}
+<main class="pt-16 bg-gradient-to-b from-white via-gray-50 to-gray-100 min-h-screen py-8 sm:py-12">
+    <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-center min-h-[calc(100vh-8rem)]">
+            <div class="w-full">
+                <div class="text-center mb-8">
+                    <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-2">Edit Your Submission</h1>
+                    <p class="text-sm sm:text-base text-gray-600">Update your edit for the week of <span class="font-semibold text-gray-800">{{ target_week_label }}</span></p>
+                    <p class="text-xs text-gray-500 mt-2">
+                        <i class="fas fa-clock mr-1"></i>
+                        Deadline: {{ deadline|date:"M d, Y H:i" }} UTC
+                    </p>
+                </div>
+
+                {% if approved_app.channel_type == 'youtube' %}
+                <div class="bg-white rounded-xl shadow-lg border-2 border-red-100 overflow-hidden">
+                    <div class="bg-gradient-to-r from-red-600 to-red-700 px-6 py-4">
+                        <div class="flex items-center gap-3">
+                            <i class="fab fa-youtube text-2xl sm:text-3xl text-white"></i>
+                            <h2 class="text-xl sm:text-2xl font-bold text-white">{{ approved_app.get_channel_type_display }}</h2>
+                        </div>
+                    </div>
+                    
+                    <div class="p-6">
+                        <!-- Approved Channel Info -->
+                        <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+                            <div class="flex items-center gap-3 mb-3">
+                                {% if approved_app.channel_thumbnail %}
+                                <img src="{{ approved_app.channel_thumbnail }}" alt="{{ approved_app.channel_name }}" 
+                                     class="h-12 w-12 rounded-full object-cover flex-shrink-0">
+                                {% endif %}
+                                <div class="flex-1 min-w-0">
+                                    <p class="font-semibold text-gray-900 text-sm truncate">{{ approved_app.channel_name }}</p>
+                                    <a href="{{ approved_app.channel_link }}" target="_blank" rel="noopener noreferrer" 
+                                       class="text-xs text-blue-600 hover:underline">
+                                        View Channel
+                                    </a>
+                                </div>
+                            </div>
+                            <p class="text-xs text-green-700 flex items-center gap-1">
+                                <i class="fas fa-check-circle"></i> 
+                                Your channel is verified
+                            </p>
+                        </div>
+
+                        <!-- Current Submission Info -->
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                            <p class="text-xs font-semibold text-blue-800 mb-2">Current Submission:</p>
+                            <p class="text-xs text-gray-700 break-all">
+                                <a href="{{ submission.video_url }}" target="_blank" class="text-blue-600 hover:underline">
+                                    {{ submission.video_url }}
+                                </a>
+                            </p>
+                            {% if submission.title %}
+                            <p class="text-xs text-gray-700 mt-2"><strong>Title:</strong> {{ submission.title }}</p>
+                            {% endif %}
+                        </div>
+
+                        <form method="POST" enctype="multipart/form-data" class="space-y-4">
+                            {% csrf_token %}
+                            
+                            {% if form.non_field_errors %}
+                            <div class="bg-red-50 border border-red-200 rounded-lg p-3">
+                                <p class="text-xs text-red-600">{{ form.non_field_errors.0 }}</p>
+                            </div>
+                            {% endif %}
+
+                            <div>
+                                <label for="{{ form.video_url.id_for_label }}" class="block text-sm font-semibold text-gray-800 mb-2">
+                                    Video URL <span class="text-red-500">*</span>
+                                </label>
+                                {% render_field form.video_url class="mt-1 block w-full px-4 py-2.5 rounded-lg border-2 border-gray-300 bg-gray-50 text-sm text-gray-900 placeholder-gray-400 focus:border-red-500 focus:ring-2 focus:ring-red-500/20 focus:bg-white transition-all duration-200" placeholder="https://www.youtube.com/shorts/..." %}
+                                {% if form.video_url.errors %}
+                                <p class="mt-1.5 text-xs text-red-600">{{ form.video_url.errors.0 }}</p>
+                                {% endif %}
+                                <p class="mt-1.5 text-xs text-gray-500">
+                                    YouTube Shorts or video URL from your approved channel
+                                </p>
+                            </div>
+
+                            <div>
+                                <label for="{{ form.title.id_for_label }}" class="block text-sm font-semibold text-gray-800 mb-2">
+                                    Title <span class="text-gray-400 text-xs">(Optional)</span>
+                                </label>
+                                {% render_field form.title class="mt-1 block w-full px-4 py-2.5 rounded-lg border-2 border-gray-300 bg-gray-50 text-sm text-gray-900 placeholder-gray-400 focus:border-red-500 focus:ring-2 focus:ring-red-500/20 focus:bg-white transition-all duration-200" placeholder="Edit title (optional)" %}
+                                {% if form.title.errors %}
+                                <p class="mt-1.5 text-xs text-red-600">{{ form.title.errors.0 }}</p>
+                                {% endif %}
+                            </div>
+
+                            <div>
+                                <label for="{{ form.description.id_for_label }}" class="block text-sm font-semibold text-gray-800 mb-2">
+                                    Description <span class="text-gray-400 text-xs">(Optional)</span>
+                                </label>
+                                {% render_field form.description class="mt-1 block w-full px-4 py-2.5 rounded-lg border-2 border-gray-300 bg-gray-50 text-sm text-gray-900 placeholder-gray-400 focus:border-red-500 focus:ring-2 focus:ring-red-500/20 focus:bg-white transition-all duration-200" placeholder="Description (optional)" rows="3" %}
+                                {% if form.description.errors %}
+                                <p class="mt-1.5 text-xs text-red-600">{{ form.description.errors.0 }}</p>
+                                {% endif %}
+                            </div>
+
+                            <div class="flex gap-3 pt-4">
+                                <button type="submit" 
+                                        class="flex-1 px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition-colors">
+                                    Update Submission
+                                </button>
+                                <a href="{% url 'edithub:submit_edit' %}" 
+                                   class="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition-colors">
+                                    Cancel
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                {% else %}
+                <div class="bg-white rounded-xl shadow-lg border-2 border-purple-100 overflow-hidden">
+                    <div class="bg-gradient-to-r from-gray-900 to-black px-6 py-4">
+                        <div class="flex items-center gap-3">
+                            <i class="fab fa-tiktok text-2xl sm:text-3xl text-white"></i>
+                            <h2 class="text-xl sm:text-2xl font-bold text-white">{{ approved_app.get_channel_type_display }}</h2>
+                        </div>
+                    </div>
+                    
+                    <div class="p-6">
+                        <!-- Approved Channel Info -->
+                        <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+                            <div class="flex items-center gap-3 mb-3">
+                                {% if approved_app.channel_thumbnail %}
+                                <img src="{{ approved_app.channel_thumbnail }}" alt="{{ approved_app.channel_name }}" 
+                                     class="h-12 w-12 rounded-full object-cover flex-shrink-0">
+                                {% endif %}
+                                <div class="flex-1 min-w-0">
+                                    <p class="font-semibold text-gray-900 text-sm truncate">{{ approved_app.channel_name }}</p>
+                                    <a href="{{ approved_app.channel_link }}" target="_blank" rel="noopener noreferrer" 
+                                       class="text-xs text-blue-600 hover:underline">
+                                        View Channel
+                                    </a>
+                                </div>
+                            </div>
+                            <p class="text-xs text-green-700 flex items-center gap-1">
+                                <i class="fas fa-check-circle"></i> 
+                                Your channel is verified
+                            </p>
+                        </div>
+
+                        <!-- Current Submission Info -->
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                            <p class="text-xs font-semibold text-blue-800 mb-2">Current Submission:</p>
+                            <p class="text-xs text-gray-700 break-all">
+                                <a href="{{ submission.video_url }}" target="_blank" class="text-blue-600 hover:underline">
+                                    {{ submission.video_url }}
+                                </a>
+                            </p>
+                            {% if submission.title %}
+                            <p class="text-xs text-gray-700 mt-2"><strong>Title:</strong> {{ submission.title }}</p>
+                            {% endif %}
+                        </div>
+
+                        <form method="POST" enctype="multipart/form-data" class="space-y-4">
+                            {% csrf_token %}
+                            
+                            {% if form.non_field_errors %}
+                            <div class="bg-red-50 border border-red-200 rounded-lg p-3">
+                                <p class="text-xs text-red-600">{{ form.non_field_errors.0 }}</p>
+                            </div>
+                            {% endif %}
+
+                            <div>
+                                <label for="{{ form.video_url.id_for_label }}" class="block text-sm font-semibold text-gray-800 mb-2">
+                                    Video URL <span class="text-red-500">*</span>
+                                </label>
+                                {% render_field form.video_url class="mt-1 block w-full px-4 py-2.5 rounded-lg border-2 border-gray-300 bg-gray-50 text-sm text-gray-900 placeholder-gray-400 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 focus:bg-white transition-all duration-200" placeholder="https://www.tiktok.com/@username/video/..." %}
+                                {% if form.video_url.errors %}
+                                <p class="mt-1.5 text-xs text-red-600">{{ form.video_url.errors.0 }}</p>
+                                {% endif %}
+                                <p class="mt-1.5 text-xs text-gray-500">
+                                    TikTok video URL from your approved account
+                                </p>
+                            </div>
+
+                            <div>
+                                <label for="{{ form.title.id_for_label }}" class="block text-sm font-semibold text-gray-800 mb-2">
+                                    Title <span class="text-gray-400 text-xs">(Optional)</span>
+                                </label>
+                                {% render_field form.title class="mt-1 block w-full px-4 py-2.5 rounded-lg border-2 border-gray-300 bg-gray-50 text-sm text-gray-900 placeholder-gray-400 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 focus:bg-white transition-all duration-200" placeholder="Edit title (optional)" %}
+                                {% if form.title.errors %}
+                                <p class="mt-1.5 text-xs text-red-600">{{ form.title.errors.0 }}</p>
+                                {% endif %}
+                            </div>
+
+                            <div>
+                                <label for="{{ form.description.id_for_label }}" class="block text-sm font-semibold text-gray-800 mb-2">
+                                    Description <span class="text-gray-400 text-xs">(Optional)</span>
+                                </label>
+                                {% render_field form.description class="mt-1 block w-full px-4 py-2.5 rounded-lg border-2 border-gray-300 bg-gray-50 text-sm text-gray-900 placeholder-gray-400 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 focus:bg-white transition-all duration-200" placeholder="Description (optional)" rows="3" %}
+                                {% if form.description.errors %}
+                                <p class="mt-1.5 text-xs text-red-600">{{ form.description.errors.0 }}</p>
+                                {% endif %}
+                            </div>
+
+                            <div class="flex gap-3 pt-4">
+                                <button type="submit" 
+                                        class="flex-1 px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-semibold transition-colors">
+                                    Update Submission
+                                </button>
+                                <a href="{% url 'edithub:submit_edit' %}" 
+                                   class="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition-colors">
+                                    Cancel
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</main>
+{% endblock %}
