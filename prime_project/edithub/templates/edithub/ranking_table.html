@@ -164,6 +164,24 @@
         opacity: 0.65;
     }
 
+    /* Mobile platform tabs - make them fit on one line */
+    @media (max-width: 640px) {
+        .platform-tabs-container {
+            flex-wrap: nowrap !important;
+        }
+        .platform-tab-link {
+            padding-left: 0.5rem !important;
+            padding-right: 0.5rem !important;
+            font-size: 0.7rem !important;
+        }
+        .platform-tab-link i {
+            font-size: 0.875rem !important;
+        }
+        .platform-tab-link span {
+            font-size: 0.7rem !important;
+        }
+    }
+    
     @media (max-width: 640px) {
         .tournament-card__body {
             flex-direction: column;
@@ -252,8 +270,222 @@
                 </h2>
             </div>
             
-            <!-- Tournament Bracket Structure -->
-            <div class="max-w-7xl mx-auto">
+            <!-- Mobile Card Layout (visible on mobile only) -->
+            <div class="md:hidden space-y-6 mb-8">
+                {% if semi_finals_active %}
+                    <!-- Semi-Final 1 Card -->
+                    {% if tournament_participants.0 or tournament_participants.1 %}
+                    <div class="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                        <div class="text-center mb-3">
+                            <span class="text-white/90 text-xs font-semibold uppercase tracking-wider">Semi-Final 1</span>
+                        </div>
+                        <div class="flex items-center justify-between gap-3">
+                            <!-- Participant 1 -->
+                            <div class="flex-1 text-center">
+                                {% if tournament_participants.0 %}
+                                    <div class="mb-2">
+                                        {% if tournament_participants.0.profile_picture %}
+                                            <img src="{{ tournament_participants.0.profile_picture }}" 
+                                                 alt="{{ tournament_participants.0.channel_name }}" 
+                                                 class="w-16 h-16 rounded-full object-cover border-2 border-white/30 mx-auto">
+                                        {% elif tournament_participants.0.channel_thumbnail %}
+                                            <img src="{{ tournament_participants.0.channel_thumbnail }}" 
+                                                 alt="{{ tournament_participants.0.channel_name }}" 
+                                                 class="w-16 h-16 rounded-full object-cover border-2 border-white/30 mx-auto">
+                                        {% else %}
+                                            <div class="w-16 h-16 rounded-full bg-gradient-to-br from-purple-400 via-pink-400 to-blue-400 flex items-center justify-center border-2 border-white/30 mx-auto">
+                                                <span class="text-xl font-bold text-white">{{ tournament_participants.0.channel_name|first|upper }}</span>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    <p class="text-white text-sm font-semibold truncate">{{ tournament_participants.0.channel_name|upper }}</p>
+                                    <p class="text-white/70 text-xs truncate">{{ tournament_participants.0.editor_title }}</p>
+                                {% else %}
+                                    <div class="w-16 h-16 rounded-full bg-white/10 border-2 border-white/20 flex items-center justify-center mx-auto mb-2">
+                                        <span class="text-white/50 text-xl">?</span>
+                                    </div>
+                                    <p class="text-white/50 text-sm">TBD</p>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- VS -->
+                            <div class="text-white font-bold text-lg">VS</div>
+                            
+                            <!-- Participant 2 -->
+                            <div class="flex-1 text-center">
+                                {% if tournament_participants.1 %}
+                                    <div class="mb-2">
+                                        {% if tournament_participants.1.profile_picture %}
+                                            <img src="{{ tournament_participants.1.profile_picture }}" 
+                                                 alt="{{ tournament_participants.1.channel_name }}" 
+                                                 class="w-16 h-16 rounded-full object-cover border-2 border-white/30 mx-auto">
+                                        {% elif tournament_participants.1.channel_thumbnail %}
+                                            <img src="{{ tournament_participants.1.channel_thumbnail }}" 
+                                                 alt="{{ tournament_participants.1.channel_name }}" 
+                                                 class="w-16 h-16 rounded-full object-cover border-2 border-white/30 mx-auto">
+                                        {% else %}
+                                            <div class="w-16 h-16 rounded-full bg-gradient-to-br from-pink-400 via-purple-400 to-blue-400 flex items-center justify-center border-2 border-white/30 mx-auto">
+                                                <span class="text-xl font-bold text-white">{{ tournament_participants.1.channel_name|first|upper }}</span>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    <p class="text-white text-sm font-semibold truncate">{{ tournament_participants.1.channel_name|upper }}</p>
+                                    <p class="text-white/70 text-xs truncate">{{ tournament_participants.1.editor_title }}</p>
+                                {% else %}
+                                    <div class="w-16 h-16 rounded-full bg-white/10 border-2 border-white/20 flex items-center justify-center mx-auto mb-2">
+                                        <span class="text-white/50 text-xl">?</span>
+                                    </div>
+                                    <p class="text-white/50 text-sm">TBD</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Semi-Final 2 Card -->
+                    {% if tournament_participants.2 or tournament_participants.3 %}
+                    <div class="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                        <div class="text-center mb-3">
+                            <span class="text-white/90 text-xs font-semibold uppercase tracking-wider">Semi-Final 2</span>
+                        </div>
+                        <div class="flex items-center justify-between gap-3">
+                            <!-- Participant 3 -->
+                            <div class="flex-1 text-center">
+                                {% if tournament_participants.2 %}
+                                    <div class="mb-2">
+                                        {% if tournament_participants.2.profile_picture %}
+                                            <img src="{{ tournament_participants.2.profile_picture }}" 
+                                                 alt="{{ tournament_participants.2.channel_name }}" 
+                                                 class="w-16 h-16 rounded-full object-cover border-2 border-white/30 mx-auto">
+                                        {% elif tournament_participants.2.channel_thumbnail %}
+                                            <img src="{{ tournament_participants.2.channel_thumbnail }}" 
+                                                 alt="{{ tournament_participants.2.channel_name }}" 
+                                                 class="w-16 h-16 rounded-full object-cover border-2 border-white/30 mx-auto">
+                                        {% else %}
+                                            <div class="w-16 h-16 rounded-full bg-gradient-to-br from-purple-400 via-pink-400 to-blue-400 flex items-center justify-center border-2 border-white/30 mx-auto">
+                                                <span class="text-xl font-bold text-white">{{ tournament_participants.2.channel_name|first|upper }}</span>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    <p class="text-white text-sm font-semibold truncate">{{ tournament_participants.2.channel_name|upper }}</p>
+                                    <p class="text-white/70 text-xs truncate">{{ tournament_participants.2.editor_title }}</p>
+                                {% else %}
+                                    <div class="w-16 h-16 rounded-full bg-white/10 border-2 border-white/20 flex items-center justify-center mx-auto mb-2">
+                                        <span class="text-white/50 text-xl">?</span>
+                                    </div>
+                                    <p class="text-white/50 text-sm">TBD</p>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- VS -->
+                            <div class="text-white font-bold text-lg">VS</div>
+                            
+                            <!-- Participant 4 -->
+                            <div class="flex-1 text-center">
+                                {% if tournament_participants.3 %}
+                                    <div class="mb-2">
+                                        {% if tournament_participants.3.profile_picture %}
+                                            <img src="{{ tournament_participants.3.profile_picture }}" 
+                                                 alt="{{ tournament_participants.3.channel_name }}" 
+                                                 class="w-16 h-16 rounded-full object-cover border-2 border-white/30 mx-auto">
+                                        {% elif tournament_participants.3.channel_thumbnail %}
+                                            <img src="{{ tournament_participants.3.channel_thumbnail }}" 
+                                                 alt="{{ tournament_participants.3.channel_name }}" 
+                                                 class="w-16 h-16 rounded-full object-cover border-2 border-white/30 mx-auto">
+                                        {% else %}
+                                            <div class="w-16 h-16 rounded-full bg-gradient-to-br from-pink-400 via-purple-400 to-blue-400 flex items-center justify-center border-2 border-white/30 mx-auto">
+                                                <span class="text-xl font-bold text-white">{{ tournament_participants.3.channel_name|first|upper }}</span>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    <p class="text-white text-sm font-semibold truncate">{{ tournament_participants.3.channel_name|upper }}</p>
+                                    <p class="text-white/70 text-xs truncate">{{ tournament_participants.3.editor_title }}</p>
+                                {% else %}
+                                    <div class="w-16 h-16 rounded-full bg-white/10 border-2 border-white/20 flex items-center justify-center mx-auto mb-2">
+                                        <span class="text-white/50 text-xl">?</span>
+                                    </div>
+                                    <p class="text-white/50 text-sm">TBD</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                {% endif %}
+                
+                {% if finals_active %}
+                    <!-- Final Card -->
+                    {% if tournament_finalists.0 or tournament_finalists.1 %}
+                    <div class="bg-gradient-to-r from-yellow-500/20 to-orange-500/20 backdrop-blur-sm rounded-xl p-4 border-2 border-yellow-400/50">
+                        <div class="text-center mb-3">
+                            <span class="text-yellow-300 text-xs font-bold uppercase tracking-wider">Final</span>
+                        </div>
+                        <div class="flex items-center justify-between gap-3">
+                            <!-- Finalist 1 -->
+                            <div class="flex-1 text-center">
+                                {% if tournament_finalists.0 %}
+                                    <div class="mb-2">
+                                        {% if tournament_finalists.0.profile_picture %}
+                                            <img src="{{ tournament_finalists.0.profile_picture }}" 
+                                                 alt="{{ tournament_finalists.0.channel_name }}" 
+                                                 class="w-16 h-16 rounded-full object-cover border-2 border-yellow-400/50 mx-auto">
+                                        {% elif tournament_finalists.0.channel_thumbnail %}
+                                            <img src="{{ tournament_finalists.0.channel_thumbnail }}" 
+                                                 alt="{{ tournament_finalists.0.channel_name }}" 
+                                                 class="w-16 h-16 rounded-full object-cover border-2 border-yellow-400/50 mx-auto">
+                                        {% else %}
+                                            <div class="w-16 h-16 rounded-full bg-gradient-to-br from-yellow-400 via-orange-400 to-yellow-500 flex items-center justify-center border-2 border-yellow-400/50 mx-auto">
+                                                <span class="text-xl font-bold text-white">{{ tournament_finalists.0.channel_name|first|upper }}</span>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    <p class="text-white text-sm font-semibold truncate">{{ tournament_finalists.0.channel_name|upper }}</p>
+                                    <p class="text-white/70 text-xs truncate">{{ tournament_finalists.0.editor_title }}</p>
+                                {% else %}
+                                    <div class="w-16 h-16 rounded-full bg-white/10 border-2 border-white/20 flex items-center justify-center mx-auto mb-2">
+                                        <span class="text-white/50 text-xl">?</span>
+                                    </div>
+                                    <p class="text-white/50 text-sm">TBD</p>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- VS -->
+                            <div class="text-yellow-300 font-bold text-lg">VS</div>
+                            
+                            <!-- Finalist 2 -->
+                            <div class="flex-1 text-center">
+                                {% if tournament_finalists.1 %}
+                                    <div class="mb-2">
+                                        {% if tournament_finalists.1.profile_picture %}
+                                            <img src="{{ tournament_finalists.1.profile_picture }}" 
+                                                 alt="{{ tournament_finalists.1.channel_name }}" 
+                                                 class="w-16 h-16 rounded-full object-cover border-2 border-yellow-400/50 mx-auto">
+                                        {% elif tournament_finalists.1.channel_thumbnail %}
+                                            <img src="{{ tournament_finalists.1.channel_thumbnail }}" 
+                                                 alt="{{ tournament_finalists.1.channel_name }}" 
+                                                 class="w-16 h-16 rounded-full object-cover border-2 border-yellow-400/50 mx-auto">
+                                        {% else %}
+                                            <div class="w-16 h-16 rounded-full bg-gradient-to-br from-orange-400 via-yellow-400 to-orange-500 flex items-center justify-center border-2 border-yellow-400/50 mx-auto">
+                                                <span class="text-xl font-bold text-white">{{ tournament_finalists.1.channel_name|first|upper }}</span>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    <p class="text-white text-sm font-semibold truncate">{{ tournament_finalists.1.channel_name|upper }}</p>
+                                    <p class="text-white/70 text-xs truncate">{{ tournament_finalists.1.editor_title }}</p>
+                                {% else %}
+                                    <div class="w-16 h-16 rounded-full bg-white/10 border-2 border-white/20 flex items-center justify-center mx-auto mb-2">
+                                        <span class="text-white/50 text-xl">?</span>
+                                    </div>
+                                    <p class="text-white/50 text-sm">TBD</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                {% endif %}
+            </div>
+            
+            <!-- Tournament Bracket Structure (Desktop only) -->
+            <div class="hidden md:block max-w-7xl mx-auto">
                 <div class="relative flex flex-col md:flex-row items-center justify-center gap-8 md:gap-20">
                     <!-- Far Left - Semi-Final 1 -->
                     {% if semi_finals_active %}
@@ -401,9 +633,9 @@
     <!-- Platform Tabs (visible in summary/highlight view) -->
     <section class="py-4 bg-white border-b">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="inline-flex flex-wrap rounded-lg border border-gray-200 overflow-hidden shadow-sm">
+            <div class="inline-flex flex-wrap rounded-lg border border-gray-200 overflow-hidden shadow-sm platform-tabs-container">
                 <a href="?channel_filter=mix{% if selected_area %}&editing_area={{ selected_area }}{% endif %}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}"
-                   class="flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors {% if channel_filter == 'mix' %}bg-blue-600 text-white{% else %}bg-white text-gray-700 hover:bg-gray-50{% endif %}">
+                   class="flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors platform-tab-link {% if channel_filter == 'mix' %}bg-blue-600 text-white{% else %}bg-white text-gray-700 hover:bg-gray-50{% endif %}">
                     <span class="flex items-center gap-2">
                         <i class="fab fa-youtube {% if channel_filter == 'mix' %}text-white{% else %}text-red-600{% endif %}"></i>
                         <i class="fab fa-tiktok {% if channel_filter == 'mix' %}text-white{% else %}text-gray-900{% endif %}"></i>
@@ -411,12 +643,12 @@
                     <span>Mix ({{ channel_counts.mix }})</span>
                 </a>
                 <a href="?channel_filter=youtube{% if selected_area %}&editing_area={{ selected_area }}{% endif %}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}"
-                   class="flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors {% if channel_filter == 'youtube' %}bg-red-600 text-white{% else %}bg-white text-gray-700 hover:bg-gray-50{% endif %}">
+                   class="flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors platform-tab-link {% if channel_filter == 'youtube' %}bg-red-600 text-white{% else %}bg-white text-gray-700 hover:bg-gray-50{% endif %}">
                     <i class="fab fa-youtube {% if channel_filter == 'youtube' %}text-white{% else %}text-red-600{% endif %}"></i>
                     <span>YouTube ({{ channel_counts.youtube }})</span>
                 </a>
                 <a href="?channel_filter=tiktok{% if selected_area %}&editing_area={{ selected_area }}{% endif %}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}"
-                   class="flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors {% if channel_filter == 'tiktok' %}bg-black text-white{% else %}bg-white text-gray-700 hover:bg-gray-50{% endif %}">
+                   class="flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors platform-tab-link {% if channel_filter == 'tiktok' %}bg-black text-white{% else %}bg-white text-gray-700 hover:bg-gray-50{% endif %}">
                     <i class="fab fa-tiktok {% if channel_filter == 'tiktok' %}text-white{% else %}text-gray-900{% endif %}"></i>
                     <span>TikTok ({{ channel_counts.tiktok }})</span>
                 </a>
@@ -451,9 +683,9 @@
 
             <div class="mt-6">
                 <span class="block text-gray-700 font-medium mb-3">Filter by Platform:</span>
-                <div class="inline-flex flex-wrap rounded-lg border border-gray-200 overflow-hidden shadow-sm">
+                <div class="inline-flex flex-wrap rounded-lg border border-gray-200 overflow-hidden shadow-sm platform-tabs-container">
                     <a href="?channel_filter=mix{% if selected_area %}&editing_area={{ selected_area }}{% endif %}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}"
-                       class="flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors {% if channel_filter == 'mix' %}bg-blue-600 text-white{% else %}bg-white text-gray-700 hover:bg-gray-50{% endif %}">
+                       class="flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors platform-tab-link {% if channel_filter == 'mix' %}bg-blue-600 text-white{% else %}bg-white text-gray-700 hover:bg-gray-50{% endif %}">
                         <span class="flex items-center gap-2">
                             <i class="fab fa-youtube {% if channel_filter == 'mix' %}text-white{% else %}text-red-600{% endif %}"></i>
                             <i class="fab fa-tiktok {% if channel_filter == 'mix' %}text-white{% else %}text-gray-900{% endif %}"></i>
@@ -461,12 +693,12 @@
                         <span>Mix ({{ channel_counts.mix }})</span>
                     </a>
                     <a href="?channel_filter=youtube{% if selected_area %}&editing_area={{ selected_area }}{% endif %}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}"
-                       class="flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors {% if channel_filter == 'youtube' %}bg-red-600 text-white{% else %}bg-white text-gray-700 hover:bg-gray-50{% endif %}">
+                       class="flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors platform-tab-link {% if channel_filter == 'youtube' %}bg-red-600 text-white{% else %}bg-white text-gray-700 hover:bg-gray-50{% endif %}">
                         <i class="fab fa-youtube {% if channel_filter == 'youtube' %}text-white{% else %}text-red-600{% endif %}"></i>
                         <span>YouTube ({{ channel_counts.youtube }})</span>
                     </a>
                     <a href="?channel_filter=tiktok{% if selected_area %}&editing_area={{ selected_area }}{% endif %}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}"
-                       class="flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors {% if channel_filter == 'tiktok' %}bg-black text-white{% else %}bg-white text-gray-700 hover:bg-gray-50{% endif %}">
+                       class="flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors platform-tab-link {% if channel_filter == 'tiktok' %}bg-black text-white{% else %}bg-white text-gray-700 hover:bg-gray-50{% endif %}">
                         <i class="fab fa-tiktok {% if channel_filter == 'tiktok' %}text-white{% else %}text-gray-900{% endif %}"></i>
                         <span>TikTok ({{ channel_counts.tiktok }})</span>
                     </a>
@@ -1112,7 +1344,7 @@
     </div>
 
     <!-- User Stats Modal -->
-    <div id="userStatsModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50">
+    <div id="userStatsModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-[110]">
         <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative m-4 max-h-[90vh] overflow-y-auto">
             <button type="button" id="closeUserStatsModal" class="absolute top-3 right-3 text-gray-500 hover:text-gray-700">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1177,16 +1409,127 @@
         const closeBtn = document.getElementById('closeUserStatsModal');
         const contentEl = document.getElementById('userStatsContent');
 
+        // Add null checks
+        if (!modal || !contentEl) {
+            console.error('User stats modal elements not found');
+            return;
+        }
+        
+        // Verify modal is in DOM
+        if (!modal.parentNode) {
+            console.error('Modal is not in DOM!');
+            if (document.body) {
+                document.body.appendChild(modal);
+                console.log('Modal appended to body');
+            }
+        }
+
         function openModal() {
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
+            if (!modal) {
+                console.error('Modal element not found!');
+                return false; // Return false to indicate failure
+            }
+            try {
+                console.log('Opening modal, current classes:', modal.className); // Debug log
+                
+                // Remove hidden class first
+                modal.classList.remove('hidden');
+                
+                // Use cssText to completely override all styles and classes
+                // This ensures no Tailwind classes interfere
+                modal.style.cssText = `
+                    display: flex !important;
+                    position: fixed !important;
+                    top: 0 !important;
+                    left: 0 !important;
+                    right: 0 !important;
+                    bottom: 0 !important;
+                    width: 100vw !important;
+                    height: 100vh !important;
+                    min-width: 100vw !important;
+                    min-height: 100vh !important;
+                    max-width: 100vw !important;
+                    max-height: 100vh !important;
+                    z-index: 110 !important;
+                    background-color: rgba(0, 0, 0, 0.5) !important;
+                    align-items: center !important;
+                    justify-content: center !important;
+                    visibility: visible !important;
+                    opacity: 1 !important;
+                    margin: 0 !important;
+                    padding: 0 !important;
+                    border: none !important;
+                    box-sizing: border-box !important;
+                `;
+                
+                // Prevent background scrolling
+                if (document.body) {
+                    document.body.style.overflow = 'hidden';
+                }
+                
+                console.log('Modal opened, cssText applied');
+                
+                // Force a reflow to ensure styles are applied
+                void modal.offsetHeight;
+                
+                // Verify modal is actually visible after a brief delay
+                setTimeout(() => {
+                    const rect = modal.getBoundingClientRect();
+                    const computedStyle = window.getComputedStyle(modal);
+                    const innerContent = modal.querySelector('.bg-white');
+                    
+                    console.log('Modal position check:');
+                    console.log('  - Width:', rect.width, 'Height:', rect.height);
+                    console.log('  - Top:', rect.top, 'Left:', rect.left);
+                    console.log('  - Computed display:', computedStyle.display);
+                    console.log('  - Computed width:', computedStyle.width);
+                    console.log('  - Computed height:', computedStyle.height);
+                    console.log('  - Computed z-index:', computedStyle.zIndex);
+                    console.log('  - Computed position:', computedStyle.position);
+                    console.log('  - Computed visibility:', computedStyle.visibility);
+                    console.log('  - Computed opacity:', computedStyle.opacity);
+                    
+                    if (innerContent) {
+                        const contentRect = innerContent.getBoundingClientRect();
+                        const contentStyle = window.getComputedStyle(innerContent);
+                        console.log('  - Inner content width:', contentRect.width, 'height:', contentRect.height);
+                        console.log('  - Inner content display:', contentStyle.display);
+                    }
+                    
+                    if (rect.width === 0 || rect.height === 0 || computedStyle.display === 'none') {
+                        console.error('Modal is still not visible! Attempting DOM manipulation...');
+                        // Last resort: check if modal is in DOM and try moving it
+                        if (modal.parentNode) {
+                            console.log('Modal parent:', modal.parentNode);
+                            // Try appending to body directly if not already there
+                            if (document.body && modal.parentNode !== document.body) {
+                                document.body.appendChild(modal);
+                                console.log('Moved modal to body');
+                            }
+                        }
+                        // Force dimensions one more time
+                        modal.style.setProperty('width', window.innerWidth + 'px', 'important');
+                        modal.style.setProperty('height', window.innerHeight + 'px', 'important');
+                    } else {
+                        console.log('✓ Modal appears to be visible');
+                    }
+                }, 100);
+                
+                return true; // Return true to indicate success
+            } catch (error) {
+                console.error('Error opening modal:', error);
+                if (document.body) {
+                    document.body.style.overflow = ''; // Restore scrolling on error
+                }
+                return false;
+            }
         }
         
         function closeModal() {
-            if (modal) {
-                modal.classList.add('hidden');
-                modal.classList.remove('flex');
-            }
+            if (!modal) return; // Safety check
+            modal.classList.add('hidden');
+            modal.style.setProperty('display', 'none', 'important');
+            document.body.style.overflow = ''; // Restore scrolling
         }
         
         // Make closeModal globally accessible
@@ -1200,6 +1543,28 @@
                 if (e.target === modal) closeModal(); 
             });
         }
+        
+        // Close on Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                if (modal && !modal.classList.contains('hidden')) {
+                    closeModal();
+                } else {
+                    // Emergency: if page is stuck, restore scrolling
+                    document.body.style.overflow = '';
+                }
+            }
+        });
+        
+        // Emergency restore scrolling function (can be called from console)
+        window.restoreScrolling = function() {
+            document.body.style.overflow = '';
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.style.setProperty('display', 'none', 'important');
+            }
+            console.log('Scrolling restored');
+        };
 
         function renderUserStats(data) {
             const channelType = data.channel_type || 'youtube';
@@ -1283,30 +1648,51 @@
             `;
         }
 
-        document.querySelectorAll('.open-user-stats').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const userId = btn.getAttribute('data-user-id');
-                if (!userId) {
-                    alert('User ID not found');
-                    return;
-                }
-                
-                // Show loading state
+        // Function to handle user stats modal opening
+        function handleUserStatsClick(userId) {
+            // Better validation for userId
+            if (!userId || userId === 'None' || userId === '' || userId === 'null') {
+                console.warn('User ID not found or invalid:', userId);
+                alert('User ID not found');
+                return;
+            }
+            
+            console.log('Opening user stats modal for user ID:', userId); // Debug log
+            
+            // Show loading state first
+            if (contentEl) {
                 contentEl.innerHTML = `
                     <div class="py-8">
                         <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
                         <p class="mt-4 text-gray-600">Loading...</p>
                     </div>
                 `;
-                openModal();
-                
-                // Fetch user stats
-                fetch(`{% url 'edithub:get_user_stats' %}?user_id=${userId}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
+            }
+            
+            // Try to open modal - if it fails, restore scrolling
+            const modalOpened = openModal();
+            if (!modalOpened) {
+                console.error('Failed to open modal!');
+                alert('Failed to open user stats. Please try again.');
+                document.body.style.overflow = ''; // Restore scrolling
+                return;
+            }
+            
+            // Fetch user stats
+            fetch(`{% url 'edithub:get_user_stats' %}?user_id=${userId}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        if (contentEl) {
                             contentEl.innerHTML = renderUserStats(data);
-                        } else {
+                        }
+                    } else {
+                        if (contentEl) {
                             contentEl.innerHTML = `
                                 <div class="py-8 text-center">
                                     <p class="text-red-600">Error: ${data.error || 'Failed to load user stats'}</p>
@@ -1314,16 +1700,48 @@
                                 </div>
                             `;
                         }
-                    })
-                    .catch(error => {
-                        console.error('Error fetching user stats:', error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching user stats:', error);
+                    if (contentEl) {
                         contentEl.innerHTML = `
                             <div class="py-8 text-center">
                                 <p class="text-red-600">Error loading user stats. Please try again.</p>
                                 <button onclick="closeModal()" class="mt-4 px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300">Close</button>
                             </div>
                         `;
-                    });
+                    }
+                    // Don't close modal on error - let user see the error message
+                });
+        }
+
+        // Attach event listeners directly to buttons (they exist on page load)
+        const userStatsButtons = document.querySelectorAll('.open-user-stats');
+        console.log('Found', userStatsButtons.length, 'user stats buttons'); // Debug log
+        
+        if (userStatsButtons.length === 0) {
+            console.warn('No user stats buttons found on page!');
+        }
+        
+        userStatsButtons.forEach((btn, index) => {
+            const userId = btn.getAttribute('data-user-id');
+            console.log(`Button ${index}: userId =`, userId); // Debug log
+            
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                const clickedUserId = this.getAttribute('data-user-id');
+                console.log('User stats button clicked, userId:', clickedUserId); // Debug log
+                
+                // Wrap in try-catch to prevent page freeze on error
+                try {
+                    handleUserStatsClick(clickedUserId);
+                } catch (error) {
+                    console.error('Error handling user stats click:', error);
+                    alert('An error occurred. Please try again.');
+                    document.body.style.overflow = ''; // Restore scrolling on error
+                }
             });
         });
     });
