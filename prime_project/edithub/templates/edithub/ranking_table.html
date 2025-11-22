@@ -237,7 +237,7 @@
     </section>
 
     <!-- Tournament of Editors Section -->
-    {% if not show_all %}
+    {% if not show_all and tournament and tournament.is_active %}
     <section class="py-12 bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 border-b-4 border-yellow-500 relative overflow-hidden">
         <!-- Geometric Pattern Background -->
         <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.05) 10px, rgba(255,255,255,0.05) 20px);"></div>
@@ -386,14 +386,14 @@
         </div>
         
         <!-- View All Edits Link -->
-        
+        {% if tournament and tournament.is_active %}
         <div class="text-center mt-8">
             <a href="{% url 'edithub:tournament_matches' %}" 
                class="inline-block px-8 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg font-semibold hover:from-purple-700 hover:to-pink-700 transform hover:scale-105 transition-all duration-300 shadow-lg">
                 <i class="fas fa-video mr-2"></i>View All Edits
             </a>
         </div>
-       
+        {% endif %}
     </section>
     {% endif %}
 

@@ -363,6 +363,9 @@ class RankingTableView(ListView):
         from .models import Tournament
         active_tournament = Tournament.get_active_tournament()
         
+        # Pass tournament to context for conditional rendering
+        context['tournament'] = active_tournament
+        
         # Phase status
         context['semi_finals_active'] = False
         context['finals_active'] = False
@@ -370,7 +373,7 @@ class RankingTableView(ListView):
         tournament_participants = []
         tournament_finalists = []
         
-        if active_tournament:
+        if active_tournament and active_tournament.is_active:
             # Get phase status
             context['semi_finals_active'] = active_tournament.semi_finals_active
             context['finals_active'] = active_tournament.finals_active
