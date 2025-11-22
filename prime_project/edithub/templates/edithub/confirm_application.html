@@ -3,100 +3,137 @@
 {% block title %}Confirm Application - EditingHub{% endblock %}
 
 {% block content %}
-<main class="pt-16 bg-gradient-to-b from-white via-gray-50 to-gray-100 min-h-screen py-12">
-    <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="bg-white rounded-lg shadow-lg p-8">
-            <div class="text-center mb-8">
-                <h1 class="text-3xl font-bold text-gray-900 mb-2">Confirm Your Channels</h1>
+<main class="pt-16 bg-gradient-to-b from-white via-gray-50 to-gray-100 min-h-screen flex items-center justify-center py-12">
+    <div class="max-w-3xl w-full mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="bg-white rounded-xl shadow-2xl overflow-hidden">
+            <!-- Header -->
+            <div class="text-center py-6 px-8 border-b border-gray-200">
+                <h1 class="text-3xl font-bold text-gray-900 mb-2">Confirm Your Channel{% if applications|length > 1 %}s{% endif %}</h1>
                 <p class="text-gray-600">Please verify the information below before submitting your application{% if applications|length > 1 %}s{% endif %}.</p>
             </div>
 
-            {% for summary in applications %}
-            {% with application=summary.instance %}
-            <div class="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
-                <div class="flex items-start">
-                    <div class="flex-shrink-0">
-                        <svg class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                    </div>
-                    <div class="ml-3 w-full">
-                        <div class="flex items-center justify-between flex-wrap gap-3">
-                            <h3 class="text-lg font-medium text-blue-900 flex items-center gap-2">
+            <div class="p-8">
+                {% for summary in applications %}
+                {% with application=summary.instance %}
+                <div class="mb-8 last:mb-0">
+                    <!-- Platform-themed container -->
+                    <div class="rounded-xl overflow-hidden shadow-lg {% if summary.channel_type == 'youtube' %}bg-gradient-to-br from-red-50 via-red-50 to-orange-50 border-2 border-red-200{% else %}bg-gradient-to-br from-gray-900 via-gray-800 to-black border-2 border-gray-700{% endif %}">
+                        <!-- Platform header -->
+                        <div class="px-6 py-4 {% if summary.channel_type == 'youtube' %}bg-red-600{% else %}bg-black{% endif %} flex items-center justify-between">
+                            <div class="flex items-center gap-3">
                                 {% if summary.channel_type == 'youtube' %}
-                                <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-red-100 text-red-700"><i class="fab fa-youtube"></i></span>
-                                YouTube Channel
+                                <i class="fab fa-youtube text-2xl text-white"></i>
+                                <h3 class="text-lg font-bold text-white">YouTube Channel</h3>
                                 {% else %}
-                                <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-black text-white"><i class="fab fa-tiktok"></i></span>
-                                TikTok Channel
+                                <i class="fab fa-tiktok text-2xl text-white"></i>
+                                <h3 class="text-lg font-bold text-white">TikTok Channel</h3>
                                 {% endif %}
-                            </h3>
+                            </div>
                             <span class="px-3 py-1 text-xs font-semibold rounded-full {% if application.status == 'pending' %}bg-yellow-100 text-yellow-800{% elif application.status == 'accepted' %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
                                 {{ application.get_status_display }}
                             </span>
                         </div>
 
-                        <div class="mt-4 flex items-center">
-                            {% if summary.channel_thumbnail %}
-                            <img src="{{ summary.channel_thumbnail }}" alt="{{ summary.channel_name }}" class="h-16 w-16 rounded-full mr-4 object-cover">
-                            {% endif %}
-                            <div class="space-y-1">
-                                <p class="text-lg font-semibold text-gray-900">{{ summary.channel_name|default:"Unknown" }}</p>
-                                <p class="text-sm text-gray-600">Followers: {{ summary.follower_count|floatformat:0|default:"0" }}</p>
-                                <p class="text-sm text-blue-600">
-                                    <a href="{{ summary.channel_link }}" target="_blank" rel="noopener noreferrer" class="hover:underline">
-                                        {{ summary.channel_link }}
-                                    </a>
-                                </p>
-                            </div>
-                        </div>
-
-                        <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-gray-700">
-                            <div>
-                                <span class="font-medium">Editing Tool:</span>
-                                <span class="inline-flex items-center gap-2 ml-2">
-                                    <span class="inline-flex items-center justify-center" aria-hidden="true">
-                                        {{ application.editing_tool_icon|safe }}
-                                    </span>
-                                    <span class="text-xs text-gray-500">({{ application.get_editing_tool_display }})</span>
-                                </span>
-                            </div>
-                            <div>
-                                <span class="font-medium">Editing Area:</span>
-                                <span class="ml-2">{{ application.get_editing_area_display }}</span>
-                                {% if application.editing_area == 'others' and application.editing_area_other %}
-                                <span class="ml-1 text-xs text-gray-500">({{ application.editing_area_other }})</span>
+                        <!-- Content area -->
+                        <div class="p-8">
+                            <!-- Centered image and username -->
+                            <div class="text-center mb-6">
+                                {% if summary.channel_thumbnail %}
+                                <div class="flex justify-center mb-4">
+                                    <img src="{{ summary.channel_thumbnail }}" 
+                                         alt="{{ summary.channel_name }}" 
+                                         class="h-24 w-24 rounded-full object-cover border-4 {% if summary.channel_type == 'youtube' %}border-red-500{% else %}border-white{% endif %} shadow-lg"
+                                         onerror="this.onerror=null; this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                    <div class="h-24 w-24 rounded-full {% if summary.channel_type == 'youtube' %}bg-gradient-to-br from-red-400 to-orange-400 border-4 border-red-500{% else %}bg-gradient-to-br from-purple-400 via-pink-400 to-blue-400 border-4 border-white{% endif %} flex items-center justify-center shadow-lg" style="display: none;">
+                                        <span class="text-3xl font-bold text-white">{{ summary.channel_name|first|upper|default:"U" }}</span>
+                                    </div>
+                                </div>
+                                {% else %}
+                                <div class="flex justify-center mb-4">
+                                    <div class="h-24 w-24 rounded-full {% if summary.channel_type == 'youtube' %}bg-gradient-to-br from-red-400 to-orange-400 border-4 border-red-500{% else %}bg-gradient-to-br from-purple-400 via-pink-400 to-blue-400 border-4 border-white{% endif %} flex items-center justify-center shadow-lg">
+                                        <span class="text-3xl font-bold text-white">{{ summary.channel_name|first|upper|default:"U" }}</span>
+                                    </div>
+                                </div>
                                 {% endif %}
+                                
+                                <h2 class="text-2xl font-bold {% if summary.channel_type == 'youtube' %}text-gray-900{% else %}text-white{% endif %} mb-2">
+                                    {{ summary.channel_name|default:"Unknown" }}
+                                </h2>
+                                <p class="text-lg {% if summary.channel_type == 'youtube' %}text-gray-700{% else %}text-gray-300{% endif %} mb-4">
+                                    <span class="font-semibold">{{ summary.follower_count|floatformat:0|default:"0" }}</span> followers
+                                </p>
+                                <a href="{{ summary.channel_link }}" 
+                                   target="_blank" 
+                                   rel="noopener noreferrer" 
+                                   class="inline-flex items-center gap-2 text-sm {% if summary.channel_type == 'youtube' %}text-red-600 hover:text-red-700{% else %}text-pink-400 hover:text-pink-300{% endif %} font-medium hover:underline">
+                                    <i class="fas fa-external-link-alt"></i>
+                                    View Channel
+                                </a>
+                            </div>
+
+                            <!-- Details section -->
+                            <div class="mt-6 pt-6 border-t {% if summary.channel_type == 'youtube' %}border-red-200{% else %}border-gray-700{% endif %}">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                                    <div class="{% if summary.channel_type == 'youtube' %}text-gray-700{% else %}text-gray-300{% endif %}">
+                                        <span class="font-semibold block mb-1">Editing Tool:</span>
+                                        <div class="inline-flex items-center gap-2">
+                                            <span class="inline-flex items-center justify-center" aria-hidden="true">
+                                                {{ application.editing_tool_icon|safe }}
+                                            </span>
+                                            <span class="text-xs {% if summary.channel_type == 'youtube' %}text-gray-500{% else %}text-gray-400{% endif %}">
+                                                {{ application.get_editing_tool_display }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="{% if summary.channel_type == 'youtube' %}text-gray-700{% else %}text-gray-300{% endif %}">
+                                        <span class="font-semibold block mb-1">Editing Area:</span>
+                                        <span>{{ application.get_editing_area_display }}</span>
+                                        {% if application.editing_area == 'others' and application.editing_area_other %}
+                                        <span class="text-xs {% if summary.channel_type == 'youtube' %}text-gray-500{% else %}text-gray-400{% endif %} block mt-1">
+                                            ({{ application.editing_area_other }})
+                                        </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
-            {% endwith %}
-            {% endfor %}
+                {% endwith %}
+                {% endfor %}
 
-            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-                <p class="text-yellow-800 text-sm">
-                    <strong>Is this your channel?</strong> If yes, click "Yes, This is My Channel" to submit your application. 
-                    If no, click "No, Go Back" to modify your information.
-                </p>
-            </div>
+                <!-- Confirmation message -->
+                <div class="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-4 mb-6">
+                    <div class="flex items-start gap-3">
+                        <svg class="h-5 w-5 text-yellow-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                        </svg>
+                        <p class="text-yellow-800 text-sm">
+                            <strong>Is this your channel?</strong> If yes, click "Yes, This is My Channel" to submit your application. 
+                            If no, click "No, Go Back" to modify your information.
+                        </p>
+                    </div>
+                </div>
 
-            <form method="POST" class="flex gap-4">
-                {% csrf_token %}
-                <button type="submit" 
-                        name="action" 
-                        value="confirm"
-                        class="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-colors">
-                    Yes, This is My Channel
-                </button>
-                <button type="submit" 
-                        name="action" 
-                        value="cancel"
-                        class="flex-1 px-6 py-3 bg-gray-200 text-gray-800 rounded-lg font-semibold hover:bg-gray-300 transition-colors">
-                    No, Go Back
-                </button>
-            </form>
+                <!-- Action buttons -->
+                <form method="POST" class="flex gap-4">
+                    {% csrf_token %}
+                    <button type="submit" 
+                            name="action" 
+                            value="confirm"
+                            class="flex-1 px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg font-semibold hover:from-green-700 hover:to-green-800 transition-all shadow-lg hover:shadow-xl transform hover:scale-[1.02]">
+                        <i class="fas fa-check-circle mr-2"></i>
+                        Yes, This is My Channel
+                    </button>
+                    <button type="submit" 
+                            name="action" 
+                            value="cancel"
+                            class="flex-1 px-6 py-3 bg-gray-200 text-gray-800 rounded-lg font-semibold hover:bg-gray-300 transition-colors">
+                        <i class="fas fa-arrow-left mr-2"></i>
+                        No, Go Back
+                    </button>
+                </form>
+            </div>
         </div>
     </div>
 </main>

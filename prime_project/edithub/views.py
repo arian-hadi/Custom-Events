@@ -9,9 +9,16 @@ from django.views.decorators.http import require_http_methods
 from django.views.generic import ListView, DetailView
 from django.db.models import Q
 from django.core.paginator import Paginator
-from .models import EditorApplication, EditSubmission, EditUpvote, EditReport
+from .models import EditorApplication, EditSubmission, EditUpvote, EditReport, Tournament, TournamentMatchVote
 from .forms import EditorApplicationForm, EditSubmissionForm, EditReportForm
-from .utils import fetch_youtube_channel_data, fetch_tiktok_channel_data, validate_channel_url
+from .utils import (
+    fetch_youtube_channel_data,
+    fetch_tiktok_channel_data,
+    validate_channel_url,
+    get_competition_state,
+    format_countdown,
+    get_week_start_end,
+)
 from accounts.models import CustomUser
 from datetime import datetime, timedelta, timezone
 import json
@@ -152,11 +159,13 @@ class RankingTableView(ListView):
                     Q(editing_area=editing_area) | Q(editing_area='all')
                 )
             
-            # Build list with actual ranks
+            # Build list with actual ranks - THIS IS THE SOURCE OF TRUTH
             unfiltered_list = list(unfiltered_base)
             user_rank_map = {}
             for index, app in enumerate(unfiltered_list, start=1):
                 user_rank_map[app.user_id] = index
+                # Set actual_rank directly on the app object for immediate use
+                app.actual_rank = index
             
             # Now get the filtered queryset
             queryset = getattr(self, 'full_queryset', super().get_queryset())
@@ -166,7 +175,8 @@ class RankingTableView(ListView):
                 # For filtered results, we need to add rank attribute to each object
                 queryset_list = list(queryset)
                 for app in queryset_list:
-                    app.actual_rank = user_rank_map.get(app.user_id, None)
+                    # Always get from user_rank_map to ensure accuracy
+                    app.actual_rank = user_rank_map.get(app.user_id)
                 queryset = queryset_list
             
             # current user rank (platform)
@@ -178,6 +188,13 @@ class RankingTableView(ListView):
             if show_all:
                 # If we have a list (from search), use it directly; otherwise paginate
                 if isinstance(queryset, list):
+                    # Ensure actual_rank is set for all items in the list
+                    for app in queryset:
+                        app.actual_rank = user_rank_map.get(app.user_id)
+                        # If somehow not in map, this shouldn't happen but ensure it's set
+                        if app.actual_rank is None:
+                            logger.warning(f"User {app.user_id} not found in rank map for {channel_filter}")
+                            app.actual_rank = 999  # Fallback to high number
                     paginator = Paginator(queryset, self.paginate_by)
                     page_number = self.request.GET.get('page')
                     page_obj = paginator.get_page(page_number)
@@ -190,19 +207,27 @@ class RankingTableView(ListView):
                     paginator = Paginator(queryset, self.paginate_by)
                     page_number = self.request.GET.get('page')
                     page_obj = paginator.get_page(page_number)
-                    # Add actual ranks to paginated results
+                    # Add actual ranks to paginated results - CRITICAL: Always use user_rank_map
                     for app in page_obj.object_list:
-                        app.actual_rank = user_rank_map.get(app.user_id, None)
+                        # Get actual rank from user_rank_map (source of truth)
+                        app.actual_rank = user_rank_map.get(app.user_id)
                     context['rankings'] = page_obj.object_list
                     context['object_list'] = page_obj.object_list
                     context['page_obj'] = page_obj
                     context['is_paginated'] = page_obj.has_other_pages()
                     context['paginator'] = paginator
             else:
-                top5 = list(queryset[:5])
-                # Add actual ranks to top 5
-                for app in top5:
-                    app.actual_rank = user_rank_map.get(app.user_id, None)
+                # For top 5, use unfiltered_list to ensure correct ranking order
+                # This ensures ranks are always accurate even when follower counts change
+                top5 = unfiltered_list[:5]
+                # actual_rank is already set when we built unfiltered_list above
+                # Double-check to ensure it's set correctly (should match index)
+                for index, app in enumerate(top5, start=1):
+                    expected_rank = user_rank_map.get(app.user_id)
+                    app.actual_rank = expected_rank if expected_rank is not None else index
+                    # Verify it matches (debugging)
+                    if app.actual_rank != index:
+                        logger.warning(f"Rank mismatch for user {app.user_id}: expected {index}, got {app.actual_rank}")
                 context['rankings'] = top5
                 context['object_list'] = top5
                 context['is_paginated'] = False
@@ -212,7 +237,6 @@ class RankingTableView(ListView):
         # Competition runs Monday 00:00 to Friday 23:59
         # Saturday-Sunday shows winners only
         try:
-            from .utils import get_competition_state, format_countdown, get_week_start_end
             competition_state = get_competition_state()
             week_start, week_end = get_week_start_end()
         except Exception as e:
@@ -235,15 +259,23 @@ class RankingTableView(ListView):
         if edit_platform not in ['youtube', 'tiktok']:
             edit_platform = 'youtube'
         
-        # Filter edits by current week
+        # Filter edits by previous week (full week Mon-Sun for display)
+        # Current week's submissions are queued for next week, so we show the previous week's competition
+        display_week_start = week_start - timedelta(days=7)  # Previous week
+        display_week_end = display_week_start + timedelta(days=6, hours=23, minutes=59, seconds=59)  # Previous week Sunday
+        display_week_start_date = display_week_start.date()
+        competition_end = competition_state.get('competition_end', week_start + timedelta(days=4, hours=23, minutes=59, seconds=59))
+        
         if competition_state['state'] == 'live':
-            # Show live rankings for current week
+            # Show live rankings for previous week (Mon-Fri: points updating, Sat-Sun: frozen)
+            # Display edits from the previous week (Mon-Sun)
             week_edits_qs = EditSubmission.objects.filter(
                 status='verified',
-                channel_type=edit_platform,
-                submitted_date__gte=week_start,
-                submitted_date__lte=week_end
-            ).order_by('-calculated_points', '-submitted_date')
+                channel_type=edit_platform
+            ).filter(
+                Q(scheduled_week=display_week_start_date) |
+                (Q(scheduled_week__isnull=True) & Q(submitted_date__gte=display_week_start) & Q(submitted_date__lte=display_week_end))
+            ).order_by('-calculated_points', 'submitted_date')
             
             # If we have fewer than 3 edits from this week, fill with top edits from all time
             week_edits = list(week_edits_qs[:3])
@@ -258,15 +290,15 @@ class RankingTableView(ListView):
             else:
                 top_three = week_edits
         else:
-            # Show winners from last week (the week that just ended)
-            last_week_start = week_start - timedelta(days=7)
-            last_week_end = week_end - timedelta(days=2)  # Friday of last week
+            # Show results from previous week (Sat-Sun: frozen rankings)
+            # Display edits from the previous week (Mon-Sun)
             top_edits_qs = EditSubmission.objects.filter(
                 status='verified',
-                channel_type=edit_platform,
-                submitted_date__gte=last_week_start,
-                submitted_date__lte=last_week_end
-            ).order_by('-calculated_points', '-submitted_date')
+                channel_type=edit_platform
+            ).filter(
+                Q(scheduled_week=display_week_start_date) |
+                (Q(scheduled_week__isnull=True) & Q(submitted_date__gte=display_week_start) & Q(submitted_date__lte=display_week_end))
+            ).order_by('-calculated_points', 'submitted_date')
             top_three = list(top_edits_qs[:3])
         # Attach thumbnails via oEmbed/ID extraction for custom cards
         from .utils import fetch_tiktok_oembed, youtube_thumbnail_from_url
@@ -308,21 +340,112 @@ class RankingTableView(ListView):
         # Convert datetime objects to ISO format for JavaScript
         try:
             if competition_state['state'] == 'live':
-                context['week_end_iso'] = week_end.isoformat()
+                # Show countdown to competition end (Friday)
+                context['competition_end_iso'] = competition_end.isoformat()
             else:
+                # Show countdown to next week start (Monday)
                 context['next_week_start_iso'] = competition_state.get('next_week_start', week_start + timedelta(days=7)).isoformat()
         except:
-            context['week_end_iso'] = week_end.isoformat() if 'week_end' in locals() else None
+            context['competition_end_iso'] = competition_end.isoformat() if 'competition_end' in locals() else None
         
-        # Check if user has already submitted an edit for the current week
+        # Check if user has already submitted an edit for the next week
+        # (submissions are queued for next week, so we check next week's start date)
         user_has_submitted_this_week = False
         if self.request.user.is_authenticated and competition_state['state'] == 'live':
+            next_week_start_date = (week_start + timedelta(days=7)).date()
             user_has_submitted_this_week = EditSubmission.objects.filter(
                 user=self.request.user,
-                submitted_date__gte=week_start,
-                submitted_date__lte=week_end
+                scheduled_week=next_week_start_date
             ).exists()
         context['user_has_submitted_this_week'] = user_has_submitted_this_week
+        
+        # Tournament participants - Get from active tournament
+        from .models import Tournament
+        active_tournament = Tournament.get_active_tournament()
+        
+        # Pass tournament to context for conditional rendering
+        context['tournament'] = active_tournament
+        
+        # Phase status
+        context['semi_finals_active'] = False
+        context['finals_active'] = False
+        
+        tournament_participants = []
+        tournament_finalists = []
+        
+        if active_tournament and active_tournament.is_active:
+            # Get phase status
+            context['semi_finals_active'] = active_tournament.semi_finals_active
+            context['finals_active'] = active_tournament.finals_active
+            
+            # Get semi-final participants
+            if active_tournament.semi_finals_active:
+                participants = active_tournament.get_participants()
+                for app in participants:
+                    if app:
+                        channel_type_label = (app.channel_type or '').strip()
+                        if channel_type_label:
+                            channel_type_label = f"{channel_type_label.title()} Editor"
+                        else:
+                            channel_type_label = "Editor"
+                        
+                        tournament_participants.append({
+                            'user': app.user,
+                            'app': app,
+                            'channel_name': app.channel_name or app.user.username,
+                            'username': app.user.username,
+                            'profile_picture': app.user.profile_picture.url if app.user.profile_picture else None,
+                            'channel_thumbnail': (app.channel_thumbnail or '').strip(),
+                            'channel_type': app.channel_type,
+                            'editor_title': channel_type_label,
+                        })
+                    else:
+                        tournament_participants.append(None)
+            else:
+                # Semi-finals not active, show empty slots
+                tournament_participants = [None, None, None, None]
+            
+            # Get finalists
+            if active_tournament.finals_active:
+                finalists = active_tournament.get_finalists()
+                for app in finalists:
+                    if app:
+                        channel_type_label = (app.channel_type or '').strip()
+                        if channel_type_label:
+                            channel_type_label = f"{channel_type_label.title()} Editor"
+                        else:
+                            channel_type_label = "Editor"
+                        
+                        tournament_finalists.append({
+                            'user': app.user,
+                            'app': app,
+                            'channel_name': app.channel_name or app.user.username,
+                            'username': app.user.username,
+                            'profile_picture': app.user.profile_picture.url if app.user.profile_picture else None,
+                            'channel_thumbnail': (app.channel_thumbnail or '').strip(),
+                            'channel_type': app.channel_type,
+                            'editor_title': channel_type_label,
+                        })
+                    else:
+                        tournament_finalists.append(None)
+            else:
+                # Finals not active, show empty slots
+                tournament_finalists = [None, None]
+        else:
+            # No active tournament, show empty slots
+            tournament_participants = [None, None, None, None]
+            tournament_finalists = [None, None]
+        
+        # Ensure we have exactly 4 participants (pad with None if needed)
+        while len(tournament_participants) < 4:
+            tournament_participants.append(None)
+        
+        # Ensure we have exactly 2 finalists (pad with None if needed)
+        while len(tournament_finalists) < 2:
+            tournament_finalists.append(None)
+        
+        context['tournament_participants'] = tournament_participants[:4]
+        context['tournament_finalists'] = tournament_finalists[:2]
         
         return context
 
@@ -372,19 +495,24 @@ class RankingTableView(ListView):
                 })
             display_user_name = apps[0].user.get_full_name() or apps[0].user.username
             # Get thumbnail - prefer primary app, but fallback to other platform if primary has no thumbnail
+            from .utils import get_fallback_thumbnail
             display_thumbnail = ''
             if primary_app:
-                display_thumbnail = (primary_app.channel_thumbnail or '').strip()
-                # If primary app has no thumbnail, try the other platform
-                if not display_thumbnail and youtube_app and tiktok_app:
-                    other_app = tiktok_app if primary_app == youtube_app else youtube_app
-                    display_thumbnail = (other_app.channel_thumbnail or '').strip()
-                # If still no thumbnail and user only has one platform, use that one
-                elif not display_thumbnail:
-                    if tiktok_app and not youtube_app:
-                        display_thumbnail = (tiktok_app.channel_thumbnail or '').strip()
-                    elif youtube_app and not tiktok_app:
-                        display_thumbnail = (youtube_app.channel_thumbnail or '').strip()
+                primary_thumb = (primary_app.channel_thumbnail or '').strip()
+                youtube_thumb = (youtube_app.channel_thumbnail or '').strip() if youtube_app else ''
+                tiktok_thumb = (tiktok_app.channel_thumbnail or '').strip() if tiktok_app else ''
+                
+                # Use fallback helper to get the best available thumbnail
+                if youtube_app and tiktok_app:
+                    # User has both platforms - prefer primary, then other platform
+                    other_app_thumb = tiktok_thumb if primary_app == youtube_app else youtube_thumb
+                    display_thumbnail = get_fallback_thumbnail(primary_thumb, other_app_thumb)
+                elif youtube_app:
+                    display_thumbnail = get_fallback_thumbnail(primary_thumb, youtube_thumb)
+                elif tiktok_app:
+                    display_thumbnail = get_fallback_thumbnail(primary_thumb, tiktok_thumb)
+                else:
+                    display_thumbnail = primary_thumb if primary_thumb else ''
             all_entries.append({
                 'user': apps[0].user,
                 'apps': apps,
@@ -460,6 +588,20 @@ def apply_view(request):
             'youtube': [app for app in user_applications if app.channel_type == 'youtube'],
             'tiktok': [app for app in user_applications if app.channel_type == 'tiktok'],
         }
+        
+        # Check if user has active applications (pending or accepted) for each platform
+        youtube_active = EditorApplication.objects.filter(
+            user=request.user,
+            channel_type='youtube',
+            status__in=['pending', 'accepted']
+        ).exclude(removal_requested=True).exists()
+        
+        tiktok_active = EditorApplication.objects.filter(
+            user=request.user,
+            channel_type='tiktok',
+            status__in=['pending', 'accepted']
+        ).exclude(removal_requested=True).exists()
+        
         return render(request, 'edithub/apply.html', {
             'youtube_form': youtube_form,
             'tiktok_form': tiktok_form,
@@ -468,6 +610,8 @@ def apply_view(request):
             'data_consent_checked': data_consent_checked,
             'existing_applications': user_applications,
             'existing_applications_grouped': grouped_existing,
+            'youtube_already_applied': youtube_active,
+            'tiktok_already_applied': tiktok_active,
         })
 
     if request.method == 'POST':
@@ -556,17 +700,21 @@ def apply_view(request):
                 return render_apply_form(youtube_form, tiktok_form, apply_youtube, apply_tiktok, data_consent)
 
             channel_link = form.cleaned_data['channel_link'].strip()
+            # Only check for active applications (pending or accepted, not removal_requested)
+            # This allows re-application if the previous application was deleted/rejected/removed
             duplicate_link = EditorApplication.objects.filter(
                 user=request.user,
-                channel_link=channel_link
-            ).exclude(status='rejected')
+                channel_link=channel_link,
+                status__in=['pending', 'accepted']
+            ).exclude(removal_requested=True)
             if duplicate_link.exists():
-                messages.error(request, "You have already submitted this channel link.")
+                messages.error(request, "You have already submitted this channel link with an active application.")
                 return render_apply_form(youtube_form, tiktok_form, apply_youtube, apply_tiktok, data_consent)
 
         created_applications = []
 
         try:
+            from django.db import IntegrityError
             for platform, form in forms_to_process:
                 channel_link = form.cleaned_data['channel_link'].strip()
 
@@ -610,6 +758,22 @@ def apply_view(request):
                     request.user.username
                 )
 
+        except IntegrityError as error:
+            # Handle unique_together constraint violation
+            # This can happen if a deleted application still exists in the database
+            logger.warning("Integrity error while creating application: %s", error)
+            for app in created_applications:
+                app.delete()
+            # Check if it's a duplicate channel_link issue
+            if 'channel_link' in str(error) or 'unique' in str(error).lower():
+                messages.error(
+                    request, 
+                    "An application with this channel link already exists. "
+                    "If your previous application was deleted, please contact support or try again in a few moments."
+                )
+            else:
+                messages.error(request, f"Database error: {error}")
+            return render_apply_form(youtube_form, tiktok_form, apply_youtube, apply_tiktok, data_consent)
         except ValueError as error:
             logger.warning("Application processing error: %s", error)
             for app in created_applications:
@@ -634,8 +798,20 @@ def apply_view(request):
     # GET request - initialise forms
     youtube_form = build_form('youtube', 'youtube')
     tiktok_form = build_form('tiktok', 'tiktok')
+    
+    # Check if platform is specified in query params
+    edit_platform = request.GET.get('edit_platform', '').lower()
+    if edit_platform == 'youtube':
+        apply_youtube = True
+        apply_tiktok = False
+    elif edit_platform == 'tiktok':
+        apply_youtube = False
+        apply_tiktok = True
+    else:
+        apply_youtube = True
+        apply_tiktok = False
 
-    return render_apply_form(youtube_form, tiktok_form, apply_youtube=True, apply_tiktok=False, data_consent_checked=False)
+    return render_apply_form(youtube_form, tiktok_form, apply_youtube=apply_youtube, apply_tiktok=apply_tiktok, data_consent_checked=False)
 
 
 @require_http_methods(["GET"])
@@ -682,11 +858,12 @@ def get_user_stats_ajax(request):
         user_edits = EditSubmission.objects.filter(
             user=edit_user,
             status='verified'
-        ).order_by('submitted_date')
+        ).order_by('scheduled_week', 'submitted_date')
         
         months_checked = set()
         for edit in user_edits:
-            year_month = (edit.submitted_date.year, edit.submitted_date.month)
+            reference_date = edit.scheduled_week or edit.submitted_date.date()
+            year_month = (reference_date.year, reference_date.month)
             if year_month in months_checked:
                 continue
             months_checked.add(year_month)
@@ -697,8 +874,8 @@ def get_user_stats_ajax(request):
             
             top_edit = EditSubmission.objects.filter(
                 status='verified',
-                submitted_date__gte=first_day,
-                submitted_date__lte=last_day
+                scheduled_week__gte=first_day.date(),
+                scheduled_week__lte=last_day.date()
             ).order_by('-calculated_points', 'submitted_date').first()
             
             if top_edit and top_edit.user == edit_user:
@@ -717,7 +894,7 @@ def get_user_stats_ajax(request):
         return JsonResponse({
             'success': True,
             'username': primary_app.channel_name or edit_user.username,
-            'profile_picture': primary_app.channel_thumbnail or '',
+            'profile_picture': (primary_app.channel_thumbnail or '').strip(),
             'channel_type': primary_app.channel_type,
             'channel_link': primary_app.channel_link,
             'editor_title': editor_title,
@@ -1013,32 +1190,71 @@ def submit_edit(request):
         messages.error(request, "Only regular users can submit edits.")
         return redirect('edithub:ranking_table')
     
-    # Check if user has an approved EditorApplication
-    approved_app = EditorApplication.objects.filter(
+    youtube_app = EditorApplication.objects.filter(
         user=request.user,
+        channel_type='youtube',
+        status='accepted',
+        removal_requested=False
+    ).first()
+    tiktok_app = EditorApplication.objects.filter(
+        user=request.user,
+        channel_type='tiktok',
         status='accepted',
         removal_requested=False
     ).first()
     
-    if not approved_app:
+    if not youtube_app and not tiktok_app:
         messages.error(request, "You must have an approved channel application before submitting edits. Please apply first.")
         return redirect('edithub:apply')
     
+    from .utils import get_week_start_end
+    from django.utils import timezone
+    
+    week_start_dt, week_end_dt = get_week_start_end()
+    current_week_start = week_start_dt.date()
+    next_week_start = (week_start_dt + timedelta(days=7)).date()
+    next_week_end = next_week_start + timedelta(days=4)
+    next_week_label = f"{next_week_start.strftime('%b %d')} – {next_week_end.strftime('%b %d')}"
+    
+    youtube_future_submission = False
+    tiktok_future_submission = False
+    
+    if youtube_app:
+        youtube_future_submission = EditSubmission.objects.filter(
+            user=request.user,
+            channel_type='youtube',
+            scheduled_week=next_week_start
+        ).exists()
+    if tiktok_app:
+        tiktok_future_submission = EditSubmission.objects.filter(
+            user=request.user,
+            channel_type='tiktok',
+            scheduled_week=next_week_start
+        ).exists()
+    
+    youtube_form = None
+    tiktok_form = None
+    
     if request.method == 'POST':
+        platform = request.POST.get('platform', '').lower()
+        approved_app = None
+        
+        if platform == 'youtube' and youtube_app:
+            approved_app = youtube_app
+        elif platform == 'tiktok' and tiktok_app:
+            approved_app = tiktok_app
+        else:
+            messages.error(request, "Invalid platform or you don't have an approved application for this platform.")
+            return redirect('edithub:submit_edit')
+        
+        if (platform == 'youtube' and youtube_future_submission) or (platform == 'tiktok' and tiktok_future_submission):
+            messages.warning(request, f"You have already submitted a {approved_app.get_channel_type_display()} edit for the week of {next_week_label}.")
+            return redirect('edithub:submit_edit')
+        
         form = EditSubmissionForm(data=request.POST, files=request.FILES, approved_application=approved_app)
         
         if form.is_valid():
             try:
-                # Create submission using approved application data
-                if not approved_app:
-                    messages.error(request, "No approved application found.")
-                    return render(request, 'edithub/submit_edit.html', {
-                        'form': form,
-                        'approved_application': approved_app
-                    })
-                
-                # Extract direct video URL for TikTok videos (for clean HTML5 player)
-                # Also fetch title automatically for TikTok if user didn't provide one
                 direct_video_url = None
                 video_title = form.cleaned_data.get('title', '').strip()
                 
@@ -1047,17 +1263,21 @@ def submit_edit(request):
                     video_data = extract_tiktok_video_url(form.cleaned_data['video_url'])
                     if video_data.get('video_url') and not video_data.get('error'):
                         direct_video_url = video_data['video_url']
-                        logger.info(f"Extracted TikTok direct video URL for edit submission")
+                        logger.info("Extracted TikTok direct video URL for edit submission")
                     else:
                         logger.warning(f"Could not extract TikTok video URL: {video_data.get('error', 'Unknown error')}")
-                        # Continue anyway - will use TikTok embed as fallback
                     
-                    # Auto-fetch title from TikTok oEmbed if user didn't provide one
                     if not video_title:
                         fetched_title = fetch_tiktok_video_title(form.cleaned_data['video_url'])
                         if fetched_title:
                             video_title = fetched_title
                             logger.info(f"Auto-fetched TikTok video title: {video_title}")
+                
+                from .utils import get_fallback_thumbnail
+                # Use fallback to ensure we have a valid thumbnail
+                existing_thumb = ''  # No existing thumbnail for new submission
+                new_thumb = (approved_app.channel_thumbnail or '').strip()
+                best_thumb = get_fallback_thumbnail(existing_thumb, new_thumb)
                 
                 submission = EditSubmission(
                     user=request.user,
@@ -1065,35 +1285,53 @@ def submit_edit(request):
                     channel_link=approved_app.channel_link,
                     channel_type=approved_app.channel_type,
                     channel_name=approved_app.channel_name,
-                    channel_thumbnail=approved_app.channel_thumbnail,
+                    channel_thumbnail=best_thumb,
+                    scheduled_week=next_week_start,
                     video_url=form.cleaned_data['video_url'],
                     direct_video_url=direct_video_url,
-                    title=video_title,  # Use auto-fetched title for TikTok if available
+                    title=video_title,
                     description=form.cleaned_data.get('description', ''),
-                    status='verified'  # Auto-verified since channel is already approved
+                    status='verified'
                 )
                 submission.save()
                 
-                from django.utils import timezone
                 submission.verified_date = timezone.now()
-                submission.save()
+                submission.save(update_fields=['verified_date'])
                 
-                messages.success(request, "Edit submitted successfully! It will be visible in the Edit of the Week section.")
+                messages.success(request, f"Edit submitted successfully for {approved_app.get_channel_type_display()}! It will participate in the week of {next_week_label}.")
                 return redirect('edithub:view_all_edits')
             
             except Exception as error:
                 logger.error("Error creating edit submission", exc_info=True)
                 messages.error(request, f"An error occurred: {error}")
-                return render(request, 'edithub/submit_edit.html', {
-                    'form': form,
-                    'approved_application': approved_app
-                })
+        
+        if platform == 'youtube':
+            youtube_form = form
+            tiktok_form = EditSubmissionForm(approved_application=tiktok_app) if tiktok_app and not tiktok_future_submission else None
+        else:
+            tiktok_form = form
+            youtube_form = EditSubmissionForm(approved_application=youtube_app) if youtube_app and not youtube_future_submission else None
     else:
-        form = EditSubmissionForm(approved_application=approved_app)
+        if youtube_app and not youtube_future_submission:
+            youtube_form = EditSubmissionForm(approved_application=youtube_app)
+        if tiktok_app and not tiktok_future_submission:
+            tiktok_form = EditSubmissionForm(approved_application=tiktok_app)
+    
+    default_platform = 'youtube' if youtube_app else 'tiktok'
+    if not youtube_app and tiktok_app:
+        default_platform = 'tiktok'
     
     return render(request, 'edithub/submit_edit.html', {
-        'form': form,
-        'approved_application': approved_app
+        'youtube_form': youtube_form,
+        'tiktok_form': tiktok_form,
+        'youtube_app': youtube_app,
+        'tiktok_app': tiktok_app,
+        'youtube_future_submission': youtube_future_submission,
+        'tiktok_future_submission': tiktok_future_submission,
+        'target_week_label': next_week_label,
+        'target_week_start': next_week_start,
+        'target_week_end': next_week_end,
+        'default_platform': default_platform,
     })
 
 
@@ -1150,11 +1388,25 @@ def view_all_edits(request):
     if platform not in ['youtube', 'tiktok']:
         platform = 'youtube'
     
+    week_start_dt, week_end_dt = get_week_start_end()  # Current week (Mon-Sun)
+    competition_state = get_competition_state()
+    
+    # Show previous week's edits (Mon-Sun)
+    # Current week's submissions are queued for next week, so we show the previous week's competition
+    display_week_start_dt = week_start_dt - timedelta(days=7)  # Previous week Monday
+    display_week_end_dt = display_week_start_dt + timedelta(days=6, hours=23, minutes=59, seconds=59)  # Previous week Sunday
+    display_week_date = display_week_start_dt.date()
+    display_week_label = f"{display_week_start_dt.strftime('%b %d')} – {display_week_end_dt.strftime('%b %d')}"
+    
     # Get verified edits filtered by platform and ordered by calculated points
+    # Show edits from the full week (Mon-Sun)
     edits_qs = EditSubmission.objects.filter(
         status='verified',
         channel_type=platform
-    ).order_by('-calculated_points', '-submitted_date')
+    ).filter(
+        Q(scheduled_week=display_week_date) |
+        (Q(scheduled_week__isnull=True) & Q(submitted_date__gte=display_week_start_dt) & Q(submitted_date__lte=display_week_end_dt))
+    ).order_by('-calculated_points', 'submitted_date')
     
     # Pagination: 1 video per page (to avoid multiple videos playing simultaneously)
     paginator = Paginator(edits_qs, 1)
@@ -1200,10 +1452,14 @@ def view_all_edits(request):
         })
 
     # Get all edits for ranking panel filtered by platform (with channel thumbnails)
+    # Show edits from the full week (Mon-Sun)
     all_edits_ranking = list(EditSubmission.objects.filter(
         status='verified',
         channel_type=platform
-    ).order_by('-calculated_points', '-submitted_date').values('id', 'title', 'channel_name', 'calculated_points', 'upvote_count', 'channel_type', 'channel_thumbnail')[:50])  # Limit to top 50 for performance
+    ).filter(
+        Q(scheduled_week=display_week_date) |
+        (Q(scheduled_week__isnull=True) & Q(submitted_date__gte=display_week_start_dt) & Q(submitted_date__lte=display_week_end_dt))
+    ).order_by('-calculated_points', 'submitted_date').values('id', 'title', 'channel_name', 'calculated_points', 'upvote_count', 'channel_type', 'channel_thumbnail')[:50])  # Limit to top 50 for performance
     
     # Get channel statistics for banner (if viewing a specific edit)
     channel_stats = None
@@ -1227,8 +1483,7 @@ def view_all_edits(request):
         
         # Count Edit of the Month wins (top edit in a calendar month)
         from django.utils import timezone
-        from datetime import datetime, timedelta
-        from django.db.models import Max, Q
+        from datetime import datetime
         from calendar import monthrange
         
         edit_of_month_wins = 0
@@ -1236,12 +1491,13 @@ def view_all_edits(request):
         user_edits = EditSubmission.objects.filter(
             user=edit_user,
             status='verified'
-        ).order_by('submitted_date')
+        ).order_by('scheduled_week', 'submitted_date')
         
         # Group edits by year-month
         months_checked = set()
         for edit in user_edits:
-            year_month = (edit.submitted_date.year, edit.submitted_date.month)
+            reference_date = edit.scheduled_week or edit.submitted_date.date()
+            year_month = (reference_date.year, reference_date.month)
             if year_month in months_checked:
                 continue
             months_checked.add(year_month)
@@ -1254,8 +1510,8 @@ def view_all_edits(request):
             # Get the highest points edit in that month (across all users)
             top_edit = EditSubmission.objects.filter(
                 status='verified',
-                submitted_date__gte=first_day,
-                submitted_date__lte=last_day
+                scheduled_week__gte=first_day.date(),
+                scheduled_week__lte=last_day.date()
             ).order_by('-calculated_points', 'submitted_date').first()
             
             # If this user's edit is the top edit of the month, count it as a win
@@ -1312,6 +1568,9 @@ def view_all_edits(request):
         'max_upvotes': 3,
         'all_edits_ranking': all_edits_ranking,  # For side panel
         'current_platform': platform,  # Current selected platform
+        'display_week_label': display_week_label,
+        'display_week_start': display_week_date,
+        'competition_state': competition_state,  # Competition state (live/results)
         'channel_stats': channel_stats,  # Channel statistics for banner (YouTube/TikTok profile)
     }
     
@@ -1499,3 +1758,288 @@ def admin_resolve_report(request, pk):
         return JsonResponse({'success': True})
     
     return redirect('edithub:admin_reported_edits')
+
+
+def tournament_matches(request):
+    """View to list all tournament matches"""
+    active_tournament = Tournament.get_active_tournament()
+    matches = []
+    
+    if active_tournament:
+        raw_matches = active_tournament.get_match_pairs()
+        # Add display names for match types
+        match_type_display = {
+            'semi_final_1': 'Semi-Final 1',
+            'semi_final_2': 'Semi-Final 2',
+            'final': 'Final',
+        }
+        for match in raw_matches:
+            match['type_display'] = match_type_display.get(match['type'], match['type'].replace('_', ' ').title())
+            # Prepare participant data for display
+            def prepare_participant_data(participant):
+                if not participant:
+                    return None
+                channel_type_label = (participant.channel_type or '').strip()
+                if channel_type_label:
+                    channel_type_label = f"{channel_type_label.title()} Editor"
+                else:
+                    channel_type_label = "Editor"
+                
+                return {
+                    'user': participant.user,
+                    'app': participant,
+                    'channel_name': participant.channel_name or participant.user.username,
+                    'username': participant.user.username,
+                    'profile_picture': participant.user.profile_picture.url if participant.user.profile_picture else None,
+                    'channel_thumbnail': (participant.channel_thumbnail or '').strip(),
+                    'channel_type': participant.channel_type,
+                    'editor_title': channel_type_label,
+                }
+            
+            match['participant_1'] = prepare_participant_data(match['participant_1'])
+            match['participant_2'] = prepare_participant_data(match['participant_2'])
+            matches.append(match)
+    
+    context = {
+        'tournament': active_tournament,
+        'matches': matches,
+    }
+    
+    return render(request, 'edithub/tournament_matches.html', context)
+
+
+def tournament_match_detail(request, match_type):
+    """View to show a specific tournament match (The Fish Food Show)"""
+    active_tournament = Tournament.get_active_tournament()
+    
+    if not active_tournament:
+        messages.error(request, 'No active tournament found.')
+        return redirect('edithub:ranking_table')
+    
+    # Get match data based on match_type
+    match_data = None
+    if match_type == 'semi_final_1' and active_tournament.semi_finals_active:
+        if active_tournament.participant_1 and active_tournament.participant_2:
+            match_data = {
+                'type': 'semi_final_1',
+                'type_display': 'Semi-Final 1',
+                'participant_1': active_tournament.participant_1,
+                'participant_1_edit_link': active_tournament.participant_1_edit_link,
+                'participant_2': active_tournament.participant_2,
+                'participant_2_edit_link': active_tournament.participant_2_edit_link,
+            }
+    elif match_type == 'semi_final_2' and active_tournament.semi_finals_active:
+        if active_tournament.participant_3 and active_tournament.participant_4:
+            match_data = {
+                'type': 'semi_final_2',
+                'type_display': 'Semi-Final 2',
+                'participant_1': active_tournament.participant_3,
+                'participant_1_edit_link': active_tournament.participant_3_edit_link,
+                'participant_2': active_tournament.participant_4,
+                'participant_2_edit_link': active_tournament.participant_4_edit_link,
+            }
+    elif match_type == 'final' and active_tournament.finals_active:
+        if active_tournament.finalist_1 and active_tournament.finalist_2:
+            match_data = {
+                'type': 'final',
+                'type_display': 'Final',
+                'participant_1': active_tournament.finalist_1,
+                'participant_1_edit_link': active_tournament.finalist_1_edit_link,
+                'participant_2': active_tournament.finalist_2,
+                'participant_2_edit_link': active_tournament.finalist_2_edit_link,
+            }
+    
+    if not match_data:
+        messages.error(request, 'Match not found or not available.')
+        return redirect('edithub:ranking_table')
+    
+    # Get vote counts
+    votes_participant_1 = TournamentMatchVote.objects.filter(
+        tournament=active_tournament,
+        match_type=match_type,
+        voted_for=match_data['participant_1']
+    ).count()
+    
+    votes_participant_2 = TournamentMatchVote.objects.filter(
+        tournament=active_tournament,
+        match_type=match_type,
+        voted_for=match_data['participant_2']
+    ).count()
+    
+    # Check if user has already voted
+    user_vote = None
+    if request.user.is_authenticated:
+        try:
+            user_vote = TournamentMatchVote.objects.get(
+                tournament=active_tournament,
+                match_type=match_type,
+                voter=request.user
+            )
+        except TournamentMatchVote.DoesNotExist:
+            pass
+    
+    # Prepare participant data
+    def prepare_participant_data(participant, edit_link):
+        if not participant:
+            return None
+        channel_type_label = (participant.channel_type or '').strip()
+        if channel_type_label:
+            channel_type_label = f"{channel_type_label.title()} Editor"
+        else:
+            channel_type_label = "Editor"
+        
+        # Determine if edit link is YouTube or TikTok
+        is_youtube = False
+        is_tiktok = False
+        if edit_link:
+            if 'youtube.com' in edit_link or 'youtu.be' in edit_link:
+                is_youtube = True
+            elif 'tiktok.com' in edit_link:
+                is_tiktok = True
+        
+        return {
+            'user': participant.user,
+            'app': participant,
+            'channel_name': participant.channel_name or participant.user.username,
+            'username': participant.user.username,
+            'profile_picture': participant.user.profile_picture.url if participant.user.profile_picture else None,
+            'channel_thumbnail': (participant.channel_thumbnail or '').strip(),
+            'channel_type': participant.channel_type,
+            'editor_title': channel_type_label,
+            'edit_link': edit_link,
+            'is_youtube': is_youtube,
+            'is_tiktok': is_tiktok,
+        }
+    
+    participant_1_data = prepare_participant_data(match_data['participant_1'], match_data['participant_1_edit_link'])
+    participant_2_data = prepare_participant_data(match_data['participant_2'], match_data['participant_2_edit_link'])
+    
+    # Determine next and previous matches (circular navigation)
+    all_matches = active_tournament.get_match_pairs()
+    next_match = None
+    previous_match = None
+    current_match_index = -1
+    
+    # Find current match index
+    for idx, match in enumerate(all_matches):
+        if match['type'] == match_type:
+            current_match_index = idx
+            break
+    
+    # Get next and previous matches (circular - wraps around)
+    if current_match_index >= 0 and len(all_matches) > 0:
+        # Next match (wraps to first if on last)
+        next_match = all_matches[(current_match_index + 1) % len(all_matches)]
+        # Previous match (wraps to last if on first)
+        previous_match = all_matches[(current_match_index - 1) % len(all_matches)]
+    
+    context = {
+        'tournament': active_tournament,
+        'match_type': match_type,
+        'match_type_display': match_data['type_display'],
+        'participant_1': participant_1_data,
+        'participant_2': participant_2_data,
+        'votes_participant_1': votes_participant_1,
+        'votes_participant_2': votes_participant_2,
+        'user_vote': user_vote,
+        'user_has_voted': user_vote is not None,
+        'next_match': next_match,
+        'previous_match': previous_match,
+    }
+    
+    return render(request, 'edithub/tournament_match_detail.html', context)
+
+
+@login_required
+@require_http_methods(["POST"])
+def vote_tournament_match(request, match_type):
+    """AJAX endpoint to vote for a tournament match"""
+    active_tournament = Tournament.get_active_tournament()
+    
+    if not active_tournament:
+        return JsonResponse({'success': False, 'error': 'No active tournament found.'}, status=404)
+    
+    # Validate match_type
+    valid_match_types = ['semi_final_1', 'semi_final_2', 'final']
+    if match_type not in valid_match_types:
+        return JsonResponse({'success': False, 'error': 'Invalid match type.'}, status=400)
+    
+    # Check if match is active
+    if match_type in ['semi_final_1', 'semi_final_2'] and not active_tournament.semi_finals_active:
+        return JsonResponse({'success': False, 'error': 'Semi-finals are not active.'}, status=400)
+    if match_type == 'final' and not active_tournament.finals_active:
+        return JsonResponse({'success': False, 'error': 'Finals are not active.'}, status=400)
+    
+    # Get the participant being voted for
+    participant_id = request.POST.get('participant_id')
+    if not participant_id:
+        return JsonResponse({'success': False, 'error': 'Participant ID is required.'}, status=400)
+    
+    try:
+        participant = EditorApplication.objects.get(pk=participant_id)
+    except EditorApplication.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Participant not found.'}, status=404)
+    
+    # Check if user has already voted
+    existing_vote = TournamentMatchVote.objects.filter(
+        tournament=active_tournament,
+        match_type=match_type,
+        voter=request.user
+    ).first()
+    
+    if existing_vote:
+        return JsonResponse({'success': False, 'error': 'You have already voted for this match.'}, status=400)
+    
+    # Verify participant is in this match
+    valid_participants = []
+    if match_type == 'semi_final_1':
+        valid_participants = [active_tournament.participant_1, active_tournament.participant_2]
+    elif match_type == 'semi_final_2':
+        valid_participants = [active_tournament.participant_3, active_tournament.participant_4]
+    elif match_type == 'final':
+        valid_participants = [active_tournament.finalist_1, active_tournament.finalist_2]
+    
+    if participant not in valid_participants:
+        return JsonResponse({'success': False, 'error': 'Invalid participant for this match.'}, status=400)
+    
+    # Create vote
+    try:
+        vote = TournamentMatchVote.objects.create(
+            tournament=active_tournament,
+            match_type=match_type,
+            voter=request.user,
+            voted_for=participant
+        )
+    except Exception as e:
+        logger.error(f"Error creating vote: {str(e)}")
+        return JsonResponse({
+            'success': False, 
+            'error': f'Failed to record vote: {str(e)}'
+        }, status=500)
+    
+    # Get updated vote counts
+    try:
+        votes_participant_1 = TournamentMatchVote.objects.filter(
+            tournament=active_tournament,
+            match_type=match_type,
+            voted_for=valid_participants[0]
+        ).count()
+        
+        votes_participant_2 = TournamentMatchVote.objects.filter(
+            tournament=active_tournament,
+            match_type=match_type,
+            voted_for=valid_participants[1]
+        ).count()
+    except Exception as e:
+        logger.error(f"Error getting vote counts: {str(e)}")
+        # Still return success but with error in counts
+        votes_participant_1 = 0
+        votes_participant_2 = 0
+    
+    return JsonResponse({
+        'success': True,
+        'message': 'Vote recorded successfully!',
+        'votes_participant_1': votes_participant_1,
+        'votes_participant_2': votes_participant_2,
+        'voted_for_id': participant.id,
+    })

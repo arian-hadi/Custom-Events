@@ -256,6 +256,11 @@ class EditSubmission(models.Model):
     channel_type = models.CharField(max_length=20, choices=CHANNEL_TYPE_CHOICES)
     channel_name = models.CharField(max_length=200, blank=True)
     channel_thumbnail = models.URLField(max_length=500, blank=True)
+    scheduled_week = models.DateField(
+        null=True,
+        blank=True,
+        help_text="Monday (UTC) of the competition week this edit participates in"
+    )
     
     # Edit information
     video_url = models.URLField(max_length=500, help_text="YouTube Shorts or TikTok video URL")
@@ -450,28 +455,383 @@ def update_edit_submission_thumbnails_signal(sender, instance, **kwargs):
     When EditorApplication thumbnail or channel_name is updated,
     automatically update all related EditSubmissions to keep them in sync.
     This ensures banner images always show the latest profile pictures.
+    
+    Uses fallback logic to prevent overwriting valid thumbnails with empty/invalid ones.
     """
+    from .utils import is_valid_thumbnail_url, get_fallback_thumbnail
+    
     # Only update if this is an accepted application
     if instance.status == 'accepted' and not instance.removal_requested:
-        # Update all EditSubmissions that reference this EditorApplication
-        EditSubmission.objects.filter(
-            approved_application=instance,
-            status='verified'
-        ).update(
-            channel_thumbnail=instance.channel_thumbnail or '',
-            channel_name=instance.channel_name or ''
-        )
+        new_thumbnail = (instance.channel_thumbnail or '').strip()
         
-        # Also update EditSubmissions that don't have approved_application but match user/channel
-        EditSubmission.objects.filter(
-            user=instance.user,
-            channel_type=instance.channel_type,
-            status='verified',
-            approved_application__isnull=True
-        ).update(
-            channel_thumbnail=instance.channel_thumbnail or '',
-            channel_name=instance.channel_name or ''
-        )
+        # Only proceed if the new thumbnail is valid, or if we need to update channel_name
+        if is_valid_thumbnail_url(new_thumbnail) or instance.channel_name:
+            # Get all EditSubmissions that reference this EditorApplication
+            submissions_to_update = EditSubmission.objects.filter(
+                approved_application=instance,
+                status='verified'
+            )
+            
+            # Update each submission individually to preserve existing valid thumbnails
+            for submission in submissions_to_update:
+                existing_thumbnail = (submission.channel_thumbnail or '').strip()
+                # Use fallback to preserve existing valid thumbnails
+                best_thumbnail = get_fallback_thumbnail(existing_thumbnail, new_thumbnail)
+                
+                submission.channel_thumbnail = best_thumbnail
+                if instance.channel_name:
+                    submission.channel_name = instance.channel_name
+                submission.save(update_fields=['channel_thumbnail', 'channel_name'])
+            
+            # Also update EditSubmissions that don't have approved_application but match user/channel
+            submissions_to_update_2 = EditSubmission.objects.filter(
+                user=instance.user,
+                channel_type=instance.channel_type,
+                status='verified',
+                approved_application__isnull=True
+            )
+            
+            for submission in submissions_to_update_2:
+                existing_thumbnail = (submission.channel_thumbnail or '').strip()
+                # Use fallback to preserve existing valid thumbnails
+                best_thumbnail = get_fallback_thumbnail(existing_thumbnail, new_thumbnail)
+                
+                submission.channel_thumbnail = best_thumbnail
+                if instance.channel_name:
+                    submission.channel_name = instance.channel_name
+                submission.save(update_fields=['channel_thumbnail', 'channel_name'])
 
 # Connect the signal after EditSubmission is defined
 post_save.connect(update_edit_submission_thumbnails_signal, sender=EditorApplication)
+
+
+class Tournament(models.Model):
+    """Model for Tournament of Editors - Semi-Finals and Finals"""
+    
+    name = models.CharField(max_length=200, default="Tournament of Editors", help_text="Tournament name")
+    is_active = models.BooleanField(default=True, help_text="Only one active tournament should exist")
+    
+    # Phase status
+    semi_finals_active = models.BooleanField(default=True, help_text="Semi-finals phase is active")
+    finals_active = models.BooleanField(default=False, help_text="Finals phase is active")
+    
+    # Semi-Final 1 participants
+    participant_1 = models.ForeignKey(
+        EditorApplication,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='tournament_participant_1',
+        help_text="Semi-Final 1 - First participant",
+        limit_choices_to={'status': 'accepted', 'removal_requested': False}
+    )
+    participant_1_edit_link = models.URLField(
+        max_length=500,
+        blank=True,
+        null=True,
+        help_text="Edit link for participant 1 (YouTube or TikTok URL)"
+    )
+    participant_2 = models.ForeignKey(
+        EditorApplication,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='tournament_participant_2',
+        help_text="Semi-Final 1 - Second participant",
+        limit_choices_to={'status': 'accepted', 'removal_requested': False}
+    )
+    participant_2_edit_link = models.URLField(
+        max_length=500,
+        blank=True,
+        null=True,
+        help_text="Edit link for participant 2 (YouTube or TikTok URL)"
+    )
+    
+    # Semi-Final 2 participants
+    participant_3 = models.ForeignKey(
+        EditorApplication,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='tournament_participant_3',
+        help_text="Semi-Final 2 - First participant",
+        limit_choices_to={'status': 'accepted', 'removal_requested': False}
+    )
+    participant_3_edit_link = models.URLField(
+        max_length=500,
+        blank=True,
+        null=True,
+        help_text="Edit link for participant 3 (YouTube or TikTok URL)"
+    )
+    participant_4 = models.ForeignKey(
+        EditorApplication,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='tournament_participant_4',
+        help_text="Semi-Final 2 - Second participant",
+        limit_choices_to={'status': 'accepted', 'removal_requested': False}
+    )
+    participant_4_edit_link = models.URLField(
+        max_length=500,
+        blank=True,
+        null=True,
+        help_text="Edit link for participant 4 (YouTube or TikTok URL)"
+    )
+    
+    # Finals participants (winners from semi-finals)
+    finalist_1 = models.ForeignKey(
+        EditorApplication,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='tournament_finalist_1',
+        help_text="Finalist 1 - Winner from Semi-Final 1 (left side)",
+        limit_choices_to={'status': 'accepted', 'removal_requested': False}
+    )
+    finalist_1_edit_link = models.URLField(
+        max_length=500,
+        blank=True,
+        null=True,
+        help_text="Edit link for finalist 1 (YouTube or TikTok URL)"
+    )
+    finalist_2 = models.ForeignKey(
+        EditorApplication,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='tournament_finalist_2',
+        help_text="Finalist 2 - Winner from Semi-Final 2 (right side)",
+        limit_choices_to={'status': 'accepted', 'removal_requested': False}
+    )
+    finalist_2_edit_link = models.URLField(
+        max_length=500,
+        blank=True,
+        null=True,
+        help_text="Edit link for finalist 2 (YouTube or TikTok URL)"
+    )
+    
+    created_date = models.DateTimeField(auto_now_add=True)
+    updated_date = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-is_active', '-created_date']
+        verbose_name = "Tournament"
+        verbose_name_plural = "Tournaments"
+    
+    def __str__(self):
+        return f"{self.name} ({'Active' if self.is_active else 'Inactive'})"
+    
+    def get_participants(self):
+        """Return list of semi-final participants in order"""
+        return [
+            self.participant_1,
+            self.participant_2,
+            self.participant_3,
+            self.participant_4,
+        ]
+    
+    def get_finalists(self):
+        """Return list of finalists in order"""
+        return [
+            self.finalist_1,
+            self.finalist_2,
+        ]
+    
+    def save(self, *args, **kwargs):
+        # If this tournament is being set as active, deactivate all others
+        if self.is_active:
+            Tournament.objects.filter(is_active=True).exclude(pk=self.pk).update(is_active=False)
+        super().save(*args, **kwargs)
+    
+    @classmethod
+    def get_active_tournament(cls):
+        """Get the currently active tournament"""
+        return cls.objects.filter(is_active=True).first()
+    
+    def get_match_pairs(self):
+        """Get match pairs for voting: [(participant_1, participant_2), (participant_3, participant_4), (finalist_1, finalist_2)]"""
+        matches = []
+        if self.semi_finals_active:
+            if self.participant_1 and self.participant_2:
+                matches.append({
+                    'type': 'semi_final_1',
+                    'participant_1': self.participant_1,
+                    'participant_1_edit_link': self.participant_1_edit_link,
+                    'participant_2': self.participant_2,
+                    'participant_2_edit_link': self.participant_2_edit_link,
+                })
+            if self.participant_3 and self.participant_4:
+                matches.append({
+                    'type': 'semi_final_2',
+                    'participant_1': self.participant_3,
+                    'participant_1_edit_link': self.participant_3_edit_link,
+                    'participant_2': self.participant_4,
+                    'participant_2_edit_link': self.participant_4_edit_link,
+                })
+        if self.finals_active:
+            if self.finalist_1 and self.finalist_2:
+                matches.append({
+                    'type': 'final',
+                    'participant_1': self.finalist_1,
+                    'participant_1_edit_link': self.finalist_1_edit_link,
+                    'participant_2': self.finalist_2,
+                    'participant_2_edit_link': self.finalist_2_edit_link,
+                })
+        return matches
+
+
+class TournamentMatchVote(models.Model):
+    """Model to track votes for tournament matches"""
+    
+    MATCH_TYPES = [
+        ('semi_final_1', 'Semi-Final 1'),
+        ('semi_final_2', 'Semi-Final 2'),
+        ('final', 'Final'),
+    ]
+    
+    tournament = models.ForeignKey(
+        Tournament,
+        on_delete=models.CASCADE,
+        related_name='votes'
+    )
+    match_type = models.CharField(max_length=20, choices=MATCH_TYPES)
+    voter = models.ForeignKey(
+        CustomUser,
+        on_delete=models.CASCADE,
+        related_name='tournament_votes'
+    )
+    voted_for = models.ForeignKey(
+        EditorApplication,
+        on_delete=models.CASCADE,
+        related_name='tournament_votes_received',
+        help_text="The participant that received this vote"
+    )
+    created_date = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        unique_together = [('tournament', 'match_type', 'voter')]
+        verbose_name = "Tournament Match Vote"
+        verbose_name_plural = "Tournament Match Votes"
+        ordering = ['-created_date']
+    
+    def __str__(self):
+        return f"{self.voter.username} voted for {self.voted_for.channel_name} in {self.get_match_type_display()}"
+
+
+class WeekWinner(models.Model):
+    """Model to store Edit of the Week winners separately for tracking and preventing resubmission"""
+    
+    # Link to the winning EditSubmission
+    edit_submission = models.OneToOneField(
+        EditSubmission,
+        on_delete=models.CASCADE,
+        related_name='week_winner_record',
+        help_text="The EditSubmission that won"
+    )
+    
+    # Store key information separately for easy querying
+    user = models.ForeignKey(
+        CustomUser,
+        on_delete=models.CASCADE,
+        related_name='week_wins',
+        help_text="The user who won"
+    )
+    
+    video_url = models.URLField(
+        max_length=500,
+        help_text="The winning video URL (prevents resubmission)"
+    )
+    
+    week_start = models.DateField(
+        help_text="Monday of the competition week"
+    )
+    
+    week_rank = models.IntegerField(
+        help_text="Rank in Edit of the Week (1, 2, or 3)"
+    )
+    
+    channel_type = models.CharField(
+        max_length=20,
+        choices=EditSubmission.CHANNEL_TYPE_CHOICES,
+        help_text="Platform type (YouTube or TikTok)"
+    )
+    
+    channel_name = models.CharField(
+        max_length=200,
+        blank=True,
+        help_text="Channel name at time of win"
+    )
+    
+    title = models.CharField(
+        max_length=200,
+        blank=True,
+        help_text="Edit title at time of win"
+    )
+    
+    calculated_points = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=0.00,
+        help_text="Points at time of win"
+    )
+    
+    created_date = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-week_start', 'week_rank']
+        unique_together = ('video_url', 'week_start')  # Same video can't win twice in same week
+        indexes = [
+            models.Index(fields=['video_url']),  # For quick lookup when checking if video was a winner
+            models.Index(fields=['week_start', 'week_rank']),  # For querying winners by week
+            models.Index(fields=['user']),  # For querying user's wins
+        ]
+        verbose_name = "Week Winner"
+        verbose_name_plural = "Week Winners"
+    
+    def __str__(self):
+        return f"Week {self.week_start} - Rank #{self.week_rank} - {self.channel_name or self.user.username}"
+
+
+# Signal to automatically create WeekWinner records when week_rank is set to 1, 2, or 3
+@receiver(post_save, sender=EditSubmission)
+def create_week_winner_record(sender, instance, created, **kwargs):
+    """
+    Automatically create a WeekWinner record when an EditSubmission's week_rank
+    is set to 1, 2, or 3. This prevents duplicate winner records and ensures
+    winner videos cannot be resubmitted.
+    """
+    # Only create/update winner record if week_rank is 1, 2, or 3
+    if instance.week_rank in [1, 2, 3] and instance.scheduled_week:
+        try:
+            # Check if WeekWinner record already exists for this submission
+            winner_record = instance.week_winner_record
+            # Update existing record
+            winner_record.week_rank = instance.week_rank
+            winner_record.week_start = instance.scheduled_week
+            winner_record.calculated_points = instance.calculated_points or 0.00
+            winner_record.channel_name = instance.channel_name or ''
+            winner_record.title = instance.title or ''
+            winner_record.save(update_fields=['week_rank', 'week_start', 'calculated_points', 'channel_name', 'title'])
+        except WeekWinner.DoesNotExist:
+            # Check if this video_url already has a winner record (shouldn't happen, but safety check)
+            existing_winner = WeekWinner.objects.filter(video_url=instance.video_url).first()
+            if not existing_winner:
+                # Create new WeekWinner record
+                WeekWinner.objects.create(
+                    edit_submission=instance,
+                    user=instance.user,
+                    video_url=instance.video_url,
+                    week_start=instance.scheduled_week,
+                    week_rank=instance.week_rank,
+                    channel_type=instance.channel_type,
+                    channel_name=instance.channel_name or '',
+                    title=instance.title or '',
+                    calculated_points=instance.calculated_points or 0.00
+                )
+            else:
+                # Update existing winner record (edge case: same video won in different week)
+                existing_winner.week_rank = instance.week_rank
+                existing_winner.week_start = instance.scheduled_week
+                existing_winner.calculated_points = instance.calculated_points or 0.00
+                existing_winner.save(update_fields=['week_rank', 'week_start', 'calculated_points'])

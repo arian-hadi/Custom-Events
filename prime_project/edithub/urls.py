@@ -31,5 +31,10 @@ urlpatterns = [
     # Edit of the Week admin views
     path('admin/reported-edits/', views.admin_reported_edits, name='admin_reported_edits'),
     path('admin/report/<int:pk>/resolve/', views.admin_resolve_report, name='admin_resolve_report'),
+    
+    # Tournament match views
+    path('tournament/matches/', views.tournament_matches, name='tournament_matches'),
+    path('tournament/match/<str:match_type>/', views.tournament_match_detail, name='tournament_match_detail'),
+    path('tournament/match/<str:match_type>/vote/', views.vote_tournament_match, name='vote_tournament_match'),
 ]
 

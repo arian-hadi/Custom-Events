@@ -53,10 +53,156 @@ def user_dashboard(request):
     applications = EventApplication.objects.filter(applicant=request.user).order_by('-applied_date')
     
     # Get EditingHub application status
-    from edithub.models import EditorApplication
+    from edithub.models import EditorApplication, EditSubmission
     editor_applications = EditorApplication.objects.filter(user=request.user).order_by('-applied_date')
+    
+    # Separate applications by platform
+    youtube_application = editor_applications.filter(channel_type='youtube').first()
+    tiktok_application = editor_applications.filter(channel_type='tiktok').first()
+    
+    # Get the first application (for backward compatibility)
     editor_application = editor_applications.first() if editor_applications.exists() else None
+    
+    # Calculate user's ranking position for each platform (if accepted)
+    youtube_rank = None
+    tiktok_rank = None
+    
+    if youtube_application and youtube_application.status == 'accepted':
+        # Get all accepted YouTube applications ordered by follower count
+        all_youtube = EditorApplication.objects.filter(
+            channel_type='youtube',
+            status='accepted',
+            removal_requested=False
+        ).order_by('-follower_count', 'applied_date')
+        for index, app in enumerate(all_youtube, start=1):
+            if app.user_id == request.user.id:
+                youtube_rank = index
+                break
+    
+    if tiktok_application and tiktok_application.status == 'accepted':
+        # Get all accepted TikTok applications ordered by follower count
+        all_tiktok = EditorApplication.objects.filter(
+            channel_type='tiktok',
+            status='accepted',
+            removal_requested=False
+        ).order_by('-follower_count', 'applied_date')
+        for index, app in enumerate(all_tiktok, start=1):
+            if app.user_id == request.user.id:
+                tiktok_rank = index
+                break
+    
+    # Get ranking tab selection (default to 'mix')
+    ranking_tab = request.GET.get('ranking_tab', 'mix')
+    if ranking_tab not in ['mix', 'youtube', 'tiktok']:
+        ranking_tab = 'mix'
+    
+    # Helper function to get ranking data for a specific tab
+    def get_ranking_data(tab_type):
+        user_rank = None
+        user_rank_app = None
+        rank_above = None
+        rank_below = None
+        
+        if tab_type == 'mix':
+            # Mix ranking: group by user and get best application per user
+            all_apps = EditorApplication.objects.filter(
+                status='accepted',
+                removal_requested=False
+            ).select_related('user').order_by('-follower_count', 'applied_date')
+            
+            user_best_apps = {}
+            for app in all_apps:
+                if app.user_id not in user_best_apps:
+                    user_best_apps[app.user_id] = app
+            
+            sorted_users = sorted(user_best_apps.items(), key=lambda x: (-x[1].follower_count, x[1].applied_date))
+            
+        elif tab_type == 'youtube':
+            # YouTube ranking
+            sorted_apps = list(EditorApplication.objects.filter(
+                channel_type='youtube',
+                status='accepted',
+                removal_requested=False
+            ).select_related('user').order_by('-follower_count', 'applied_date'))
+            sorted_users = [(app.user_id, app) for app in sorted_apps]
+            
+        elif tab_type == 'tiktok':
+            # TikTok ranking
+            sorted_apps = list(EditorApplication.objects.filter(
+                channel_type='tiktok',
+                status='accepted',
+                removal_requested=False
+            ).select_related('user').order_by('-follower_count', 'applied_date'))
+            sorted_users = [(app.user_id, app) for app in sorted_apps]
+        
+        # Find current user's position and get users above/below
+        for index, (user_id, app) in enumerate(sorted_users, start=1):
+            if user_id == request.user.id:
+                user_rank = index
+                user_rank_app = app
+                # Get user above (index - 1)
+                if index > 1:
+                    rank_above_app = sorted_users[index - 2][1]
+                    rank_above = {
+                        'app': rank_above_app,
+                        'rank': index - 1,
+                        'user': rank_above_app.user,
+                        'channel_name': rank_above_app.channel_name or rank_above_app.user.username,
+                        'follower_count': rank_above_app.follower_count,
+                        'channel_type': rank_above_app.channel_type,
+                        'channel_thumbnail': rank_above_app.channel_thumbnail or '',
+                        'profile_picture': rank_above_app.user.profile_picture.url if rank_above_app.user.profile_picture else '',
+                    }
+                # Get user below (index + 1)
+                if index < len(sorted_users):
+                    rank_below_app = sorted_users[index][1]
+                    rank_below = {
+                        'app': rank_below_app,
+                        'rank': index + 1,
+                        'user': rank_below_app.user,
+                        'channel_name': rank_below_app.channel_name or rank_below_app.user.username,
+                        'follower_count': rank_below_app.follower_count,
+                        'channel_type': rank_below_app.channel_type,
+                        'channel_thumbnail': rank_below_app.channel_thumbnail or '',
+                        'profile_picture': rank_below_app.user.profile_picture.url if rank_below_app.user.profile_picture else '',
+                    }
+                break
+        
+        return {
+            'user_rank': user_rank,
+            'user_rank_app': user_rank_app,
+            'rank_above': rank_above,
+            'rank_below': rank_below,
+        }
+    
+    # Get ranking data for the selected tab
+    ranking_data = get_ranking_data(ranking_tab)
+    user_rank = ranking_data['user_rank']
+    user_rank_app = ranking_data['user_rank_app']
+    rank_above = ranking_data['rank_above']
+    rank_below = ranking_data['rank_below']
+    
+    # Fallback: if user not found in selected tab, try mix ranking
+    if user_rank is None and ranking_tab != 'mix':
+        ranking_data = get_ranking_data('mix')
+        user_rank = ranking_data['user_rank']
+        user_rank_app = ranking_data['user_rank_app']
+        rank_above = ranking_data['rank_above']
+        rank_below = ranking_data['rank_below']
+        ranking_tab = 'mix'  # Switch to mix if user not in selected tab
+    
+    # Get edit submissions count
+    edit_submissions = EditSubmission.objects.filter(user=request.user)
+    total_edit_submissions = edit_submissions.count()
+    verified_edit_submissions = edit_submissions.filter(status='verified').count()
 
+    # Prepare current user's image data
+    current_user_image = ''
+    if user_rank_app:
+        current_user_image = user_rank_app.channel_thumbnail or ''
+        if not current_user_image and user_rank_app.user.profile_picture:
+            current_user_image = user_rank_app.user.profile_picture.url
+    
     context = {
         'applications': applications,
         'total_applications': applications.count(),
@@ -64,6 +210,21 @@ def user_dashboard(request):
         'accepted_applications': applications.filter(status='accepted').count(),
         'editor_application': editor_application,
         'has_editor_application': editor_applications.exists(),
+        'youtube_application': youtube_application,
+        'tiktok_application': tiktok_application,
+        'has_youtube_application': youtube_application is not None,
+        'has_tiktok_application': tiktok_application is not None,
+        'youtube_rank': youtube_rank,
+        'tiktok_rank': tiktok_rank,
+        'user_rank': user_rank,
+        'user_rank_app': user_rank_app,
+        'current_user_image': current_user_image,
+        'has_rank': user_rank is not None,
+        'rank_above': rank_above,
+        'rank_below': rank_below,
+        'ranking_tab': ranking_tab,
+        'total_edit_submissions': total_edit_submissions,
+        'verified_edit_submissions': verified_edit_submissions,
     }
     return render(request, 'dashboard/user_dashboard.html', context)
 

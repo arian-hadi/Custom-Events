@@ -59,9 +59,9 @@
                     </p>
                     
                     <div class="flex flex-wrap gap-4 slide-up-on-load" style="animation-delay: 0.8s;">
-                <a href="{% url 'events:event_list' %}" 
+                <a href="{% url 'edithub:ranking_table' %}" 
                            class="px-8 py-4 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transform hover:scale-105 transition-all duration-300 flex items-center gap-2 shadow-lg">
-                  <span>Explore Events</span>
+                  <span>Explore EditingHub</span>
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
                   </svg>
@@ -164,7 +164,7 @@
                         <p class="text-gray-600 mb-6">
                             Join monthly challenges, tournaments, and creative events to test your skills, win rewards, and connect with other editors from around the world.
                         </p>
-                        <a href="{% url 'events:event_list' %}" class="inline-block text-blue-600 font-semibold mb-6">See Events →</a>
+                        <a href="{% url 'edithub:ranking_table' %}" class="inline-block text-blue-600 font-semibold mb-6">Explore EditingHub →</a>
                         <img src="{% static 'core/images/EditingContest.png' %}" alt="Editing Contests & Events"
                              class="w-full rounded-xl shadow-xl" />
                     </div>
