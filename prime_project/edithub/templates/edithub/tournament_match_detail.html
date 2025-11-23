@@ -6,6 +6,52 @@
 
 {% block content %}
 <style>
+  /* Editor Title Rarity Styling */
+  @keyframes legendaryGlow {
+    0%, 100% {
+      text-shadow: 
+        0 0 10px rgba(255, 215, 0, 0.8),
+        0 0 20px rgba(255, 165, 0, 0.6),
+        0 0 30px rgba(255, 140, 0, 0.4);
+    }
+    50% {
+      text-shadow: 
+        0 0 20px rgba(255, 215, 0, 1),
+        0 0 30px rgba(255, 165, 0, 0.8),
+        0 0 40px rgba(255, 140, 0, 0.6),
+        0 0 50px rgba(255, 215, 0, 0.4);
+    }
+  }
+  
+  .title-legendary {
+    background: linear-gradient(45deg, #ffd700, #ff8c00, #ffd700, #ffa500);
+    background-size: 200% 200%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: legendaryGlow 2s ease-in-out infinite, gradientShift 3s ease infinite;
+    position: relative;
+  }
+  
+  @keyframes gradientShift {
+    0%, 100% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+  }
+  
+  .title-epic {
+    color: #9333ea;
+    font-weight: 600;
+    text-shadow: 0 0 10px rgba(147, 51, 234, 0.3);
+  }
+  
+  .title-ordinary {
+    color: #4b5563;
+  }
+
   .match-container {
     min-height: calc(100vh - 4rem);
     display: flex;
@@ -190,7 +236,7 @@
                     <h2 class="text-2xl font-bold text-gray-900 mb-1">{{ participant_1.channel_name|upper }}</h2>
                     
                     <!-- Editor Title -->
-                    <p class="text-sm text-purple-600 font-semibold mb-4">{{ participant_1.editor_title }}</p>
+                    <p class="text-sm font-semibold mb-4 {% if participant_1.editor_title_rarity == 'legendary' %}title-legendary{% elif participant_1.editor_title_rarity == 'epic' %}title-epic{% else %}text-purple-600{% endif %}">{{ participant_1.editor_title }}</p>
                     
                     <!-- Vote Count -->
                     <div class="vote-count mb-4">
@@ -275,7 +321,7 @@
                     <h2 class="text-2xl font-bold text-gray-900 mb-1">{{ participant_2.channel_name|upper }}</h2>
                     
                     <!-- Editor Title -->
-                    <p class="text-sm text-pink-600 font-semibold mb-4">{{ participant_2.editor_title }}</p>
+                    <p class="text-sm font-semibold mb-4 {% if participant_2.editor_title_rarity == 'legendary' %}title-legendary{% elif participant_2.editor_title_rarity == 'epic' %}title-epic{% else %}text-pink-600{% endif %}">{{ participant_2.editor_title }}</p>
                     
                     <!-- Vote Count -->
                     <div class="vote-count mb-4">

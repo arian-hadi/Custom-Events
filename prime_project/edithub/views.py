@@ -361,12 +361,6 @@ class RankingTableView(ListView):
                 participants = active_tournament.get_participants()
                 for app in participants:
                     if app:
-                        channel_type_label = (app.channel_type or '').strip()
-                        if channel_type_label:
-                            channel_type_label = f"{channel_type_label.title()} Editor"
-                        else:
-                            channel_type_label = "Editor"
-                        
                         tournament_participants.append({
                             'user': app.user,
                             'app': app,
@@ -375,7 +369,8 @@ class RankingTableView(ListView):
                             'profile_picture': app.user.profile_picture.url if app.user.profile_picture else None,
                             'channel_thumbnail': (app.channel_thumbnail or '').strip(),
                             'channel_type': app.channel_type,
-                            'editor_title': channel_type_label,
+                            'editor_title': app.editor_title,  # Use property which handles custom titles
+                            'editor_title_rarity': app.editor_title_rarity,  # Include rarity for styling
                         })
                     else:
                         tournament_participants.append(None)
@@ -388,12 +383,6 @@ class RankingTableView(ListView):
                 finalists = active_tournament.get_finalists()
                 for app in finalists:
                     if app:
-                        channel_type_label = (app.channel_type or '').strip()
-                        if channel_type_label:
-                            channel_type_label = f"{channel_type_label.title()} Editor"
-                        else:
-                            channel_type_label = "Editor"
-                        
                         tournament_finalists.append({
                             'user': app.user,
                             'app': app,
@@ -402,7 +391,8 @@ class RankingTableView(ListView):
                             'profile_picture': app.user.profile_picture.url if app.user.profile_picture else None,
                             'channel_thumbnail': (app.channel_thumbnail or '').strip(),
                             'channel_type': app.channel_type,
-                            'editor_title': channel_type_label,
+                            'editor_title': app.editor_title,  # Use property which handles custom titles
+                            'editor_title_rarity': app.editor_title_rarity,  # Include rarity for styling
                         })
                     else:
                         tournament_finalists.append(None)
@@ -874,8 +864,9 @@ def get_user_stats_ajax(request):
         ).order_by('-calculated_points').first()
         best_points = float(best_rank.calculated_points) if best_rank else 0.0
         
-        # Get editor title
-        editor_title = f"{primary_app.channel_type.title()} Editor"
+        # Get editor title (using property which handles custom titles)
+        editor_title = primary_app.editor_title
+        editor_title_rarity = primary_app.editor_title_rarity
         
         return JsonResponse({
             'success': True,
@@ -884,6 +875,7 @@ def get_user_stats_ajax(request):
             'channel_type': primary_app.channel_type,
             'channel_link': primary_app.channel_link,
             'editor_title': editor_title,
+            'editor_title_rarity': editor_title_rarity,
             'total_edits': total_edits,
             'edit_of_week_wins': edit_of_week_wins,
             'edit_of_month_wins': edit_of_month_wins,
@@ -892,6 +884,182 @@ def get_user_stats_ajax(request):
     
     except Exception as e:
         logger.error(f"Error fetching user stats: {str(e)}")
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+def get_available_titles(request):
+    """Get available editor titles for the current user, grouped by category"""
+    from .models import EditorTitle, EditorApplication
+    
+    # Get user's primary application
+    primary_app = EditorApplication.objects.filter(
+        user=request.user,
+        status='accepted'
+    ).order_by('-follower_count').first()
+    
+    if not primary_app:
+        return JsonResponse({
+            'success': False,
+            'error': 'No accepted application found. Please apply to join the rankings first.'
+        }, status=404)
+    
+    # Get all active titles grouped by category
+    try:
+        titles = EditorTitle.objects.filter(is_active=True).order_by('category', 'rarity', 'cost_coins', 'name')
+    except Exception as e:
+        # If category field doesn't exist yet (migration not run), fall back to old query
+        logger.warning(f"Error querying titles with category: {e}")
+        titles = EditorTitle.objects.filter(is_active=True).order_by('rarity', 'cost_coins', 'name')
+    
+    # Group titles by category
+    titles_by_category = {
+        'reel': [],
+        'comment': [],
+        'general': []
+    }
+    
+    for title in titles:
+        # Get category, defaulting to 'general' if field doesn't exist
+        title_category = getattr(title, 'category', 'general')
+        
+        title_data = {
+            'id': title.id,
+            'name': title.name,
+            'rarity': title.rarity,
+            'category': title_category,
+            'description': title.description or '',
+            'cost_coins': title.cost_coins,
+            'is_selected': primary_app.selected_title_id == title.id if primary_app.selected_title else False,
+        }
+        
+        # For comment titles, only show YouTube/TikTok Editor based on user's channel type
+        if title_category == 'comment':
+            if title.name.lower() == f"{primary_app.channel_type} editor":
+                titles_by_category['comment'].append(title_data)
+        else:
+            # Ensure category exists in our dict, default to 'general' if not
+            category_key = title_category if title_category in titles_by_category else 'general'
+            titles_by_category[category_key].append(title_data)
+    
+    # Get current title info
+    current_title = None
+    if primary_app.selected_title:
+        current_title = {
+            'id': primary_app.selected_title.id,
+            'name': primary_app.selected_title.name,
+            'rarity': primary_app.selected_title.rarity,
+            'category': getattr(primary_app.selected_title, 'category', 'general'),
+        }
+    else:
+        # Default title based on channel type
+        current_title = {
+            'id': None,
+            'name': f"{primary_app.channel_type.title()} Editor",
+            'rarity': 'ordinary',
+            'category': 'comment',
+        }
+    
+    return JsonResponse({
+        'success': True,
+        'titles_by_category': titles_by_category,
+        'current_title': current_title,
+        'current_title_id': primary_app.selected_title_id if primary_app.selected_title else None,
+    })
+
+
+@login_required
+def customize_profile(request):
+    """Profile customization page with title selection"""
+    from .models import EditorApplication
+    
+    # Get user's primary application
+    primary_app = EditorApplication.objects.filter(
+        user=request.user,
+        status='accepted'
+    ).order_by('-follower_count').first()
+    
+    if not primary_app:
+        messages.warning(request, 'You need to have an accepted application to customize your profile.')
+        return redirect('edithub:apply')
+    
+    # Get current title info
+    current_title = None
+    if primary_app.selected_title:
+        current_title = {
+            'id': primary_app.selected_title.id,
+            'name': primary_app.selected_title.name,
+            'rarity': primary_app.selected_title.rarity,
+            'category': getattr(primary_app.selected_title, 'category', 'general'),
+        }
+    else:
+        # Default title based on channel type
+        current_title = {
+            'id': None,
+            'name': f"{primary_app.channel_type.title()} Editor",
+            'rarity': 'ordinary',
+            'category': 'comment',
+        }
+    
+    context = {
+        'primary_app': primary_app,
+        'current_title': current_title,
+        'user': request.user,
+    }
+    
+    return render(request, 'edithub/customize_profile.html', context)
+
+
+@login_required
+@require_http_methods(["POST"])
+def select_editor_title(request):
+    """Select an editor title for the user"""
+    from .models import EditorTitle, EditorApplication
+    import json
+    
+    try:
+        data = json.loads(request.body)
+        title_id = data.get('title_id')
+        
+        if not title_id:
+            return JsonResponse({'error': 'Title ID is required'}, status=400)
+        
+        # Get user's primary application
+        primary_app = EditorApplication.objects.filter(
+            user=request.user,
+            status='accepted'
+        ).order_by('-follower_count').first()
+        
+        if not primary_app:
+            return JsonResponse({'error': 'No accepted application found'}, status=404)
+        
+        # Get the title
+        try:
+            title = EditorTitle.objects.get(id=title_id, is_active=True)
+        except EditorTitle.DoesNotExist:
+            return JsonResponse({'error': 'Title not found'}, status=404)
+        
+        # Update the selected title (only for reel and general categories)
+        # Comment titles are automatically set based on channel type
+        if title.category == 'comment':
+            return JsonResponse({
+                'error': 'Comment titles cannot be manually selected. They are automatically set based on your channel type.'
+            }, status=400)
+        
+        # Update the selected title
+        primary_app.selected_title = title
+        primary_app.save(update_fields=['selected_title'])
+        
+        return JsonResponse({
+            'success': True,
+            'title_name': title.name,
+            'title_rarity': title.rarity,
+        })
+    
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid JSON'}, status=400)
+    except Exception as e:
+        logger.error(f"Error selecting title: {str(e)}")
         return JsonResponse({'error': str(e)}, status=500)
 
 
@@ -1646,14 +1814,27 @@ def view_all_edits(request):
         ).order_by('-calculated_points').first()
         best_points = best_rank.calculated_points if best_rank else 0
         
-        # Get editor title (default based on channel type, can be customized later)
-        editor_title = f"{current_edit.channel_type.title()} Editor"  # e.g., "TikTok Editor" or "YouTube Editor"
-        
-        # Get mix rank (overall ranking in editors table, regardless of platform)
+        # Get mix rank and editor title from EditorApplication
         mix_rank = None
+        editor_title = f"{current_edit.channel_type.title()} Editor"  # Default
+        editor_title_rarity = 'ordinary'  # Default
+        
         try:
             # Get the user's EditorApplication(s) - they might have multiple (YouTube and TikTok)
             # For mix ranking, we use the one with highest follower count
+            # For title, use the one matching the edit's channel type
+            editor_app_for_title = EditorApplication.objects.filter(
+                user=edit_user,
+                status='accepted',
+                removal_requested=False,
+                channel_type=current_edit.channel_type
+            ).first()
+            
+            if editor_app_for_title:
+                editor_title = editor_app_for_title.editor_title
+                editor_title_rarity = editor_app_for_title.editor_title_rarity
+            
+            # For mix rank, use the one with highest follower count
             editor_app = EditorApplication.objects.filter(
                 user=edit_user,
                 status='accepted',
@@ -1663,7 +1844,7 @@ def view_all_edits(request):
             if editor_app and editor_app.rank_position:
                 mix_rank = editor_app.rank_position
         except Exception:
-            mix_rank = None
+            pass
         
         # Use channel thumbnail and channel name from the edit (YouTube/TikTok profile)
         channel_stats = {
@@ -1676,6 +1857,7 @@ def view_all_edits(request):
             'username': current_edit.channel_name,  # Use YouTube/TikTok channel name
             'channel_type': current_edit.channel_type,
             'editor_title': editor_title,  # Customizable editor title
+            'editor_title_rarity': editor_title_rarity,  # Include rarity for styling
             'mix_rank': mix_rank,  # Rank in mix (overall) editors table
         }
     
@@ -1900,11 +2082,6 @@ def tournament_matches(request):
             def prepare_participant_data(participant):
                 if not participant:
                     return None
-                channel_type_label = (participant.channel_type or '').strip()
-                if channel_type_label:
-                    channel_type_label = f"{channel_type_label.title()} Editor"
-                else:
-                    channel_type_label = "Editor"
                 
                 return {
                     'user': participant.user,
@@ -1914,7 +2091,8 @@ def tournament_matches(request):
                     'profile_picture': participant.user.profile_picture.url if participant.user.profile_picture else None,
                     'channel_thumbnail': (participant.channel_thumbnail or '').strip(),
                     'channel_type': participant.channel_type,
-                    'editor_title': channel_type_label,
+                    'editor_title': participant.editor_title,  # Use property which handles custom titles
+                    'editor_title_rarity': participant.editor_title_rarity,  # Include rarity for styling
                 }
             
             match['participant_1'] = prepare_participant_data(match['participant_1'])
@@ -2003,11 +2181,6 @@ def tournament_match_detail(request, match_type):
     def prepare_participant_data(participant, edit_link):
         if not participant:
             return None
-        channel_type_label = (participant.channel_type or '').strip()
-        if channel_type_label:
-            channel_type_label = f"{channel_type_label.title()} Editor"
-        else:
-            channel_type_label = "Editor"
         
         # Determine if edit link is YouTube or TikTok
         is_youtube = False
@@ -2026,7 +2199,8 @@ def tournament_match_detail(request, match_type):
             'profile_picture': participant.user.profile_picture.url if participant.user.profile_picture else None,
             'channel_thumbnail': (participant.channel_thumbnail or '').strip(),
             'channel_type': participant.channel_type,
-            'editor_title': channel_type_label,
+            'editor_title': participant.editor_title,  # Use property which handles custom titles
+            'editor_title_rarity': participant.editor_title_rarity,  # Include rarity for styling
             'edit_link': edit_link,
             'is_youtube': is_youtube,
             'is_tiktok': is_tiktok,

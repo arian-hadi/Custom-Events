@@ -7,6 +7,61 @@ from django.utils.safestring import mark_safe
 from accounts.models import CustomUser
 
 
+class EditorTitle(models.Model):
+    """Model for customizable editor titles with rarity tiers"""
+    
+    RARITY_CHOICES = [
+        ('ordinary', 'Ordinary'),
+        ('epic', 'Epic'),
+        ('legendary', 'Legendary'),
+    ]
+    
+    CATEGORY_CHOICES = [
+        ('reel', 'Reel Title'),
+        ('comment', 'Comment Title'),
+        ('general', 'General Title'),
+    ]
+    
+    name = models.CharField(max_length=100, unique=True, help_text="Title name (e.g., 'Ultimate Editing Master')")
+    rarity = models.CharField(max_length=20, choices=RARITY_CHOICES, default='ordinary')
+    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default='general', help_text="Category of the title (reel, comment, or general)")
+    description = models.TextField(blank=True, help_text="Description of the title")
+    cost_coins = models.IntegerField(default=0, help_text="Cost in coins to unlock (0 = free/unlocked by default)")
+    is_default = models.BooleanField(default=False, help_text="Default title for new users")
+    is_active = models.BooleanField(default=True, help_text="Whether this title is available")
+    unlock_requirement = models.CharField(
+        max_length=200, 
+        blank=True, 
+        help_text="Requirement to unlock (e.g., 'Win 10 Edit of the Week', 'Reach 1000 followers')"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['category', 'rarity', 'cost_coins', 'name']
+    
+    def __str__(self):
+        return f"{self.name} ({self.get_rarity_display()})"
+    
+    def get_rarity_color_class(self):
+        """Return CSS class for rarity color"""
+        colors = {
+            'ordinary': 'text-gray-600',
+            'epic': 'text-purple-600',
+            'legendary': 'text-yellow-500',
+        }
+        return colors.get(self.rarity, 'text-gray-600')
+    
+    def get_rarity_bg_class(self):
+        """Return CSS class for rarity background"""
+        colors = {
+            'ordinary': 'bg-gray-100',
+            'epic': 'bg-purple-100',
+            'legendary': 'bg-yellow-100',
+        }
+        return colors.get(self.rarity, 'bg-gray-100')
+
+
 class EditorApplication(models.Model):
     """Model for editor applications to the EditingHub ranking table"""
     
@@ -119,6 +174,16 @@ class EditorApplication(models.Model):
     removal_requested = models.BooleanField(default=False)
     removal_requested_date = models.DateTimeField(null=True, blank=True)
     
+    # Custom editor title
+    selected_title = models.ForeignKey(
+        'EditorTitle',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='applications',
+        help_text="Selected custom editor title"
+    )
+    
     class Meta:
         ordering = ['-follower_count', 'applied_date']
         unique_together = ('user', 'channel_link')  # One application per user per channel
@@ -230,6 +295,21 @@ class EditorApplication(models.Model):
         if delta < 0:
             return mark_safe(f'<span title="{delta}" class="ml-2 text-red-600" aria-label="rank down">▼</span>')
         return mark_safe('<span class="ml-2 text-gray-400" aria-label="no change">–</span>')
+    
+    @property
+    def editor_title(self):
+        """Get the editor title - custom title if selected, otherwise default based on channel type"""
+        if self.selected_title:
+            return self.selected_title.name
+        # Default title based on channel type
+        return f"{self.channel_type.title()} Editor"
+    
+    @property
+    def editor_title_rarity(self):
+        """Get the rarity of the selected title"""
+        if self.selected_title:
+            return self.selected_title.rarity
+        return 'ordinary'
 
 
 class EditSubmission(models.Model):

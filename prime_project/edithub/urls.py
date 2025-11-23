@@ -13,9 +13,14 @@ urlpatterns = [
     path('application/<int:pk>/', views.application_detail, name='application_detail'),
     path('application/<int:pk>/remove/', views.request_removal, name='request_removal'),
     
+    # Profile customization
+    path('customize-profile/', views.customize_profile, name='customize_profile'),
+    
     # AJAX endpoints
     path('verify-channel/', views.verify_channel_ajax, name='verify_channel'),
     path('user-stats/', views.get_user_stats_ajax, name='get_user_stats'),
+    path('titles/', views.get_available_titles, name='get_available_titles'),
+    path('select-title/', views.select_editor_title, name='select_editor_title'),
     
     # Admin views
     path('admin/', views.admin_applications, name='admin_applications'),

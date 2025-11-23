@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.utils.html import mark_safe
 
-from .models import EditorApplication, EditSubmission, EditUpvote, EditReport, Tournament, TournamentMatchVote, WeekWinner
+from .models import EditorApplication, EditSubmission, EditUpvote, EditReport, Tournament, TournamentMatchVote, WeekWinner, EditorTitle
 
 
 @admin.register(EditorApplication)
@@ -24,7 +24,7 @@ class EditorApplicationAdmin(admin.ModelAdmin):
             )
         }),
         ('Application Details', {
-            'fields': ('editing_area', 'editing_area_other', 'editing_tool')
+            'fields': ('editing_area', 'editing_area_other', 'editing_tool', 'selected_title')
         }),
         ('Verification & Consent', {
             'fields': ('channel_verified', 'data_consent')
@@ -190,3 +190,23 @@ class WeekWinnerAdmin(admin.ModelAdmin):
     def get_queryset(self, request):
         qs = super().get_queryset(request)
         return qs.select_related('user', 'edit_submission')
+
+
+@admin.register(EditorTitle)
+class EditorTitleAdmin(admin.ModelAdmin):
+    list_display = ('name', 'rarity', 'cost_coins', 'is_default', 'is_active', 'created_at')
+    list_filter = ('rarity', 'is_default', 'is_active', 'created_at')
+    search_fields = ('name', 'description', 'unlock_requirement')
+    readonly_fields = ('created_at', 'updated_at')
+    fieldsets = (
+        ('Title Information', {
+            'fields': ('name', 'description', 'rarity')
+        }),
+        ('Availability & Cost', {
+            'fields': ('cost_coins', 'is_default', 'is_active', 'unlock_requirement')
+        }),
+        ('Timestamps', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
