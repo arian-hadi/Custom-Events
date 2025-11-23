@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.utils.html import mark_safe
 
-from .models import EditorApplication, EditSubmission, EditUpvote, EditReport, Tournament, TournamentMatchVote, WeekWinner, EditorTitle
+from .models import EditorApplication, EditSubmission, EditUpvote, EditReport, Tournament, TournamentMatchVote, WeekWinner, EditorTitle, UserTitleUnlock
 
 
 @admin.register(EditorApplication)
@@ -194,19 +194,38 @@ class WeekWinnerAdmin(admin.ModelAdmin):
 
 @admin.register(EditorTitle)
 class EditorTitleAdmin(admin.ModelAdmin):
-    list_display = ('name', 'rarity', 'cost_coins', 'is_default', 'is_active', 'created_at')
-    list_filter = ('rarity', 'is_default', 'is_active', 'created_at')
-    search_fields = ('name', 'description', 'unlock_requirement')
+    list_display = ('name', 'rarity', 'unlock_method', 'cost_coins', 'achievement_type', 'achievement_threshold', 'is_default', 'is_active', 'created_at')
+    list_filter = ('rarity', 'unlock_method', 'achievement_type', 'is_default', 'is_active', 'created_at')
+    search_fields = ('name', 'description', 'unlock_requirement', 'achievement_group')
     readonly_fields = ('created_at', 'updated_at')
     fieldsets = (
         ('Title Information', {
-            'fields': ('name', 'description', 'rarity')
+            'fields': ('name', 'description', 'rarity', 'category')
         }),
-        ('Availability & Cost', {
-            'fields': ('cost_coins', 'is_default', 'is_active', 'unlock_requirement')
+        ('Unlock Method', {
+            'fields': ('unlock_method', 'cost_coins', 'unlock_requirement'),
+            'description': 'Choose how users can unlock this title: Coins, Achievement, or Both'
+        }),
+        ('Achievement Settings', {
+            'fields': ('achievement_type', 'achievement_threshold', 'tier_level', 'achievement_group'),
+            'description': 'Configure achievement-based unlocking. Only used if unlock_method is "Achievement Only" or "Coins or Achievement"',
+            'classes': ('collapse',)
+        }),
+        ('Availability', {
+            'fields': ('is_default', 'is_active')
         }),
         ('Timestamps', {
             'fields': ('created_at', 'updated_at'),
             'classes': ('collapse',)
         }),
     )
+
+
+@admin.register(UserTitleUnlock)
+class UserTitleUnlockAdmin(admin.ModelAdmin):
+    list_display = ('user', 'title', 'unlock_method', 'unlocked_at')
+    list_filter = ('unlock_method', 'unlocked_at')
+    search_fields = ('user__username', 'title__name')
+    readonly_fields = ('unlocked_at',)
+    date_hierarchy = 'unlocked_at'
+    raw_id_fields = ('user', 'title')

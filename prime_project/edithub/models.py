@@ -3,8 +3,11 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
 from django.utils.safestring import mark_safe
+import logging
 
 from accounts.models import CustomUser
+
+logger = logging.getLogger(__name__)
 
 
 class EditorTitle(models.Model):
@@ -22,6 +25,23 @@ class EditorTitle(models.Model):
         ('general', 'General Title'),
     ]
     
+    ACHIEVEMENT_TYPE_CHOICES = [
+        ('edit_of_week_wins', 'Edit of the Week Wins'),
+        ('total_points', 'Total Points'),
+        ('points_per_edit', 'Points Per Edit'),
+        ('consecutive_weeks', 'Consecutive Weeks Participated'),
+        ('total_submissions', 'Total Submissions'),
+        ('rank_1_wins', 'Rank #1 Wins'),
+        ('rank_2_wins', 'Rank #2 Wins'),
+        ('rank_3_wins', 'Rank #3 Wins'),
+    ]
+    
+    UNLOCK_METHOD_CHOICES = [
+        ('coins', 'Coins Only'),
+        ('achievement', 'Achievement Only'),
+        ('both', 'Coins or Achievement'),
+    ]
+    
     name = models.CharField(max_length=100, unique=True, help_text="Title name (e.g., 'Ultimate Editing Master')")
     rarity = models.CharField(max_length=20, choices=RARITY_CHOICES, default='ordinary')
     category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default='general', help_text="Category of the title (reel, comment, or general)")
@@ -34,6 +54,36 @@ class EditorTitle(models.Model):
         blank=True, 
         help_text="Requirement to unlock (e.g., 'Win 10 Edit of the Week', 'Reach 1000 followers')"
     )
+    
+    # Achievement-based unlocking fields
+    unlock_method = models.CharField(
+        max_length=20,
+        choices=UNLOCK_METHOD_CHOICES,
+        default='coins',
+        help_text="How this title can be unlocked"
+    )
+    achievement_type = models.CharField(
+        max_length=50,
+        choices=ACHIEVEMENT_TYPE_CHOICES,
+        blank=True,
+        null=True,
+        help_text="Type of achievement required to unlock (only used if unlock_method is 'achievement' or 'both')"
+    )
+    achievement_threshold = models.IntegerField(
+        default=0,
+        help_text="Threshold value for the achievement (e.g., 5 wins, 1000 points)"
+    )
+    tier_level = models.IntegerField(
+        default=1,
+        help_text="Tier level for this achievement (1, 2, 3, etc.) - helps organize multiple tiers"
+    )
+    achievement_group = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        help_text="Group name for related achievement tiers (e.g., 'weekly_wins', 'point_master')"
+    )
+    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
@@ -60,6 +110,42 @@ class EditorTitle(models.Model):
             'legendary': 'bg-yellow-100',
         }
         return colors.get(self.rarity, 'bg-gray-100')
+
+
+class UserTitleUnlock(models.Model):
+    """Track which titles users have unlocked"""
+    
+    UNLOCK_METHOD_CHOICES = [
+        ('coins', 'Coins'),
+        ('achievement', 'Achievement'),
+    ]
+    
+    user = models.ForeignKey(
+        CustomUser,
+        on_delete=models.CASCADE,
+        related_name='unlocked_titles'
+    )
+    title = models.ForeignKey(
+        EditorTitle,
+        on_delete=models.CASCADE,
+        related_name='unlocked_by'
+    )
+    unlocked_at = models.DateTimeField(auto_now_add=True)
+    unlock_method = models.CharField(
+        max_length=20,
+        choices=UNLOCK_METHOD_CHOICES,
+        default='achievement',
+        help_text="How this title was unlocked"
+    )
+    
+    class Meta:
+        unique_together = ('user', 'title')
+        ordering = ['-unlocked_at']
+        verbose_name = "User Title Unlock"
+        verbose_name_plural = "User Title Unlocks"
+    
+    def __str__(self):
+        return f"{self.user.username} unlocked {self.title.name} ({self.get_unlock_method_display()})"
 
 
 class EditorApplication(models.Model):
@@ -938,3 +1024,34 @@ def create_week_winner_record(sender, instance, created, **kwargs):
                 existing_winner.week_start = instance.scheduled_week
                 existing_winner.calculated_points = instance.calculated_points or 0.00
                 existing_winner.save(update_fields=['week_rank', 'week_start', 'calculated_points'])
+
+
+# Signal to check achievements when a user wins Edit of the Week
+@receiver(post_save, sender=WeekWinner)
+def check_achievements_on_win(sender, instance, created, **kwargs):
+    """Check achievements when a user wins Edit of the Week"""
+    if created:
+        from .utils import check_user_achievements
+        try:
+            unlocked = check_user_achievements(instance.user)
+            if unlocked:
+                logger.info(f"User {instance.user.username} unlocked {len(unlocked)} title(s) after winning Edit of the Week")
+        except Exception as e:
+            logger.error(f"Error checking achievements for user {instance.user.username} after win: {str(e)}")
+
+
+# Signal to check achievements when a submission is verified or points are updated
+@receiver(post_save, sender=EditSubmission)
+def check_achievements_on_submission_update(sender, instance, created, **kwargs):
+    """Check achievements when a submission is verified or updated"""
+    # Only check if submission is verified and has calculated points
+    if instance.status == 'verified' and instance.calculated_points:
+        from .utils import check_user_achievements
+        try:
+            # Use update_fields to avoid infinite loops
+            if 'update_fields' in kwargs and 'calculated_points' in kwargs['update_fields']:
+                unlocked = check_user_achievements(instance.user)
+                if unlocked:
+                    logger.info(f"User {instance.user.username} unlocked {len(unlocked)} title(s) after submission update")
+        except Exception as e:
+            logger.error(f"Error checking achievements for user {instance.user.username} after submission update: {str(e)}")

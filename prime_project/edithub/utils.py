@@ -2093,30 +2093,115 @@ def get_competition_state(now: datetime = None) -> Dict[str, any]:
 
 
 def format_countdown(timedelta_obj: timedelta) -> str:
-    """
-    Format a timedelta as a countdown string (e.g., "2d 4h 30m").
+    """Format a timedelta object as a countdown string"""
+    if timedelta_obj.total_seconds() < 0:
+        return "00:00:00"
     
-    Args:
-        timedelta_obj: timedelta object to format
-    
-    Returns:
-        Formatted string like "2d 4h 30m" or "4h 30m" or "30m"
-    """
     total_seconds = int(timedelta_obj.total_seconds())
-    
-    if total_seconds <= 0:
-        return "Ended"
-    
-    days = total_seconds // 86400
-    hours = (total_seconds % 86400) // 3600
+    hours = total_seconds // 3600
     minutes = (total_seconds % 3600) // 60
+    seconds = total_seconds % 60
     
-    parts = []
-    if days > 0:
-        parts.append(f"{days}d")
-    if hours > 0:
-        parts.append(f"{hours}h")
-    if minutes > 0 or not parts:
-        parts.append(f"{minutes}m")
+    return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+
+
+def check_user_achievements(user):
+    """
+    Check all achievement-based titles and unlock them if user qualifies.
+    Returns list of newly unlocked titles.
+    """
+    from .models import EditorTitle, UserTitleUnlock, WeekWinner, EditSubmission
+    from django.db.models import Sum, Avg, Max
     
-    return " ".join(parts)
+    achievement_titles = EditorTitle.objects.filter(
+        unlock_method__in=['achievement', 'both'],
+        achievement_type__isnull=False,
+        is_active=True
+    )
+    
+    unlocked_titles = []
+    
+    for title in achievement_titles:
+        # Skip if already unlocked
+        if UserTitleUnlock.objects.filter(user=user, title=title).exists():
+            continue
+        
+        qualifies = False
+        
+        try:
+            if title.achievement_type == 'edit_of_week_wins':
+                # Count total wins (rank 1, 2, or 3)
+                win_count = WeekWinner.objects.filter(user=user).count()
+                qualifies = win_count >= title.achievement_threshold
+                
+            elif title.achievement_type == 'rank_1_wins':
+                win_count = WeekWinner.objects.filter(user=user, week_rank=1).count()
+                qualifies = win_count >= title.achievement_threshold
+                
+            elif title.achievement_type == 'rank_2_wins':
+                win_count = WeekWinner.objects.filter(user=user, week_rank=2).count()
+                qualifies = win_count >= title.achievement_threshold
+                
+            elif title.achievement_type == 'rank_3_wins':
+                win_count = WeekWinner.objects.filter(user=user, week_rank=3).count()
+                qualifies = win_count >= title.achievement_threshold
+                
+            elif title.achievement_type == 'total_points':
+                # Sum of all calculated_points from verified submissions
+                total_points = EditSubmission.objects.filter(
+                    user=user,
+                    status='verified'
+                ).aggregate(Sum('calculated_points'))['calculated_points__sum'] or 0
+                qualifies = float(total_points) >= title.achievement_threshold
+                
+            elif title.achievement_type == 'points_per_edit':
+                # Average points per edit (minimum threshold edits required)
+                submissions = EditSubmission.objects.filter(user=user, status='verified')
+                if submissions.exists():
+                    avg_points = submissions.aggregate(Avg('calculated_points'))['calculated_points__avg'] or 0
+                    qualifies = float(avg_points) >= title.achievement_threshold
+                    
+            elif title.achievement_type == 'consecutive_weeks':
+                # Track consecutive weeks (use weeks_participated from EditSubmission)
+                max_consecutive = EditSubmission.objects.filter(
+                    user=user,
+                    status='verified'
+                ).aggregate(Max('weeks_participated'))['weeks_participated__max'] or 0
+                qualifies = max_consecutive >= title.achievement_threshold
+                
+            elif title.achievement_type == 'total_submissions':
+                submission_count = EditSubmission.objects.filter(
+                    user=user,
+                    status='verified'
+                ).count()
+                qualifies = submission_count >= title.achievement_threshold
+            
+            if qualifies:
+                UserTitleUnlock.objects.get_or_create(
+                    user=user,
+                    title=title,
+                    defaults={'unlock_method': 'achievement'}
+                )
+                unlocked_titles.append(title)
+                logger.info(f"User {user.username} unlocked title '{title.name}' via achievement")
+                
+        except Exception as e:
+            logger.error(f"Error checking achievement for title {title.name} and user {user.username}: {str(e)}")
+            continue
+    
+    return unlocked_titles
+
+
+def is_title_unlocked_for_user(user, title):
+    """
+    Check if a title is unlocked for a user.
+    Returns True if unlocked, False otherwise.
+    """
+    from .models import UserTitleUnlock
+    
+    # Free titles are always unlocked
+    if title.cost_coins == 0 and title.unlock_method == 'coins':
+        return True
+    
+    # Check if unlocked via achievement or coins
+    return UserTitleUnlock.objects.filter(user=user, title=title).exists()

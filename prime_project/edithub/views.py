@@ -913,6 +913,7 @@ def get_user_stats_ajax(request):
 def get_available_titles(request):
     """Get available editor titles for the current user, grouped by category"""
     from .models import EditorTitle, EditorApplication
+    from .utils import is_title_unlocked_for_user
     
     # Get user's primary application
     primary_app = EditorApplication.objects.filter(
@@ -945,6 +946,9 @@ def get_available_titles(request):
         # Get category, defaulting to 'general' if field doesn't exist
         title_category = getattr(title, 'category', 'general')
         
+        # Check if title is unlocked
+        is_unlocked = is_title_unlocked_for_user(request.user, title)
+        
         title_data = {
             'id': title.id,
             'name': title.name,
@@ -953,6 +957,11 @@ def get_available_titles(request):
             'description': title.description or '',
             'cost_coins': title.cost_coins,
             'is_selected': primary_app.selected_title_id == title.id if primary_app.selected_title else False,
+            'is_unlocked': is_unlocked,
+            'unlock_requirement': title.unlock_requirement or '',
+            'unlock_method': getattr(title, 'unlock_method', 'coins'),
+            'achievement_type': getattr(title, 'achievement_type', None),
+            'achievement_threshold': getattr(title, 'achievement_threshold', 0),
         }
         
         # For comment titles, only show YouTube/TikTok Editor based on user's channel type
@@ -1036,7 +1045,8 @@ def customize_profile(request):
 @require_http_methods(["POST"])
 def select_editor_title(request):
     """Select an editor title for the user"""
-    from .models import EditorTitle, EditorApplication
+    from .models import EditorTitle, EditorApplication, UserTitleUnlock
+    from .utils import is_title_unlocked_for_user
     import json
     
     try:
@@ -1067,6 +1077,25 @@ def select_editor_title(request):
             return JsonResponse({
                 'error': 'Comment titles cannot be manually selected. They are automatically set based on your channel type.'
             }, status=400)
+        
+        # Check if title is unlocked
+        is_unlocked = is_title_unlocked_for_user(request.user, title)
+        
+        if not is_unlocked:
+            # Provide helpful error message
+            if title.unlock_method == 'achievement':
+                error_msg = f"This title is locked. {title.unlock_requirement or 'Complete the achievement requirements to unlock.'}"
+            elif title.unlock_method == 'coins':
+                error_msg = f"This title costs {title.cost_coins} coins. You don't have enough coins to unlock it."
+            elif title.unlock_method == 'both':
+                error_msg = f"This title requires either {title.cost_coins} coins or completing: {title.unlock_requirement or 'the achievement requirements'}."
+            else:
+                error_msg = f"This title is locked. {title.unlock_requirement or 'Complete the requirements to unlock.'}"
+            
+            return JsonResponse({
+                'error': error_msg,
+                'is_locked': True
+            }, status=403)
         
         # Update the selected title
         primary_app.selected_title = title
