@@ -15,6 +15,7 @@ class EditorTitle(models.Model):
     
     RARITY_CHOICES = [
         ('ordinary', 'Ordinary'),
+        ('rare', 'Rare'),
         ('epic', 'Epic'),
         ('legendary', 'Legendary'),
     ]
@@ -26,14 +27,9 @@ class EditorTitle(models.Model):
     ]
     
     ACHIEVEMENT_TYPE_CHOICES = [
-        ('edit_of_week_wins', 'Edit of the Week Wins'),
-        ('total_points', 'Total Points'),
-        ('points_per_edit', 'Points Per Edit'),
-        ('consecutive_weeks', 'Consecutive Weeks Participated'),
-        ('total_submissions', 'Total Submissions'),
-        ('rank_1_wins', 'Rank #1 Wins'),
-        ('rank_2_wins', 'Rank #2 Wins'),
-        ('rank_3_wins', 'Rank #3 Wins'),
+        ('rank_1_wins', 'Number of Edit of the Week Wins (First Place)'),
+        ('total_points', 'Total Points (Overall)'),
+        ('points_per_edit', 'Points Per Single Edit'),
     ]
     
     UNLOCK_METHOD_CHOICES = [
@@ -97,6 +93,7 @@ class EditorTitle(models.Model):
         """Return CSS class for rarity color"""
         colors = {
             'ordinary': 'text-gray-600',
+            'rare': 'text-blue-600',
             'epic': 'text-purple-600',
             'legendary': 'text-yellow-500',
         }
@@ -106,6 +103,7 @@ class EditorTitle(models.Model):
         """Return CSS class for rarity background"""
         colors = {
             'ordinary': 'bg-gray-100',
+            'rare': 'bg-blue-100',
             'epic': 'bg-purple-100',
             'legendary': 'bg-yellow-100',
         }
@@ -1048,8 +1046,24 @@ def check_achievements_on_submission_update(sender, instance, created, **kwargs)
     if instance.status == 'verified' and instance.calculated_points:
         from .utils import check_user_achievements
         try:
-            # Use update_fields to avoid infinite loops
-            if 'update_fields' in kwargs and 'calculated_points' in kwargs['update_fields']:
+            # Check achievements when:
+            # 1. Submission is newly created and verified, OR
+            # 2. Status changed to verified, OR
+            # 3. Points were updated
+            should_check = False
+            
+            if created and instance.status == 'verified':
+                # New submission that's already verified
+                should_check = True
+            elif 'update_fields' in kwargs:
+                # Check if status changed to verified or points were updated
+                if 'status' in kwargs['update_fields'] or 'calculated_points' in kwargs['update_fields']:
+                    should_check = True
+            else:
+                # No update_fields specified (full save), check anyway
+                should_check = True
+            
+            if should_check:
                 unlocked = check_user_achievements(instance.user)
                 if unlocked:
                     logger.info(f"User {instance.user.username} unlocked {len(unlocked)} title(s) after submission update")

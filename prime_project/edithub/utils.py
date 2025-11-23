@@ -2129,25 +2129,13 @@ def check_user_achievements(user):
         qualifies = False
         
         try:
-            if title.achievement_type == 'edit_of_week_wins':
-                # Count total wins (rank 1, 2, or 3)
-                win_count = WeekWinner.objects.filter(user=user).count()
-                qualifies = win_count >= title.achievement_threshold
-                
-            elif title.achievement_type == 'rank_1_wins':
+            if title.achievement_type == 'rank_1_wins':
+                # Count only rank #1 (first place) wins - becoming Edit of the Week
                 win_count = WeekWinner.objects.filter(user=user, week_rank=1).count()
                 qualifies = win_count >= title.achievement_threshold
                 
-            elif title.achievement_type == 'rank_2_wins':
-                win_count = WeekWinner.objects.filter(user=user, week_rank=2).count()
-                qualifies = win_count >= title.achievement_threshold
-                
-            elif title.achievement_type == 'rank_3_wins':
-                win_count = WeekWinner.objects.filter(user=user, week_rank=3).count()
-                qualifies = win_count >= title.achievement_threshold
-                
             elif title.achievement_type == 'total_points':
-                # Sum of all calculated_points from verified submissions
+                # Sum of all calculated_points from verified submissions (overall total)
                 total_points = EditSubmission.objects.filter(
                     user=user,
                     status='verified'
@@ -2155,26 +2143,12 @@ def check_user_achievements(user):
                 qualifies = float(total_points) >= title.achievement_threshold
                 
             elif title.achievement_type == 'points_per_edit':
-                # Average points per edit (minimum threshold edits required)
-                submissions = EditSubmission.objects.filter(user=user, status='verified')
-                if submissions.exists():
-                    avg_points = submissions.aggregate(Avg('calculated_points'))['calculated_points__avg'] or 0
-                    qualifies = float(avg_points) >= title.achievement_threshold
-                    
-            elif title.achievement_type == 'consecutive_weeks':
-                # Track consecutive weeks (use weeks_participated from EditSubmission)
-                max_consecutive = EditSubmission.objects.filter(
+                # Points for a single edit - check if user has at least one edit with this many points
+                max_points = EditSubmission.objects.filter(
                     user=user,
                     status='verified'
-                ).aggregate(Max('weeks_participated'))['weeks_participated__max'] or 0
-                qualifies = max_consecutive >= title.achievement_threshold
-                
-            elif title.achievement_type == 'total_submissions':
-                submission_count = EditSubmission.objects.filter(
-                    user=user,
-                    status='verified'
-                ).count()
-                qualifies = submission_count >= title.achievement_threshold
+                ).aggregate(Max('calculated_points'))['calculated_points__max'] or 0
+                qualifies = float(max_points) >= title.achievement_threshold
             
             if qualifies:
                 UserTitleUnlock.objects.get_or_create(
@@ -2205,3 +2179,56 @@ def is_title_unlocked_for_user(user, title):
     
     # Check if unlocked via achievement or coins
     return UserTitleUnlock.objects.filter(user=user, title=title).exists()
+
+
+def get_user_achievement_progress(user, title):
+    """
+    Get the user's current progress towards unlocking an achievement-based title.
+    Returns a dict with current_value, threshold, and progress_percentage.
+    """
+    from .models import WeekWinner, EditSubmission
+    from django.db.models import Sum, Avg, Max
+    
+    if not title.achievement_type or title.unlock_method not in ['achievement', 'both']:
+        return None
+    
+    current_value = 0
+    threshold = title.achievement_threshold
+    
+    try:
+        if title.achievement_type == 'rank_1_wins':
+            # Count only rank #1 (first place) wins - becoming Edit of the Week
+            current_value = WeekWinner.objects.filter(user=user, week_rank=1).count()
+            
+        elif title.achievement_type == 'total_points':
+            # Sum of all calculated_points from verified submissions (overall total)
+            total_points = EditSubmission.objects.filter(
+                user=user,
+                status='verified'
+            ).aggregate(Sum('calculated_points'))['calculated_points__sum'] or 0
+            current_value = float(total_points)
+            
+        elif title.achievement_type == 'points_per_edit':
+            # Points for a single edit - get the maximum points from any single edit
+            max_points = EditSubmission.objects.filter(
+                user=user,
+                status='verified'
+            ).aggregate(Max('calculated_points'))['calculated_points__max'] or 0
+            current_value = float(max_points)
+        
+        # Calculate progress percentage
+        if threshold > 0:
+            progress_percentage = min(100, (current_value / threshold) * 100)
+        else:
+            progress_percentage = 0
+        
+        return {
+            'current_value': current_value,
+            'threshold': threshold,
+            'progress_percentage': round(progress_percentage, 1),
+            'is_complete': current_value >= threshold
+        }
+        
+    except Exception as e:
+        logger.error(f"Error calculating progress for title {title.name} and user {user.username}: {str(e)}")
+        return None

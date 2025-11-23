@@ -236,7 +236,7 @@
                     <h2 class="text-2xl font-bold text-gray-900 mb-1">{{ participant_1.channel_name|upper }}</h2>
                     
                     <!-- Editor Title -->
-                    <p class="text-sm font-semibold mb-4 {% if participant_1.editor_title_rarity == 'legendary' %}title-legendary{% elif participant_1.editor_title_rarity == 'epic' %}title-epic{% else %}text-purple-600{% endif %}">{{ participant_1.editor_title }}</p>
+                    <p class="text-sm font-semibold mb-4 {% if participant_1.editor_title_rarity == 'legendary' %}title-legendary{% elif participant_1.editor_title_rarity == 'epic' %}title-epic{% elif participant_1.editor_title_rarity == 'rare' %}text-blue-600{% else %}text-purple-600{% endif %}">{{ participant_1.editor_title }}</p>
                     
                     <!-- Vote Count -->
                     <div class="vote-count mb-4">
@@ -321,7 +321,7 @@
                     <h2 class="text-2xl font-bold text-gray-900 mb-1">{{ participant_2.channel_name|upper }}</h2>
                     
                     <!-- Editor Title -->
-                    <p class="text-sm font-semibold mb-4 {% if participant_2.editor_title_rarity == 'legendary' %}title-legendary{% elif participant_2.editor_title_rarity == 'epic' %}title-epic{% else %}text-pink-600{% endif %}">{{ participant_2.editor_title }}</p>
+                    <p class="text-sm font-semibold mb-4 {% if participant_2.editor_title_rarity == 'legendary' %}title-legendary{% elif participant_2.editor_title_rarity == 'epic' %}title-epic{% elif participant_2.editor_title_rarity == 'rare' %}text-blue-600{% else %}text-pink-600{% endif %}">{{ participant_2.editor_title }}</p>
                     
                     <!-- Vote Count -->
                     <div class="vote-count mb-4">

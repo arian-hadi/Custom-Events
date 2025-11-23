@@ -345,7 +345,7 @@
                                         {% endif %}
                                     </div>
                                     <p class="text-white text-sm font-semibold truncate">{{ tournament_participants.0.channel_name|upper }}</p>
-                                    <p class="text-xs truncate {% if tournament_participants.0.editor_title_rarity == 'legendary' %}title-legendary{% elif tournament_participants.0.editor_title_rarity == 'epic' %}title-epic text-white/90{% else %}text-white/70{% endif %}">{{ tournament_participants.0.editor_title }}</p>
+                                    <p class="text-xs truncate {% if tournament_participants.0.editor_title_rarity == 'legendary' %}title-legendary{% elif tournament_participants.0.editor_title_rarity == 'epic' %}title-epic text-white/90{% elif tournament_participants.0.editor_title_rarity == 'rare' %}text-blue-300{% else %}text-white/70{% endif %}">{{ tournament_participants.0.editor_title }}</p>
                                 {% else %}
                                     <div class="w-16 h-16 rounded-full bg-white/10 border-2 border-white/20 flex items-center justify-center mx-auto mb-2">
                                         <span class="text-white/50 text-xl">?</span>
@@ -376,7 +376,7 @@
                                         {% endif %}
                                     </div>
                                     <p class="text-white text-sm font-semibold truncate">{{ tournament_participants.1.channel_name|upper }}</p>
-                                    <p class="text-xs truncate {% if tournament_participants.1.editor_title_rarity == 'legendary' %}title-legendary{% elif tournament_participants.1.editor_title_rarity == 'epic' %}title-epic text-white/90{% else %}text-white/70{% endif %}">{{ tournament_participants.1.editor_title }}</p>
+                                    <p class="text-xs truncate {% if tournament_participants.1.editor_title_rarity == 'legendary' %}title-legendary{% elif tournament_participants.1.editor_title_rarity == 'epic' %}title-epic text-white/90{% elif tournament_participants.1.editor_title_rarity == 'rare' %}text-blue-300{% else %}text-white/70{% endif %}">{{ tournament_participants.1.editor_title }}</p>
                                 {% else %}
                                     <div class="w-16 h-16 rounded-full bg-white/10 border-2 border-white/20 flex items-center justify-center mx-auto mb-2">
                                         <span class="text-white/50 text-xl">?</span>
@@ -414,7 +414,7 @@
                                         {% endif %}
                                     </div>
                                     <p class="text-white text-sm font-semibold truncate">{{ tournament_participants.2.channel_name|upper }}</p>
-                                    <p class="text-xs truncate {% if tournament_participants.2.editor_title_rarity == 'legendary' %}title-legendary{% elif tournament_participants.2.editor_title_rarity == 'epic' %}title-epic text-white/90{% else %}text-white/70{% endif %}">{{ tournament_participants.2.editor_title }}</p>
+                                    <p class="text-xs truncate {% if tournament_participants.2.editor_title_rarity == 'legendary' %}title-legendary{% elif tournament_participants.2.editor_title_rarity == 'epic' %}title-epic text-white/90{% elif tournament_participants.2.editor_title_rarity == 'rare' %}text-blue-300{% else %}text-white/70{% endif %}">{{ tournament_participants.2.editor_title }}</p>
                                 {% else %}
                                     <div class="w-16 h-16 rounded-full bg-white/10 border-2 border-white/20 flex items-center justify-center mx-auto mb-2">
                                         <span class="text-white/50 text-xl">?</span>
@@ -445,7 +445,7 @@
                                         {% endif %}
                                     </div>
                                     <p class="text-white text-sm font-semibold truncate">{{ tournament_participants.3.channel_name|upper }}</p>
-                                    <p class="text-xs truncate {% if tournament_participants.3.editor_title_rarity == 'legendary' %}title-legendary{% elif tournament_participants.3.editor_title_rarity == 'epic' %}title-epic text-white/90{% else %}text-white/70{% endif %}">{{ tournament_participants.3.editor_title }}</p>
+                                    <p class="text-xs truncate {% if tournament_participants.3.editor_title_rarity == 'legendary' %}title-legendary{% elif tournament_participants.3.editor_title_rarity == 'epic' %}title-epic text-white/90{% elif tournament_participants.3.editor_title_rarity == 'rare' %}text-blue-300{% else %}text-white/70{% endif %}">{{ tournament_participants.3.editor_title }}</p>
                                 {% else %}
                                     <div class="w-16 h-16 rounded-full bg-white/10 border-2 border-white/20 flex items-center justify-center mx-auto mb-2">
                                         <span class="text-white/50 text-xl">?</span>
@@ -485,7 +485,7 @@
                                         {% endif %}
                                     </div>
                                     <p class="text-white text-sm font-semibold truncate">{{ tournament_finalists.0.channel_name|upper }}</p>
-                                    <p class="text-xs truncate {% if tournament_finalists.0.editor_title_rarity == 'legendary' %}title-legendary{% elif tournament_finalists.0.editor_title_rarity == 'epic' %}title-epic text-white/90{% else %}text-white/70{% endif %}">{{ tournament_finalists.0.editor_title }}</p>
+                                    <p class="text-xs truncate {% if tournament_finalists.0.editor_title_rarity == 'legendary' %}title-legendary{% elif tournament_finalists.0.editor_title_rarity == 'epic' %}title-epic text-white/90{% elif tournament_finalists.0.editor_title_rarity == 'rare' %}text-blue-300{% else %}text-white/70{% endif %}">{{ tournament_finalists.0.editor_title }}</p>
                                 {% else %}
                                     <div class="w-16 h-16 rounded-full bg-white/10 border-2 border-white/20 flex items-center justify-center mx-auto mb-2">
                                         <span class="text-white/50 text-xl">?</span>
@@ -516,7 +516,7 @@
                                         {% endif %}
                                     </div>
                                     <p class="text-white text-sm font-semibold truncate">{{ tournament_finalists.1.channel_name|upper }}</p>
-                                    <p class="text-xs truncate {% if tournament_finalists.1.editor_title_rarity == 'legendary' %}title-legendary{% elif tournament_finalists.1.editor_title_rarity == 'epic' %}title-epic text-white/90{% else %}text-white/70{% endif %}">{{ tournament_finalists.1.editor_title }}</p>
+                                    <p class="text-xs truncate {% if tournament_finalists.1.editor_title_rarity == 'legendary' %}title-legendary{% elif tournament_finalists.1.editor_title_rarity == 'epic' %}title-epic text-white/90{% elif tournament_finalists.1.editor_title_rarity == 'rare' %}text-blue-300{% else %}text-white/70{% endif %}">{{ tournament_finalists.1.editor_title }}</p>
                                 {% else %}
                                     <div class="w-16 h-16 rounded-full bg-white/10 border-2 border-white/20 flex items-center justify-center mx-auto mb-2">
                                         <span class="text-white/50 text-xl">?</span>
@@ -817,7 +817,7 @@
                                                     {{ ranking.display_user_name }}
                                                 {% endif %}
                                             </button>
-                                            <div class="text-xs mt-0.5 {% if ranking.youtube and ranking.tiktok %}{% if ranking.youtube.editor_title_rarity == 'legendary' %}title-legendary{% elif ranking.youtube.editor_title_rarity == 'epic' %}title-epic{% else %}text-gray-500{% endif %}{% elif ranking.youtube %}{% if ranking.youtube.editor_title_rarity == 'legendary' %}title-legendary{% elif ranking.youtube.editor_title_rarity == 'epic' %}title-epic{% else %}text-gray-500{% endif %}{% elif ranking.tiktok %}{% if ranking.tiktok.editor_title_rarity == 'legendary' %}title-legendary{% elif ranking.tiktok.editor_title_rarity == 'epic' %}title-epic{% else %}text-gray-500{% endif %}{% else %}text-gray-500{% endif %}">
+                                            <div class="text-xs mt-0.5 {% if ranking.youtube and ranking.tiktok %}{% if ranking.youtube.editor_title_rarity == 'legendary' %}title-legendary{% elif ranking.youtube.editor_title_rarity == 'epic' %}title-epic{% elif ranking.youtube.editor_title_rarity == 'rare' %}text-blue-600{% else %}text-gray-500{% endif %}{% elif ranking.youtube %}{% if ranking.youtube.editor_title_rarity == 'legendary' %}title-legendary{% elif ranking.youtube.editor_title_rarity == 'epic' %}title-epic{% elif ranking.youtube.editor_title_rarity == 'rare' %}text-blue-600{% else %}text-gray-500{% endif %}{% elif ranking.tiktok %}{% if ranking.tiktok.editor_title_rarity == 'legendary' %}title-legendary{% elif ranking.tiktok.editor_title_rarity == 'epic' %}title-epic{% elif ranking.tiktok.editor_title_rarity == 'rare' %}text-blue-600{% else %}text-gray-500{% endif %}{% else %}text-gray-500{% endif %}">
                                                 {% if ranking.youtube and ranking.tiktok %}
                                                     {{ ranking.youtube.editor_title }}
                                                 {% elif ranking.youtube %}
@@ -938,7 +938,7 @@
                                                     data-user-id="{{ ranking.user.id }}">
                                                 {{ ranking.channel_name|default:"Unknown" }}
                                             </button>
-                                            <div class="text-xs mt-0.5 {% if ranking.editor_title_rarity == 'legendary' %}title-legendary{% elif ranking.editor_title_rarity == 'epic' %}title-epic{% else %}text-gray-500{% endif %}">
+                                            <div class="text-xs mt-0.5 {% if ranking.editor_title_rarity == 'legendary' %}title-legendary{% elif ranking.editor_title_rarity == 'epic' %}title-epic{% elif ranking.editor_title_rarity == 'rare' %}text-blue-600{% else %}text-gray-500{% endif %}">
                                                 {{ ranking.editor_title }}
                                             </div>
                                         </div>
@@ -1604,6 +1604,7 @@
             // Get CSS classes based on rarity
             const rarityClasses = {
                 'ordinary': 'text-lg title-ordinary',
+                'rare': 'text-lg text-blue-600',
                 'epic': 'text-lg title-epic',
                 'legendary': 'text-lg font-bold title-legendary'
             };

@@ -99,7 +99,7 @@
                                 </div>
                                 <div class="flex-1 min-w-0">
                                     <p class="font-semibold text-gray-900 truncate">{{ match.participant_1.channel_name }}</p>
-                                    <p class="text-sm truncate {% if match.participant_1.editor_title_rarity == 'legendary' %}title-legendary{% elif match.participant_1.editor_title_rarity == 'epic' %}title-epic{% else %}text-gray-600{% endif %}">{{ match.participant_1.editor_title }}</p>
+                                    <p class="text-sm truncate {% if match.participant_1.editor_title_rarity == 'legendary' %}title-legendary{% elif match.participant_1.editor_title_rarity == 'epic' %}title-epic{% elif match.participant_1.editor_title_rarity == 'rare' %}text-blue-600{% else %}text-gray-600{% endif %}">{{ match.participant_1.editor_title }}</p>
                                 </div>
                             </div>
                             {% endif %}
@@ -126,7 +126,7 @@
                                 </div>
                                 <div class="flex-1 min-w-0">
                                     <p class="font-semibold text-gray-900 truncate">{{ match.participant_2.channel_name }}</p>
-                                    <p class="text-sm truncate {% if match.participant_2.editor_title_rarity == 'legendary' %}title-legendary{% elif match.participant_2.editor_title_rarity == 'epic' %}title-epic{% else %}text-gray-600{% endif %}">{{ match.participant_2.editor_title }}</p>
+                                    <p class="text-sm truncate {% if match.participant_2.editor_title_rarity == 'legendary' %}title-legendary{% elif match.participant_2.editor_title_rarity == 'epic' %}title-epic{% elif match.participant_2.editor_title_rarity == 'rare' %}text-blue-600{% else %}text-gray-600{% endif %}">{{ match.participant_2.editor_title }}</p>
                                 </div>
                             </div>
                             {% endif %}

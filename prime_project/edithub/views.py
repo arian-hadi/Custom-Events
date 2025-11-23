@@ -949,6 +949,12 @@ def get_available_titles(request):
         # Check if title is unlocked
         is_unlocked = is_title_unlocked_for_user(request.user, title)
         
+        # Get achievement progress if applicable
+        achievement_progress = None
+        if not is_unlocked and getattr(title, 'achievement_type', None) and getattr(title, 'unlock_method', 'coins') in ['achievement', 'both']:
+            from .utils import get_user_achievement_progress
+            achievement_progress = get_user_achievement_progress(request.user, title)
+        
         title_data = {
             'id': title.id,
             'name': title.name,
@@ -962,6 +968,7 @@ def get_available_titles(request):
             'unlock_method': getattr(title, 'unlock_method', 'coins'),
             'achievement_type': getattr(title, 'achievement_type', None),
             'achievement_threshold': getattr(title, 'achievement_threshold', 0),
+            'achievement_progress': achievement_progress,  # Current progress towards achievement
         }
         
         # For comment titles, only show YouTube/TikTok Editor based on user's channel type
