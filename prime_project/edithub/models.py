@@ -276,8 +276,13 @@ class EditorApplication(models.Model):
         return f"{self.user.username} - {self.channel_name or self.channel_link} ({self.get_status_display()})"
     
     @staticmethod
-    def update_rank_positions():
-        """Update rank positions for all accepted applications based on follower count"""
+    def update_rank_positions(send_notifications=False):
+        """
+        Update rank positions for all accepted applications based on follower count
+        
+        Args:
+            send_notifications: If True, send notifications to users whose ranks changed
+        """
         # Get all accepted applications ordered by follower count
         accepted_apps = EditorApplication.objects.filter(
             status='accepted',
@@ -286,7 +291,10 @@ class EditorApplication(models.Model):
         
         from django.utils import timezone
         now = timezone.now()
+        rank_changes = []  # Track rank changes for notifications
+        
         for index, app in enumerate(accepted_apps, start=1):
+            old_rank = app.rank_position
             # Roll last week's snapshot if a week has passed or snapshot missing
             take_snapshot = False
             if app.rank_snapshot_at is None:
@@ -305,6 +313,37 @@ class EditorApplication(models.Model):
 
             app.rank_position = index
             app.save(update_fields=['rank_position', 'rank_position_last_week', 'rank_snapshot_at'])
+            
+            # Track rank changes for notifications
+            if send_notifications and old_rank is not None and old_rank != index:
+                rank_changes.append({
+                    'app': app,
+                    'old_rank': old_rank,
+                    'new_rank': index
+                })
+        
+        # Send notifications for rank changes
+        if send_notifications and rank_changes:
+            from notifications.manager import notification_manager
+            for change in rank_changes:
+                app = change['app']
+                old_rank = change['old_rank']
+                new_rank = change['new_rank']
+                
+                if new_rank < old_rank:
+                    # Rank improved
+                    message = f"Great news! Your ranking has improved from #{old_rank} to #{new_rank} in the EditingHub rankings. Keep up the great work! 🎉"
+                else:
+                    # Rank decreased
+                    message = f"Your ranking has changed from #{old_rank} to #{new_rank} in the EditingHub rankings. Keep creating amazing content!"
+                
+                notification_manager.create_notification(
+                    user=app.user,
+                    title="Ranking Updated",
+                    message=message,
+                    notification_type='ranking_updated',
+                    related_object=app
+                )
     
     def update_rank_position(self):
         """Update rank position based on follower count - instance method for backward compatibility"""

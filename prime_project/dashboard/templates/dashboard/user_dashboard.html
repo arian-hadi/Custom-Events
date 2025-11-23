@@ -2,6 +2,61 @@
 
 {% block title %}User Dashboard - Event Platform{% endblock %}
 
+{% block extra_css %}
+<style>
+    /* Editor Title Rarity Styling */
+    @keyframes legendaryGlow {
+        0%, 100% {
+            text-shadow: 
+                0 0 10px rgba(255, 215, 0, 0.8),
+                0 0 20px rgba(255, 165, 0, 0.6),
+                0 0 30px rgba(255, 140, 0, 0.4);
+        }
+        50% {
+            text-shadow: 
+                0 0 20px rgba(255, 215, 0, 1),
+                0 0 30px rgba(255, 165, 0, 0.8),
+                0 0 40px rgba(255, 140, 0, 0.6),
+                0 0 50px rgba(255, 215, 0, 0.4);
+        }
+    }
+    
+    .title-legendary {
+        background: linear-gradient(45deg, #ffd700, #ff8c00, #ffd700, #ffa500);
+        background-size: 200% 200%;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        animation: legendaryGlow 2s ease-in-out infinite, gradientShift 3s ease infinite;
+        position: relative;
+    }
+    
+    @keyframes gradientShift {
+        0%, 100% {
+            background-position: 0% 50%;
+        }
+        50% {
+            background-position: 100% 50%;
+        }
+    }
+    
+    .title-epic {
+        color: #9333ea;
+        font-weight: 600;
+        text-shadow: 0 0 10px rgba(147, 51, 234, 0.3);
+    }
+    
+    .title-rare {
+        color: #3b82f6;
+        font-weight: 600;
+    }
+    
+    .title-ordinary {
+        color: #4b5563;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <main class="pt-16 bg-gradient-to-br from-gray-50 via-white to-gray-50 min-h-screen">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -29,6 +84,11 @@
                         <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                             <div>
                                 <h1 class="text-3xl sm:text-4xl font-bold mb-2">{{ display_name }}</h1>
+                                {% if current_title %}
+                                <p class="text-xl sm:text-2xl font-semibold mb-2 {% if current_title.rarity == 'legendary' %}title-legendary{% elif current_title.rarity == 'epic' %}title-epic text-purple-200{% elif current_title.rarity == 'rare' %}text-blue-200{% else %}text-blue-100{% endif %}">
+                                    {{ current_title.name }}
+                                </p>
+                                {% endif %}
                                 <p class="text-blue-100 text-lg">Welcome back to your dashboard</p>
                                 <a href="{% url 'edithub:customize_profile' %}" class="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-lg text-white text-sm font-semibold transition-all">
                                     <i class="fas fa-edit"></i>
@@ -60,6 +120,39 @@
                             </div>
                             {% endif %}
                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notifications Section -->
+        <div class="bg-white rounded-xl shadow-lg mb-8 border border-gray-100">
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                        <i class="fas fa-bell text-indigo-600"></i>
+                        Notifications
+                        {% if unread_notification_count > 0 %}
+                        <span class="ml-2 px-2 py-1 bg-red-500 text-white text-sm font-bold rounded-full" id="notification-badge">
+                            {{ unread_notification_count }}
+                        </span>
+                        {% endif %}
+                    </h2>
+                    <div class="flex items-center gap-2">
+                        <button onclick="markAllNotificationsRead()" class="px-4 py-2 text-sm font-medium text-gray-700 hover:text-indigo-600 transition-colors">
+                            <i class="fas fa-check-double mr-1"></i>Mark all as read
+                        </button>
+                        <button onclick="loadNotifications()" class="px-4 py-2 text-sm font-medium text-indigo-600 hover:text-indigo-700 transition-colors">
+                            <i class="fas fa-sync-alt mr-1"></i>Refresh
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="p-6">
+                <div id="notifications-container" class="space-y-4">
+                    <div class="flex items-center justify-center py-12">
+                        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                        <span class="ml-3 text-gray-600">Loading notifications...</span>
                     </div>
                 </div>
             </div>
@@ -510,5 +603,205 @@
         </div>
     </div>
 </main>
+
+<script>
+// Notification Management Functions
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function formatDate(dateString) {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+    
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+    
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function getNotificationIcon(type) {
+    const icons = {
+        'application_approved': 'fa-check-circle text-green-500',
+        'application_disapproved': 'fa-times-circle text-red-500',
+        'ranking_updated': 'fa-trophy text-yellow-500',
+        'edit_of_week_daily': 'fa-chart-line text-blue-500',
+        'title_unlocked': 'fa-star text-purple-500',
+        'edit_verified': 'fa-check text-green-500',
+        'edit_rejected': 'fa-times text-red-500',
+    };
+    return icons[type] || 'fa-bell text-gray-500';
+}
+
+function loadNotifications() {
+    const container = document.getElementById('notifications-container');
+    container.innerHTML = '<div class="flex items-center justify-center py-12"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div><span class="ml-3 text-gray-600">Loading notifications...</span></div>';
+    
+    fetch('{% url "notifications:notification_list" %}')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                renderNotifications(data.notifications);
+                updateUnreadBadge(data.unread_count);
+            } else {
+                container.innerHTML = '<p class="text-gray-500 text-center py-8">Error loading notifications</p>';
+            }
+        })
+        .catch(error => {
+            console.error('Error loading notifications:', error);
+            container.innerHTML = '<p class="text-red-500 text-center py-8">Error loading notifications. Please try again.</p>';
+        });
+}
+
+function renderNotifications(notifications) {
+    const container = document.getElementById('notifications-container');
+    
+    if (notifications.length === 0) {
+        container.innerHTML = '<p class="text-gray-500 text-center py-12">No notifications yet. You\'ll see updates here when they arrive!</p>';
+        return;
+    }
+    
+    let html = '';
+    notifications.forEach(notification => {
+        const iconClass = getNotificationIcon(notification.notification_type);
+        const readClass = notification.is_read ? 'bg-gray-50' : 'bg-blue-50 border-l-4 border-indigo-500';
+        
+        html += `
+            <div class="notification-item ${readClass} rounded-lg p-4 border border-gray-200 hover:shadow-md transition-all" data-notification-id="${notification.id}">
+                <div class="flex items-start gap-4">
+                    <div class="flex-shrink-0 mt-1">
+                        <i class="fas ${iconClass} text-xl"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-start justify-between gap-2">
+                            <h3 class="font-semibold text-gray-900 ${notification.is_read ? '' : 'font-bold'}">${notification.title}</h3>
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs text-gray-500">${formatDate(notification.created_at)}</span>
+                                ${!notification.is_read ? '<span class="w-2 h-2 bg-indigo-500 rounded-full"></span>' : ''}
+                            </div>
+                        </div>
+                        <p class="text-sm text-gray-700 mt-1 whitespace-pre-line">${notification.message}</p>
+                        <div class="flex items-center gap-2 mt-3">
+                            ${!notification.is_read ? `<button onclick="markNotificationRead(${notification.id})" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium">Mark as read</button>` : ''}
+                            <button onclick="deleteNotification(${notification.id})" class="text-xs text-red-600 hover:text-red-800 font-medium">Delete</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
+
+function markNotificationRead(notificationId) {
+    const csrftoken = getCookie('csrftoken');
+    fetch(`{% url "notifications:mark_read" notification_id=0 %}`.replace('0', notificationId), {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrftoken
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            loadNotifications();
+        }
+    })
+    .catch(error => {
+        console.error('Error marking notification as read:', error);
+    });
+}
+
+function markAllNotificationsRead() {
+    const csrftoken = getCookie('csrftoken');
+    fetch('{% url "notifications:mark_all_read" %}', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrftoken
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            loadNotifications();
+        }
+    })
+    .catch(error => {
+        console.error('Error marking all notifications as read:', error);
+    });
+}
+
+function deleteNotification(notificationId) {
+    if (!confirm('Are you sure you want to delete this notification?')) {
+        return;
+    }
+    
+    const csrftoken = getCookie('csrftoken');
+    fetch(`{% url "notifications:delete_notification" notification_id=0 %}`.replace('0', notificationId), {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrftoken
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            loadNotifications();
+        }
+    })
+    .catch(error => {
+        console.error('Error deleting notification:', error);
+    });
+}
+
+function updateUnreadBadge(count) {
+    const badge = document.getElementById('notification-badge');
+    if (count > 0) {
+        if (badge) {
+            badge.textContent = count;
+        } else {
+            // Create badge if it doesn't exist
+            const title = document.querySelector('h2');
+            if (title) {
+                const newBadge = document.createElement('span');
+                newBadge.id = 'notification-badge';
+                newBadge.className = 'ml-2 px-2 py-1 bg-red-500 text-white text-sm font-bold rounded-full';
+                newBadge.textContent = count;
+                title.appendChild(newBadge);
+            }
+        }
+    } else {
+        if (badge) {
+            badge.remove();
+        }
+    }
+}
+
+// Load notifications on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadNotifications();
+    
+    // Auto-refresh notifications every 5 minutes
+    setInterval(loadNotifications, 300000);
+});
+</script>
 
 {% endblock %}

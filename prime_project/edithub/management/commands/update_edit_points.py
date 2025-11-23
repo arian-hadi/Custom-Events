@@ -140,9 +140,99 @@ class Command(BaseCommand):
                 errors += 1
                 continue
         
+        # Send daily reports to users with active edits
+        self._send_daily_reports()
+        
         self.stdout.write(
             self.style.SUCCESS(
                 f'Successfully updated {updated} edits. {errors} errors occurred.'
             )
         )
+    
+    def _send_daily_reports(self):
+        """Send daily Edit of the Week reports to users"""
+        from notifications.manager import notification_manager
+        from django.db.models import Q, Max
+        from datetime import timedelta
+        
+        today = timezone.now().date()
+        
+        # Get all users who have verified edits in the current week
+        # Get edits from current week (Monday to Sunday)
+        week_start = today - timedelta(days=today.weekday())
+        week_end = week_start + timedelta(days=6)
+        
+        # Get all verified edits for current week
+        current_week_edits = EditSubmission.objects.filter(
+            status='verified',
+            scheduled_week__gte=week_start,
+            scheduled_week__lte=week_end
+        ).select_related('user').order_by('user', '-calculated_points')
+        
+        # Group by user and get their best edit
+        users_with_edits = {}
+        for edit in current_week_edits:
+            if edit.user_id not in users_with_edits:
+                users_with_edits[edit.user_id] = {
+                    'user': edit.user,
+                    'best_edit': edit,
+                    'total_edits': 0,
+                    'total_points': 0,
+                    'current_rank': None
+                }
+            
+            users_with_edits[edit.user_id]['total_edits'] += 1
+            users_with_edits[edit.user_id]['total_points'] += (edit.calculated_points or 0)
+        
+        # Calculate current ranks for the week (based on best edit points per user)
+        user_best_points = {}
+        for edit in current_week_edits:
+            if edit.user_id not in user_best_points:
+                user_best_points[edit.user_id] = edit.calculated_points or 0
+            else:
+                user_best_points[edit.user_id] = max(
+                    user_best_points[edit.user_id], 
+                    edit.calculated_points or 0
+                )
+        
+        # Sort users by best points
+        sorted_users = sorted(
+            user_best_points.items(), 
+            key=lambda x: x[1], 
+            reverse=True
+        )
+        
+        # Assign ranks
+        rank = 1
+        for user_id, best_points in sorted_users:
+            if user_id in users_with_edits:
+                users_with_edits[user_id]['current_rank'] = rank
+                rank += 1
+        
+        # Send notifications
+        for user_data in users_with_edits.values():
+            user = user_data['user']
+            best_edit = user_data['best_edit']
+            total_edits = user_data['total_edits']
+            total_points = user_data['total_points']
+            current_rank = user_data['current_rank']
+            
+            # Build message
+            rank_text = f"#{current_rank}" if current_rank else "Not ranked yet"
+            message = (
+                f"📊 Daily Edit of the Week Update:\n\n"
+                f"Current Standing: {rank_text}\n"
+                f"Total Points: {total_points:.2f}\n"
+                f"Active Edits: {total_edits}\n"
+                f"Best Edit Points: {best_edit.calculated_points or 0:.2f}\n\n"
+                f"Keep creating amazing content! 🎬"
+            )
+            
+            notification_manager.create_notification(
+                user=user,
+                title="Edit of the Week - Daily Report",
+                message=message,
+                notification_type='edit_of_week_daily',
+                related_object=best_edit
+            )
 

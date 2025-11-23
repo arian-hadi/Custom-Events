@@ -64,6 +64,12 @@ def user_dashboard(request):
     # Get the first application (for backward compatibility)
     editor_application = editor_applications.first() if editor_applications.exists() else None
     
+    # Get primary application (highest follower count) for title display
+    primary_app = EditorApplication.objects.filter(
+        user=request.user,
+        status='accepted'
+    ).order_by('-follower_count').first()
+    
     # Calculate user's ranking position for each platform (if accepted)
     youtube_rank = None
     tiktok_rank = None
@@ -222,6 +228,29 @@ def user_dashboard(request):
     display_name = request.user.get_display_name()
     display_picture = request.user.get_display_picture()
     
+    # Get unread notification count
+    from notifications.manager import notification_manager
+    unread_notification_count = notification_manager.get_unread_count(request.user)
+    
+    # Get current title info from primary application
+    current_title = None
+    if primary_app:
+        if primary_app.selected_title:
+            current_title = {
+                'id': primary_app.selected_title.id,
+                'name': primary_app.selected_title.name,
+                'rarity': primary_app.selected_title.rarity,
+                'category': getattr(primary_app.selected_title, 'category', 'general'),
+            }
+        else:
+            # Default title based on channel type
+            current_title = {
+                'id': None,
+                'name': f"{primary_app.channel_type.title()} Editor",
+                'rarity': 'ordinary',
+                'category': 'comment',
+            }
+    
     context = {
         'applications': applications,
         'total_applications': applications.count(),
@@ -250,6 +279,8 @@ def user_dashboard(request):
         'next_week_start': next_week_start,
         'display_name': display_name,
         'display_picture': display_picture,
+        'current_title': current_title,
+        'unread_notification_count': unread_notification_count,
     }
     return render(request, 'dashboard/user_dashboard.html', context)
 

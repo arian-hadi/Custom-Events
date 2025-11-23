@@ -1462,6 +1462,7 @@ def admin_update_status(request, pk):
         return JsonResponse({'error': 'Unauthorized'}, status=403)
     
     application = get_object_or_404(EditorApplication, pk=pk)
+    old_status = application.status
     new_status = request.POST.get('status')
     
     if new_status not in dict(EditorApplication.STATUS_CHOICES):
@@ -1478,6 +1479,27 @@ def admin_update_status(request, pk):
     # Update rankings if status changed to accepted
     if new_status == 'accepted':
         EditorApplication.update_rank_positions()
+    
+    # Send notification to user about status change
+    if old_status != new_status and new_status in ['accepted', 'rejected']:
+        from notifications.manager import notification_manager
+        
+        if new_status == 'accepted':
+            notification_manager.create_notification(
+                user=application.user,
+                title="Application Approved! 🎉",
+                message=f"Great news! Your {application.channel_type.title()} channel application has been approved. You can now participate in the EditingHub rankings and submit edits for Edit of the Week!",
+                notification_type='application_approved',
+                related_object=application
+            )
+        elif new_status == 'rejected':
+            notification_manager.create_notification(
+                user=application.user,
+                title="Application Status Update",
+                message=f"Your {application.channel_type.title()} channel application has been reviewed. Unfortunately, it was not approved at this time. Please review the requirements and feel free to apply again in the future.",
+                notification_type='application_disapproved',
+                related_object=application
+            )
     
     messages.success(request, f"Application status updated to {application.get_status_display()}")
     

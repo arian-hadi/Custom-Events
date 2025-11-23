@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'announcements',
     'shop',
     'edithub',
+    'notifications',
     'tailwind',
     'theme',
     'ratelimit',
