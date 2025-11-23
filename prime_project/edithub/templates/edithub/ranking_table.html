@@ -1597,6 +1597,9 @@
             const channelLink = data.channel_link || '#';
             const isYouTube = channelType === 'youtube';
             const rarity = data.editor_title_rarity || 'ordinary';
+            const hasBothPlatforms = data.has_both_platforms || false;
+            const youtubeLink = data.youtube_link || null;
+            const tiktokLink = data.tiktok_link || null;
             
             // Get CSS classes based on rarity
             const rarityClasses = {
@@ -1660,8 +1663,25 @@
                         </div>
                     </div>
                     
-                    <!-- Redirect Link to Social Media -->
-                    ${channelLink !== '#' ? `
+                    <!-- Redirect Link(s) to Social Media -->
+                    ${(hasBothPlatforms && youtubeLink && tiktokLink) ? `
+                    <div class="mt-6 pt-6 border-t border-gray-200 space-y-3">
+                        <a href="${youtubeLink}" 
+                           target="_blank" 
+                           rel="noopener noreferrer"
+                           class="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg font-semibold hover:opacity-90 transition-all shadow-lg">
+                            <i class="fab fa-youtube text-xl"></i>
+                            <span>Visit YouTube Channel</span>
+                        </a>
+                        <a href="${tiktokLink}" 
+                           target="_blank" 
+                           rel="noopener noreferrer"
+                           class="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg font-semibold hover:opacity-90 transition-all shadow-lg">
+                            <i class="fab fa-tiktok text-xl"></i>
+                            <span>Visit TikTok Profile</span>
+                        </a>
+                    </div>
+                    ` : (channelLink && channelLink !== '#' ? `
                     <div class="mt-6 pt-6 border-t border-gray-200">
                         <a href="${channelLink}" 
                            target="_blank" 
@@ -1673,7 +1693,7 @@
                             }
                         </a>
                     </div>
-                    ` : ''}
+                    ` : '')}
                     
                     <!-- Note about future customization -->
                     <p class="text-xs text-gray-500 italic mt-4">

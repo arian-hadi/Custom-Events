@@ -803,14 +803,23 @@ def get_user_stats_ajax(request):
         except CustomUser.DoesNotExist:
             return JsonResponse({'error': 'User not found'}, status=404)
         
-        # Get primary channel info from EditorApplication
-        primary_app = EditorApplication.objects.filter(
+        # Get all accepted channel applications for this user
+        accepted_apps = EditorApplication.objects.filter(
             user=edit_user,
             status='accepted'
-        ).order_by('-follower_count').first()
+        )
         
-        if not primary_app:
+        if not accepted_apps.exists():
             return JsonResponse({'error': 'No channel found for this user'}, status=404)
+        
+        # Get primary channel (highest follower count)
+        primary_app = accepted_apps.order_by('-follower_count').first()
+        
+        # Check if user has both YouTube and TikTok
+        youtube_app = accepted_apps.filter(channel_type='youtube').first()
+        tiktok_app = accepted_apps.filter(channel_type='tiktok').first()
+        
+        has_both = youtube_app is not None and tiktok_app is not None
         
         # Calculate user statistics
         total_edits = EditSubmission.objects.filter(
@@ -871,7 +880,7 @@ def get_user_stats_ajax(request):
         editor_title = primary_app.editor_title
         editor_title_rarity = primary_app.editor_title_rarity
         
-        return JsonResponse({
+        response_data = {
             'success': True,
             'username': primary_app.channel_name or edit_user.username,
             'profile_picture': (primary_app.channel_thumbnail or '').strip(),
@@ -883,7 +892,17 @@ def get_user_stats_ajax(request):
             'edit_of_week_wins': edit_of_week_wins,
             'edit_of_month_wins': edit_of_month_wins,
             'best_points': best_points,
-        })
+        }
+        
+        # Add both channel links if user has both platforms
+        if has_both:
+            response_data['has_both_platforms'] = True
+            response_data['youtube_link'] = youtube_app.channel_link if youtube_app else None
+            response_data['tiktok_link'] = tiktok_app.channel_link if tiktok_app else None
+        else:
+            response_data['has_both_platforms'] = False
+        
+        return JsonResponse(response_data)
     
     except Exception as e:
         logger.error(f"Error fetching user stats: {str(e)}")
