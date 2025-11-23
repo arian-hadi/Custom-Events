@@ -32,13 +32,19 @@ class Command(BaseCommand):
         force = options.get('force', False)
         limit = options.get('limit')
         
-        # Get all verified edits
-        edits = EditSubmission.objects.filter(status='verified')
+        # Get current date to filter by scheduled_week
+        today = timezone.now().date()
+        
+        # Get all verified edits where the scheduled week has started
+        # Points should only be calculated for edits in weeks that have already begun
+        edits = EditSubmission.objects.filter(
+            status='verified',
+            scheduled_week__lte=today  # Only edits for weeks that have started
+        )
         
         if not force:
             # Only update edits that haven't been updated today (DAILY UPDATE)
             # This ensures each edit is only updated once per day
-            today = timezone.now().date()
             edits = edits.filter(
                 Q(last_points_calculation__isnull=True) |
                 Q(last_points_calculation__date__lt=today)

@@ -857,10 +857,13 @@ def get_user_stats_ajax(request):
             if top_edit and top_edit.user == edit_user:
                 edit_of_month_wins += 1
         
-        # Get user's best rank
+        # Get user's best rank (only from weeks that have started)
+        from datetime import date
+        today = date.today()
         best_rank = EditSubmission.objects.filter(
             user=edit_user,
-            status='verified'
+            status='verified',
+            scheduled_week__lte=today  # Only count points from weeks that have started
         ).order_by('-calculated_points').first()
         best_points = float(best_rank.calculated_points) if best_rank else 0.0
         
@@ -1807,10 +1810,13 @@ def view_all_edits(request):
             if top_edit and top_edit.user == edit_user:
                 edit_of_month_wins += 1
         
-        # Get user's best rank
+        # Get user's best rank (only from weeks that have started)
+        from datetime import date
+        today = date.today()
         best_rank = EditSubmission.objects.filter(
             user=edit_user,
-            status='verified'
+            status='verified',
+            scheduled_week__lte=today  # Only count points from weeks that have started
         ).order_by('-calculated_points').first()
         best_points = best_rank.calculated_points if best_rank else 0
         

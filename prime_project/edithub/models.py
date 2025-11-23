@@ -408,10 +408,21 @@ class EditSubmission(models.Model):
     
     def update_upvote_count(self):
         """Update upvote count from related upvotes and recalculate points"""
+        from django.utils import timezone
+        from datetime import date
+        
         self.upvote_count = self.upvotes.filter(is_active=True).count()
-        # Recalculate points when upvotes change (upvotes contribute to points)
-        self.calculated_points = self.calculate_points()
-        self.save(update_fields=['upvote_count', 'calculated_points'])
+        
+        # Only recalculate points if the scheduled week has started
+        # Points should not be calculated for future week submissions
+        today = date.today()
+        if self.scheduled_week and self.scheduled_week <= today:
+            # Recalculate points when upvotes change (upvotes contribute to points)
+            self.calculated_points = self.calculate_points()
+            self.save(update_fields=['upvote_count', 'calculated_points'])
+        else:
+            # Just update upvote count, don't calculate points yet
+            self.save(update_fields=['upvote_count'])
     
     def update_report_count(self):
         """Update report count from related reports"""
