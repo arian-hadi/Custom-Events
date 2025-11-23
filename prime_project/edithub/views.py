@@ -1021,6 +1021,16 @@ def customize_profile(request):
         messages.warning(request, 'You need to have an accepted application to customize your profile.')
         return redirect('edithub:apply')
     
+    # Get all accepted applications for channel switching
+    all_apps = EditorApplication.objects.filter(
+        user=request.user,
+        status='accepted',
+        removal_requested=False
+    ).order_by('-follower_count')
+    
+    # Get available channels for profile switching
+    available_channels = request.user.get_available_channels()
+    
     # Get current title info
     current_title = None
     if primary_app.selected_title:
@@ -1039,13 +1049,102 @@ def customize_profile(request):
             'category': 'comment',
         }
     
+    # Get display name and picture based on current mode
+    display_name = request.user.get_display_name()
+    display_picture = request.user.get_display_picture()
+    
     context = {
         'primary_app': primary_app,
         'current_title': current_title,
         'user': request.user,
+        'display_name': display_name,
+        'display_picture': display_picture,
+        'available_channels': available_channels,
+        'all_apps': all_apps,
     }
     
     return render(request, 'edithub/customize_profile.html', context)
+
+
+@login_required
+@require_http_methods(["POST"])
+def switch_profile_mode(request):
+    """Switch between account and channel profile display"""
+    import json
+    from .models import EditorApplication
+    
+    try:
+        data = json.loads(request.body)
+        mode = data.get('mode', 'account')
+        channel_source = data.get('channel_source', None)
+        
+        if mode not in ['account', 'channel']:
+            return JsonResponse({'success': False, 'error': 'Invalid mode'}, status=400)
+        
+        user = request.user
+        
+        # Validate channel source if switching to channel mode
+        if mode == 'channel':
+            # Check if user has any accepted applications
+            has_apps = EditorApplication.objects.filter(
+                user=user,
+                status='accepted',
+                removal_requested=False
+            ).exists()
+            
+            if not has_apps:
+                return JsonResponse({
+                    'success': False, 
+                    'error': 'You need to have an accepted application to use channel profile mode.'
+                }, status=400)
+            
+            # If channel_source is specified, validate it
+            if channel_source:
+                valid_channel = EditorApplication.objects.filter(
+                    user=user,
+                    channel_type=channel_source,
+                    status='accepted',
+                    removal_requested=False
+                ).exists()
+                
+                if not valid_channel:
+                    return JsonResponse({
+                        'success': False,
+                        'error': f'You do not have an accepted {channel_source} application.'
+                    }, status=400)
+                
+                user.profile_channel_source = channel_source
+            else:
+                # If no channel_source specified, clear it (will use primary)
+                user.profile_channel_source = None
+        
+        # Update profile display mode
+        user.profile_display_mode = mode
+        user.save()
+        
+        # Get updated display info
+        display_name = user.get_display_name()
+        display_picture = user.get_display_picture()
+        
+        # Check if user has multiple channels
+        channel_count = EditorApplication.objects.filter(
+            user=user,
+            status='accepted',
+            removal_requested=False
+        ).count()
+        
+        return JsonResponse({
+            'success': True,
+            'display_name': display_name,
+            'display_picture': display_picture,
+            'has_multiple_channels': channel_count > 1,
+        })
+        
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'error': 'Invalid JSON'}, status=400)
+    except Exception as e:
+        logger.error(f"Error switching profile mode: {str(e)}")
+        return JsonResponse({'success': False, 'error': 'An error occurred'}, status=500)
 
 
 @login_required

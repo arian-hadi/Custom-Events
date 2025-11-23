@@ -21,6 +21,7 @@ urlpatterns = [
     path('user-stats/', views.get_user_stats_ajax, name='get_user_stats'),
     path('titles/', views.get_available_titles, name='get_available_titles'),
     path('select-title/', views.select_editor_title, name='select_editor_title'),
+    path('switch-profile-mode/', views.switch_profile_mode, name='switch_profile_mode'),
     
     # Admin views
     path('admin/', views.admin_applications, name='admin_applications'),

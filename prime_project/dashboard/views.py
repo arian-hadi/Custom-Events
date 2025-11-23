@@ -218,6 +218,10 @@ def user_dashboard(request):
         if not current_user_image and user_rank_app.user.profile_picture:
             current_user_image = user_rank_app.user.profile_picture.url
     
+    # Get display name and picture based on user's profile display mode
+    display_name = request.user.get_display_name()
+    display_picture = request.user.get_display_picture()
+    
     context = {
         'applications': applications,
         'total_applications': applications.count(),
@@ -244,6 +248,8 @@ def user_dashboard(request):
         'can_edit_delete': can_edit_delete,
         'deadline': deadline,
         'next_week_start': next_week_start,
+        'display_name': display_name,
+        'display_picture': display_picture,
     }
     return render(request, 'dashboard/user_dashboard.html', context)
 
