@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load widget_tweaks %}
+{% load video %}
 
 {% block title %}Edit Submission - Edit of the Week - 2.0Transformers{% endblock %}
 
@@ -48,17 +49,22 @@
                             </p>
                         </div>
 
-                        <!-- Current Submission Info -->
-                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                            <p class="text-xs font-semibold text-blue-800 mb-2">Current Submission:</p>
-                            <p class="text-xs text-gray-700 break-all">
-                                <a href="{{ submission.video_url }}" target="_blank" class="text-blue-600 hover:underline">
-                                    {{ submission.video_url }}
-                                </a>
-                            </p>
-                            {% if submission.title %}
-                            <p class="text-xs text-gray-700 mt-2"><strong>Title:</strong> {{ submission.title }}</p>
-                            {% endif %}
+                        <!-- Video Preview -->
+                        <div class="mb-6">
+                            <h3 class="text-sm font-semibold text-gray-900 mb-3">Current Video</h3>
+                            <div class="bg-gray-900 rounded-lg overflow-hidden" style="aspect-ratio: 9/16; max-width: 400px; margin: 0 auto;">
+                                <iframe 
+                                    src="{{ submission.video_url|youtube_embed_standard }}"
+                                    title="YouTube video player"
+                                    frameborder="0"
+                                    referrerpolicy="strict-origin-when-cross-origin"
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                                    allowfullscreen
+                                    playsinline
+                                    loading="lazy"
+                                    class="w-full h-full">
+                                </iframe>
+                            </div>
                         </div>
 
                         <form method="POST" enctype="multipart/form-data" class="space-y-4">
@@ -105,8 +111,16 @@
 
                             <div class="flex gap-3 pt-4">
                                 <button type="submit" 
-                                        class="flex-1 px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition-colors">
-                                    Update Submission
+                                        id="submitBtn"
+                                        class="flex-1 px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                                    <span id="submitText">Update Submission</span>
+                                    <span id="submitSpinner" class="hidden flex items-center gap-2">
+                                        <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                        Updating...
+                                    </span>
                                 </button>
                                 <a href="{% url 'edithub:submit_edit' %}" 
                                    class="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition-colors">
@@ -147,17 +161,16 @@
                             </p>
                         </div>
 
-                        <!-- Current Submission Info -->
-                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                            <p class="text-xs font-semibold text-blue-800 mb-2">Current Submission:</p>
-                            <p class="text-xs text-gray-700 break-all">
-                                <a href="{{ submission.video_url }}" target="_blank" class="text-blue-600 hover:underline">
-                                    {{ submission.video_url }}
-                                </a>
-                            </p>
-                            {% if submission.title %}
-                            <p class="text-xs text-gray-700 mt-2"><strong>Title:</strong> {{ submission.title }}</p>
-                            {% endif %}
+                        <!-- Video Preview -->
+                        <div class="mb-6">
+                            <h3 class="text-sm font-semibold text-gray-900 mb-3">Current Video</h3>
+                            <!-- TikTok embed - let it size itself -->
+                            <div class="flex items-center justify-center bg-gray-900 rounded-lg py-4 px-2">
+                                <blockquote class="tiktok-embed" cite="{{ submission.video_url }}" data-video-id="{{ submission.video_url|tiktok_video_id }}" style="max-width: 100%; min-width: 300px;">
+                                    <section></section>
+                                </blockquote>
+                            </div>
+                            <script async src="https://www.tiktok.com/embed.js"></script>
                         </div>
 
                         <form method="POST" enctype="multipart/form-data" class="space-y-4">
@@ -204,8 +217,16 @@
 
                             <div class="flex gap-3 pt-4">
                                 <button type="submit" 
-                                        class="flex-1 px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-semibold transition-colors">
-                                    Update Submission
+                                        id="submitBtn"
+                                        class="flex-1 px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                                    <span id="submitText">Update Submission</span>
+                                    <span id="submitSpinner" class="hidden flex items-center gap-2">
+                                        <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                        Updating...
+                                    </span>
                                 </button>
                                 <a href="{% url 'edithub:submit_edit' %}" 
                                    class="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition-colors">
@@ -220,4 +241,31 @@
         </div>
     </div>
 </main>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Find all forms with POST method that have enctype (edit forms)
+    const forms = document.querySelectorAll('form[method="POST"][enctype]');
+    
+    forms.forEach(function(form) {
+        form.addEventListener('submit', function(e) {
+            // Find the submit button within this specific form
+            const submitBtn = form.querySelector('button[type="submit"]');
+            
+            if (submitBtn) {
+                // Find text and spinner spans within this button
+                const submitText = submitBtn.querySelector('#submitText');
+                const submitSpinner = submitBtn.querySelector('#submitSpinner');
+                
+                if (submitText && submitSpinner) {
+                    // Show loading state - hide text, show spinner
+                    submitBtn.disabled = true;
+                    submitText.classList.add('hidden');
+                    submitSpinner.classList.remove('hidden');
+                }
+            }
+        });
+    });
+});
+</script>
 {% endblock %}

@@ -452,9 +452,27 @@
                             <div class="bg-white/20 backdrop-blur-sm rounded-lg p-3">
                                 <i class="fas fa-video text-2xl"></i>
                             </div>
-                            <div>
+                            <div class="flex-1">
                                 <h2 class="text-xl font-bold">Edit Submissions</h2>
-                                <p class="text-green-100 text-sm">Edit of the Week</p>
+                                <div class="flex flex-wrap items-center gap-2 sm:gap-3 mt-1.5">
+                                    <p class="text-green-100 text-sm">Edit of the Week</p>
+                                    <span class="text-green-200 hidden sm:inline">•</span>
+                                    {% if can_edit_delete %}
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white/20 backdrop-blur-sm rounded-full text-xs font-semibold">
+                                        <span class="w-2 h-2 bg-green-300 rounded-full animate-pulse"></span>
+                                        Submissions Open
+                                    </span>
+                                    {% else %}
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white/20 backdrop-blur-sm rounded-full text-xs font-semibold">
+                                        <i class="fas fa-lock text-xs"></i>
+                                        Submissions Closed
+                                    </span>
+                                    {% endif %}
+                                    <span class="text-green-200 hidden sm:inline">•</span>
+                                    <p class="text-green-100 text-xs">
+                                        Deadline: {{ deadline|date:"M d, Y H:i" }} UTC
+                                    </p>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -491,61 +509,53 @@
                     {% if upcoming_submissions %}
                     <div class="border-t border-gray-200 pt-6 mt-6">
                         <h3 class="text-sm font-semibold text-gray-900 mb-3">Upcoming Week Submissions</h3>
-                        <div class="space-y-3">
+                        <div class="space-y-2">
                             {% for submission in upcoming_submissions %}
-                            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                                <div class="flex items-start justify-between gap-3">
-                                    <div class="flex-1 min-w-0">
-                                        <div class="flex items-center gap-2 mb-2">
-                                            <span class="px-2 py-1 text-xs font-semibold rounded {% if submission.channel_type == 'youtube' %}bg-red-100 text-red-800{% else %}bg-purple-100 text-purple-800{% endif %}">
-                                                {{ submission.get_channel_type_display }}
-                                            </span>
-                                            {% if can_edit_delete %}
-                                            <span class="px-2 py-1 text-xs font-semibold rounded bg-green-100 text-green-800">
-                                                <i class="fas fa-edit mr-1"></i> Editable
-                                            </span>
-                                            {% else %}
-                                            <span class="px-2 py-1 text-xs font-semibold rounded bg-gray-100 text-gray-800">
-                                                <i class="fas fa-lock mr-1"></i> Locked
-                                            </span>
-                                            {% endif %}
+                            <div class="{% if submission.channel_type == 'youtube' %}bg-red-50 border border-red-200{% else %}bg-gray-50 border border-gray-300{% endif %} rounded-lg p-3 hover:shadow-md transition-shadow">
+                                <div class="flex items-center justify-between gap-3">
+                                    <div class="flex items-center gap-3 flex-1 min-w-0">
+                                        <!-- Platform Logo -->
+                                        {% if submission.channel_type == 'youtube' %}
+                                        <div class="flex-shrink-0">
+                                            <svg class="w-6 h-6 text-red-600" fill="currentColor" viewBox="0 0 24 24">
+                                                <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                                            </svg>
                                         </div>
-                                        <p class="text-xs text-gray-600 mb-1 break-all">
-                                            <a href="{{ submission.video_url }}" target="_blank" class="text-blue-600 hover:underline">
-                                                {{ submission.video_url|truncatechars:50 }}
-                                            </a>
-                                        </p>
-                                        {% if submission.title %}
-                                        <p class="text-xs text-gray-700"><strong>Title:</strong> {{ submission.title }}</p>
+                                        {% else %}
+                                        <div class="flex-shrink-0">
+                                            <svg class="w-6 h-6 text-gray-900" fill="currentColor" viewBox="0 0 24 24">
+                                                <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
+                                            </svg>
+                                        </div>
                                         {% endif %}
-                                        <p class="text-xs text-gray-500 mt-2">
-                                            <i class="fas fa-calendar mr-1"></i>
-                                            Week of {{ submission.scheduled_week|date:"M d, Y" }}
-                                        </p>
+                                        <!-- Title -->
+                                        <div class="flex-1 min-w-0">
+                                            <p class="text-sm font-medium {% if submission.channel_type == 'youtube' %}text-gray-900{% else %}text-gray-900{% endif %} truncate">
+                                                {{ submission.title|default:submission.video_url|truncatechars:60 }}
+                                            </p>
+                                        </div>
                                     </div>
+                                    <!-- Action Icons -->
                                     {% if can_edit_delete %}
-                                    <div class="flex flex-col gap-2 flex-shrink-0">
+                                    <div class="flex items-center gap-2 flex-shrink-0">
                                         <a href="{% url 'edithub:edit_submission' submission.pk %}" 
-                                           class="px-3 py-1.5 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap">
-                                            <i class="fas fa-edit mr-1"></i> Edit
+                                           class="p-2 {% if submission.channel_type == 'youtube' %}text-red-600 hover:bg-red-100{% else %}text-gray-700 hover:bg-gray-200{% endif %} rounded-lg transition-colors"
+                                           title="Edit">
+                                            <i class="fas fa-edit"></i>
                                         </a>
                                         <form method="POST" action="{% url 'edithub:delete_submission' submission.pk %}" 
-                                              onsubmit="return confirm('Are you sure you want to delete this submission?');">
+                                              onsubmit="return confirm('Are you sure you want to delete this submission?');"
+                                              class="inline">
                                             {% csrf_token %}
                                             <button type="submit" 
-                                                    class="w-full px-3 py-1.5 bg-red-600 text-white text-xs font-semibold rounded-lg hover:bg-red-700 transition-colors">
-                                                <i class="fas fa-trash mr-1"></i> Delete
+                                                    class="p-2 text-red-600 {% if submission.channel_type == 'youtube' %}hover:bg-red-100{% else %}hover:bg-red-50{% endif %} rounded-lg transition-colors"
+                                                    title="Delete">
+                                                <i class="fas fa-trash"></i>
                                             </button>
                                         </form>
                                     </div>
                                     {% endif %}
                                 </div>
-                                {% if can_edit_delete %}
-                                <p class="text-xs text-gray-500 mt-3 pt-3 border-t border-blue-200">
-                                    <i class="fas fa-clock mr-1"></i>
-                                    You can edit or delete until {{ deadline|date:"M d, Y H:i" }} UTC
-                                </p>
-                                {% endif %}
                             </div>
                             {% endfor %}
                         </div>

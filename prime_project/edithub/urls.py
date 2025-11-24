@@ -29,6 +29,8 @@ urlpatterns = [
     
     # Edit of the Week views
     path('submit-edit/', views.submit_edit, name='submit_edit'),
+    path('edit-submission/<int:pk>/preview/', views.preview_edit_submission, name='preview_edit_submission'),
+    path('edit-submission/<int:pk>/success/', views.edit_submission_success, name='edit_submission_success'),
     path('edit-submission/<int:pk>/edit/', views.edit_submission, name='edit_submission'),
     path('edit-submission/<int:pk>/delete/', views.delete_submission, name='delete_submission'),
     path('confirm-edit/', views.confirm_edit_submission, name='confirm_edit_submission'),

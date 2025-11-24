@@ -1541,7 +1541,8 @@ def submit_edit(request):
         return redirect('edithub:apply')
     
     from .utils import get_week_start_end
-    from django.utils import timezone
+    from django.utils import timezone as django_timezone
+    from datetime import timezone as dt_timezone
     
     week_start_dt, week_end_dt = get_week_start_end()
     current_week_start = week_start_dt.date()
@@ -1549,7 +1550,27 @@ def submit_edit(request):
     next_week_end = next_week_start + timedelta(days=4)
     next_week_label = f"{next_week_start.strftime('%b %d')} – {next_week_end.strftime('%b %d')}"
     
-    # Get existing submissions for next week
+    # Get existing submissions for next week (only verified ones)
+    # Check for pending submissions first - redirect to preview if found
+    pending_youtube = EditSubmission.objects.filter(
+        user=request.user,
+        channel_type='youtube',
+        scheduled_week=next_week_start,
+        status='pending'
+    ).first()
+    pending_tiktok = EditSubmission.objects.filter(
+        user=request.user,
+        channel_type='tiktok',
+        scheduled_week=next_week_start,
+        status='pending'
+    ).first()
+    
+    # If there's a pending submission, redirect to preview
+    if pending_youtube or pending_tiktok:
+        pending_submission = pending_youtube or pending_tiktok
+        return redirect('edithub:preview_edit_submission', pk=pending_submission.pk)
+    
+    # Get verified submissions for display
     youtube_future_submission = None
     tiktok_future_submission = None
     
@@ -1557,19 +1578,20 @@ def submit_edit(request):
         youtube_future_submission = EditSubmission.objects.filter(
             user=request.user,
             channel_type='youtube',
-            scheduled_week=next_week_start
+            scheduled_week=next_week_start,
+            status='verified'
         ).first()
     if tiktok_app:
         tiktok_future_submission = EditSubmission.objects.filter(
             user=request.user,
             channel_type='tiktok',
-            scheduled_week=next_week_start
+            scheduled_week=next_week_start,
+            status='verified'
         ).first()
     
     # Check if we're before the deadline (before Monday 00:00 of next week)
-    from datetime import datetime, timezone
-    now = datetime.now(timezone.utc)
-    deadline = datetime.combine(next_week_start, datetime.min.time()).replace(tzinfo=timezone.utc)
+    now = datetime.now(dt_timezone.utc)
+    deadline = datetime.combine(next_week_start, datetime.min.time()).replace(tzinfo=dt_timezone.utc)
     can_edit_delete = now < deadline
     
     youtube_form = None
@@ -1636,15 +1658,12 @@ def submit_edit(request):
                     direct_video_url=direct_video_url,
                     title=video_title,
                     description=form.cleaned_data.get('description', ''),
-                    status='verified'
+                    status='pending'  # Save as pending until user confirms
                 )
                 submission.save()
                 
-                submission.verified_date = timezone.now()
-                submission.save(update_fields=['verified_date'])
-                
-                messages.success(request, f"Edit submitted successfully for {approved_app.get_channel_type_display()}! It will participate in the week of {next_week_label}.")
-                return redirect('edithub:submit_edit')
+                # Redirect to preview page
+                return redirect('edithub:preview_edit_submission', pk=submission.pk)
             
             except Exception as error:
                 logger.error("Error creating edit submission", exc_info=True)
@@ -1695,20 +1714,34 @@ def edit_submission(request, pk):
         messages.error(request, "Submission not found.")
         return redirect('edithub:submit_edit')
     
-    # Check if we're before the deadline
-    from datetime import datetime, timezone
-    from .utils import get_week_start_end
-    now = datetime.now(timezone.utc)
-    if submission.scheduled_week:
-        deadline = datetime.combine(submission.scheduled_week, datetime.min.time()).replace(tzinfo=timezone.utc)
-    else:
-        # Fallback: use next week start
-        week_start_dt, _ = get_week_start_end()
-        deadline = (week_start_dt + timedelta(days=7)).replace(hour=0, minute=0, second=0, microsecond=0)
+    # For pending submissions, allow editing without deadline check
+    is_pending = submission.status == 'pending'
+    deadline = None
     
-    if now >= deadline:
-        messages.error(request, "The deadline has passed. You can no longer edit this submission.")
-        return redirect('edithub:submit_edit')
+    # Check if we're before the deadline (only for verified submissions)
+    if not is_pending:
+        from datetime import datetime, timezone as dt_timezone
+        from .utils import get_week_start_end
+        now = datetime.now(dt_timezone.utc)
+        if submission.scheduled_week:
+            deadline = datetime.combine(submission.scheduled_week, datetime.min.time()).replace(tzinfo=dt_timezone.utc)
+        else:
+            # Fallback: use next week start
+            week_start_dt, _ = get_week_start_end()
+            deadline = (week_start_dt + timedelta(days=7)).replace(hour=0, minute=0, second=0, microsecond=0)
+        
+        if now >= deadline:
+            messages.error(request, "The deadline has passed. You can no longer edit this submission.")
+            return redirect('edithub:submit_edit')
+    else:
+        # For pending submissions, calculate deadline for display purposes
+        from datetime import datetime, timezone as dt_timezone
+        from .utils import get_week_start_end
+        if submission.scheduled_week:
+            deadline = datetime.combine(submission.scheduled_week, datetime.min.time()).replace(tzinfo=dt_timezone.utc)
+        else:
+            week_start_dt, _ = get_week_start_end()
+            deadline = (week_start_dt + timedelta(days=7)).replace(hour=0, minute=0, second=0, microsecond=0)
     
     approved_app = submission.approved_application
     if not approved_app:
@@ -1746,8 +1779,13 @@ def edit_submission(request, pk):
                 
                 submission.save()
                 
-                messages.success(request, f"Edit updated successfully for {approved_app.get_channel_type_display()}!")
-                return redirect('edithub:submit_edit')
+                # If pending, redirect back to preview; otherwise redirect to submit_edit
+                if submission.status == 'pending':
+                    messages.success(request, f"Edit updated successfully! Please review and confirm your submission.")
+                    return redirect('edithub:preview_edit_submission', pk=submission.pk)
+                else:
+                    messages.success(request, f"Edit updated successfully for {approved_app.get_channel_type_display()}!")
+                    return redirect('edithub:submit_edit')
             
             except Exception as error:
                 logger.error("Error updating edit submission", exc_info=True)
@@ -1801,6 +1839,93 @@ def delete_submission(request, pk):
     submission.delete()
     messages.success(request, f"Your {platform.title()} edit submission has been deleted.")
     return redirect('edithub:submit_edit')
+
+
+@login_required
+def preview_edit_submission(request, pk):
+    """Step 2: Preview the video before confirming submission"""
+    if request.user.role != 'user':
+        messages.error(request, "Only regular users can submit edits.")
+        return redirect('edithub:ranking_table')
+    
+    from django.utils import timezone as django_timezone
+    
+    try:
+        submission = EditSubmission.objects.get(pk=pk, user=request.user, status='pending')
+    except EditSubmission.DoesNotExist:
+        messages.error(request, "Submission not found or already confirmed.")
+        return redirect('edithub:submit_edit')
+    
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        
+        if action == 'confirm':
+            # Confirm the submission - mark as verified
+            submission.status = 'verified'
+            submission.verified_date = django_timezone.now()
+            submission.save()
+            
+            messages.success(request, f"Edit submitted successfully for {submission.get_channel_type_display()}! It will participate in the week of {submission.scheduled_week.strftime('%b %d')}.")
+            return redirect('edithub:edit_submission_success', pk=submission.pk)
+        
+        elif action == 'edit':
+            # Go back to edit the submission
+            return redirect('edithub:edit_submission', pk=submission.pk)
+        
+        elif action == 'cancel':
+            # Cancel and delete the submission
+            submission.delete()
+            messages.info(request, "Submission cancelled.")
+            return redirect('edithub:submit_edit')
+    
+    from .utils import get_week_start_end
+    week_start_dt, _ = get_week_start_end()
+    next_week_start = (week_start_dt + timedelta(days=7)).date()
+    next_week_end = next_week_start + timedelta(days=4)
+    next_week_label = f"{next_week_start.strftime('%b %d')} – {next_week_end.strftime('%b %d')}"
+    
+    return render(request, 'edithub/preview_edit_submission.html', {
+        'submission': submission,
+        'target_week_label': next_week_label,
+    })
+
+
+@login_required
+def edit_submission_success(request, pk):
+    """Step 3: Success page after confirming submission"""
+    if request.user.role != 'user':
+        messages.error(request, "Only regular users can submit edits.")
+        return redirect('edithub:ranking_table')
+    
+    try:
+        submission = EditSubmission.objects.get(pk=pk, user=request.user, status='verified')
+    except EditSubmission.DoesNotExist:
+        messages.error(request, "Submission not found.")
+        return redirect('edithub:submit_edit')
+    
+    # Check if we're before the deadline (before Monday 00:00 of next week)
+    from datetime import datetime, timezone as dt_timezone
+    from .utils import get_week_start_end
+    now = datetime.now(dt_timezone.utc)
+    if submission.scheduled_week:
+        deadline = datetime.combine(submission.scheduled_week, datetime.min.time()).replace(tzinfo=dt_timezone.utc)
+    else:
+        week_start_dt, _ = get_week_start_end()
+        deadline = (week_start_dt + timedelta(days=7)).replace(hour=0, minute=0, second=0, microsecond=0)
+    
+    can_edit_delete = now < deadline
+    
+    week_start_dt, _ = get_week_start_end()
+    next_week_start = (week_start_dt + timedelta(days=7)).date()
+    next_week_end = next_week_start + timedelta(days=4)
+    next_week_label = f"{next_week_start.strftime('%b %d')} – {next_week_end.strftime('%b %d')}"
+    
+    return render(request, 'edithub/edit_submission_success.html', {
+        'submission': submission,
+        'target_week_label': next_week_label,
+        'can_edit_delete': can_edit_delete,
+        'deadline': deadline,
+    })
 
 
 @login_required
