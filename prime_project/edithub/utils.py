@@ -2134,6 +2134,16 @@ def check_user_achievements(user):
                 win_count = WeekWinner.objects.filter(user=user, week_rank=1).count()
                 qualifies = win_count >= title.achievement_threshold
                 
+            elif title.achievement_type == 'rank_2_wins':
+                # Count only rank #2 (second place) wins
+                win_count = WeekWinner.objects.filter(user=user, week_rank=2).count()
+                qualifies = win_count >= title.achievement_threshold
+                
+            elif title.achievement_type == 'rank_3_wins':
+                # Count only rank #3 (third place) wins
+                win_count = WeekWinner.objects.filter(user=user, week_rank=3).count()
+                qualifies = win_count >= title.achievement_threshold
+                
             elif title.achievement_type == 'total_points':
                 # Sum of all calculated_points from verified submissions (overall total)
                 total_points = EditSubmission.objects.filter(
@@ -2149,6 +2159,22 @@ def check_user_achievements(user):
                     status='verified'
                 ).aggregate(Max('calculated_points'))['calculated_points__max'] or 0
                 qualifies = float(max_points) >= title.achievement_threshold
+                
+            elif title.achievement_type == 'total_submissions':
+                # Count total number of verified submissions
+                submission_count = EditSubmission.objects.filter(
+                    user=user,
+                    status='verified'
+                ).count()
+                qualifies = submission_count >= title.achievement_threshold
+                
+            elif title.achievement_type == 'consecutive_weeks':
+                # Get maximum consecutive weeks from all verified submissions
+                max_consecutive_weeks = EditSubmission.objects.filter(
+                    user=user,
+                    status='verified'
+                ).aggregate(Max('weeks_participated'))['weeks_participated__max'] or 0
+                qualifies = max_consecutive_weeks >= title.achievement_threshold
             
             if qualifies:
                 UserTitleUnlock.objects.get_or_create(
@@ -2200,6 +2226,14 @@ def get_user_achievement_progress(user, title):
             # Count only rank #1 (first place) wins - becoming Edit of the Week
             current_value = WeekWinner.objects.filter(user=user, week_rank=1).count()
             
+        elif title.achievement_type == 'rank_2_wins':
+            # Count only rank #2 (second place) wins
+            current_value = WeekWinner.objects.filter(user=user, week_rank=2).count()
+            
+        elif title.achievement_type == 'rank_3_wins':
+            # Count only rank #3 (third place) wins
+            current_value = WeekWinner.objects.filter(user=user, week_rank=3).count()
+            
         elif title.achievement_type == 'total_points':
             # Sum of all calculated_points from verified submissions (overall total)
             total_points = EditSubmission.objects.filter(
@@ -2215,6 +2249,20 @@ def get_user_achievement_progress(user, title):
                 status='verified'
             ).aggregate(Max('calculated_points'))['calculated_points__max'] or 0
             current_value = float(max_points)
+            
+        elif title.achievement_type == 'total_submissions':
+            # Count total number of verified submissions
+            current_value = EditSubmission.objects.filter(
+                user=user,
+                status='verified'
+            ).count()
+            
+        elif title.achievement_type == 'consecutive_weeks':
+            # Get maximum consecutive weeks from all verified submissions
+            current_value = EditSubmission.objects.filter(
+                user=user,
+                status='verified'
+            ).aggregate(Max('weeks_participated'))['weeks_participated__max'] or 0
         
         # Calculate progress percentage
         if threshold > 0:
