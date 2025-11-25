@@ -28,8 +28,12 @@ class EditorTitle(models.Model):
     
     ACHIEVEMENT_TYPE_CHOICES = [
         ('rank_1_wins', 'Number of Edit of the Week Wins (First Place)'),
+        ('rank_2_wins', 'Number of Edit of the Week Wins (Second Place)'),
+        ('rank_3_wins', 'Number of Edit of the Week Wins (Third Place)'),
         ('total_points', 'Total Points (Overall)'),
         ('points_per_edit', 'Points Per Single Edit'),
+        ('total_submissions', 'Total Number of Verified Submissions'),
+        ('consecutive_weeks', 'Consecutive Weeks Participated'),
     ]
     
     UNLOCK_METHOD_CHOICES = [
@@ -345,6 +349,112 @@ class EditorApplication(models.Model):
                     related_object=app
                 )
     
+    @staticmethod
+    def update_mix_rank_positions(send_notifications=False):
+        """
+        Update mix rank positions for all users based on total followers (YouTube + TikTok combined)
+        
+        Args:
+            send_notifications: If True, send notifications to users whose ranks changed
+        """
+        from accounts.models import CustomUser
+        from django.utils import timezone
+        from django.db.models import Sum
+        import logging
+        
+        logger = logging.getLogger(__name__)
+        
+        # Get all users with accepted applications
+        users_with_apps = CustomUser.objects.filter(
+            editor_applications__status='accepted',
+            editor_applications__removal_requested=False
+        ).distinct()
+        
+        # Calculate total followers for each user
+        user_totals = []
+        for user in users_with_apps:
+            total = EditorApplication.objects.filter(
+                user=user,
+                status='accepted',
+                removal_requested=False
+            ).aggregate(Sum('follower_count'))['follower_count__sum'] or 0
+            
+            # Get earliest applied_date for tie-breaking
+            earliest_app = EditorApplication.objects.filter(
+                user=user,
+                status='accepted',
+                removal_requested=False
+            ).order_by('applied_date').first()
+            
+            user_totals.append({
+                'user': user,
+                'total_followers': total,
+                'applied_date': earliest_app.applied_date if earliest_app else None
+            })
+        
+        # Sort by total followers (descending), then by applied_date (ascending)
+        user_totals.sort(key=lambda x: (-x['total_followers'] or 0, x['applied_date'] or timezone.now()))
+        
+        now = timezone.now()
+        rank_changes = []
+        
+        for index, item in enumerate(user_totals, start=1):
+            user = item['user']
+            old_rank = user.mix_rank_position
+            
+            # Roll last week's snapshot if a week has passed or snapshot missing
+            take_snapshot = False
+            if user.mix_rank_snapshot_at is None:
+                take_snapshot = True
+            else:
+                try:
+                    delta_days = (now - user.mix_rank_snapshot_at).days
+                    if delta_days >= 7:
+                        take_snapshot = True
+                except Exception:
+                    take_snapshot = True
+            
+            if take_snapshot and user.mix_rank_position is not None:
+                user.mix_rank_position_last_week = user.mix_rank_position
+                user.mix_rank_snapshot_at = now
+            
+            user.mix_rank_position = index
+            user.save(update_fields=['mix_rank_position', 'mix_rank_position_last_week', 'mix_rank_snapshot_at'])
+            
+            # Track rank changes for notifications
+            if send_notifications and old_rank is not None and old_rank != index:
+                rank_changes.append({
+                    'user': user,
+                    'old_rank': old_rank,
+                    'new_rank': index
+                })
+        
+        # Send notifications for rank changes
+        if send_notifications and rank_changes:
+            from notifications.manager import notification_manager
+            for change in rank_changes:
+                user = change['user']
+                old_rank = change['old_rank']
+                new_rank = change['new_rank']
+                
+                if new_rank < old_rank:
+                    # Rank improved
+                    message = f"Great news! Your mix ranking has improved from #{old_rank} to #{new_rank} in the EditingHub rankings. Keep up the great work! 🎉"
+                else:
+                    # Rank decreased
+                    message = f"Your mix ranking has changed from #{old_rank} to #{new_rank} in the EditingHub rankings. Keep creating amazing content!"
+                
+                try:
+                    notification_manager.create_notification(
+                        user=user,
+                        title="Mix Ranking Updated",
+                        message=message,
+                        notification_type='ranking_updated',
+                        related_object=None
+                    )
+                except Exception as e:
+                    logger.error(f"Error creating mix rank change notification for user {user.username}: {e}")
+    
     def update_rank_position(self):
         """Update rank position based on follower count - instance method for backward compatibility"""
         EditorApplication.update_rank_positions()
@@ -413,10 +523,10 @@ class EditorApplication(models.Model):
         """HTML snippet for trend arrow: up (green), down (red), dash (gray)"""
         delta = self.rank_delta()
         if delta > 0:
-            # Up arrow with delta value
-            return mark_safe(f'<span title="+{delta}" class="ml-2 text-green-600" aria-label="rank up">▲</span>')
+            # Up arrow with delta value - using darker green for better visibility
+            return mark_safe(f'<span title="+{delta}" class="ml-2 text-green-700 font-semibold" aria-label="rank up">▲</span>')
         if delta < 0:
-            return mark_safe(f'<span title="{delta}" class="ml-2 text-red-600" aria-label="rank down">▼</span>')
+            return mark_safe(f'<span title="{delta}" class="ml-2 text-red-600 font-semibold" aria-label="rank down">▼</span>')
         return mark_safe('<span class="ml-2 text-gray-400" aria-label="no change">–</span>')
     
     @property

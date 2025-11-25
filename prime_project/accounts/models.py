@@ -52,6 +52,23 @@ class CustomUser(AbstractUser):
         related_name='users',
         help_text="Selected editor title that applies to all platforms (YouTube and TikTok)"
     )
+    
+    # Mix ranking fields (for combined YouTube + TikTok ranking)
+    mix_rank_position = models.IntegerField(
+        null=True, 
+        blank=True, 
+        help_text="Position in mix ranking table (combines YouTube + TikTok followers)"
+    )
+    mix_rank_position_last_week = models.IntegerField(
+        null=True, 
+        blank=True, 
+        help_text="Last week's mix rank position for trend arrows"
+    )
+    mix_rank_snapshot_at = models.DateTimeField(
+        null=True, 
+        blank=True, 
+        help_text="When last weekly mix rank snapshot was taken"
+    )
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username']  # Only 'username' will be required
@@ -131,6 +148,26 @@ class CustomUser(AbstractUser):
             })
         
         return channels
+    
+    def mix_rank_delta(self):
+        """Positive if moved up, negative if moved down, 0 if unchanged/unknown"""
+        try:
+            if self.mix_rank_position is None or self.mix_rank_position_last_week is None:
+                return 0
+            return self.mix_rank_position_last_week - self.mix_rank_position
+        except Exception:
+            return 0
+    
+    def mix_rank_trend_icon(self):
+        """HTML snippet for mix rank trend arrow: up (green), down (red), dash (gray)"""
+        from django.utils.safestring import mark_safe
+        delta = self.mix_rank_delta()
+        if delta > 0:
+            # Up arrow with delta value - using darker green for better visibility
+            return mark_safe(f'<span title="+{delta}" class="ml-2 text-green-700 font-semibold" aria-label="mix rank up">▲</span>')
+        if delta < 0:
+            return mark_safe(f'<span title="{delta}" class="ml-2 text-red-600 font-semibold" aria-label="mix rank down">▼</span>')
+        return mark_safe('<span class="ml-2 text-gray-400" aria-label="no change">–</span>')
 
 # One-Time Password Model
 class OneTimePassword(models.Model):

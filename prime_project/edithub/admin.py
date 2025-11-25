@@ -158,8 +158,7 @@ class WeekWinnerAdmin(admin.ModelAdmin):
     list_display = ('week_start', 'week_rank', 'channel_name', 'user', 'channel_type', 'calculated_points', 'created_date')
     list_filter = ('week_rank', 'channel_type', 'week_start', 'created_date')
     search_fields = ('user__username', 'channel_name', 'video_url', 'title')
-    readonly_fields = ('edit_submission', 'user', 'video_url', 'week_start', 'week_rank', 'channel_type', 
-                      'channel_name', 'title', 'calculated_points', 'created_date')
+    readonly_fields = ('created_date',)  # Only created_date is readonly
     date_hierarchy = 'week_start'
     ordering = ('-week_start', 'week_rank')
     
@@ -179,9 +178,18 @@ class WeekWinnerAdmin(admin.ModelAdmin):
         }),
     )
     
+    def get_readonly_fields(self, request, obj=None):
+        # When editing existing records, make most fields readonly
+        # When adding new records (obj is None), allow all fields to be editable
+        if obj:  # Editing existing record
+            return ('edit_submission', 'user', 'video_url', 'week_start', 'week_rank', 'channel_type', 
+                   'channel_name', 'title', 'calculated_points', 'created_date')
+        else:  # Adding new record
+            return ('created_date',)
+    
     def has_add_permission(self, request):
-        # Prevent manual creation - winners are created automatically via signal
-        return False
+        # Temporarily allow manual creation for testing purposes
+        return True
     
     def has_delete_permission(self, request, obj=None):
         # Allow deletion for admin purposes (e.g., correcting mistakes)

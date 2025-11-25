@@ -517,6 +517,7 @@ class RankingTableView(ListView):
                 },
                 'editor_title': unified_editor_title,  # Unified title for all platforms
                 'editor_title_rarity': unified_editor_title_rarity,  # Unified rarity
+                'rank_trend_icon': '',  # Will be set after ranks are calculated
             })
 
         # Sort and assign actual ranks
@@ -527,11 +528,41 @@ class RankingTableView(ListView):
             )
         )
 
-        # Create a mapping of user_id to actual rank
+        # Create a mapping of user_id to actual rank and update mix rank positions on users
         user_rank_map = {}
+        from django.utils import timezone
+        now = timezone.now()
+        
         for index, entry in enumerate(all_entries, start=1):
             entry['rank'] = index
             user_rank_map[entry['user'].id] = index
+            
+            # Update mix rank positions on users (for tracking and trend calculation)
+            user = entry['user']
+            new_rank = index
+            old_rank = user.mix_rank_position
+            
+            # Roll last week's snapshot if a week has passed or snapshot missing
+            take_snapshot = False
+            if user.mix_rank_snapshot_at is None:
+                take_snapshot = True
+            else:
+                try:
+                    delta_days = (now - user.mix_rank_snapshot_at).days
+                    if delta_days >= 7:
+                        take_snapshot = True
+                except Exception:
+                    take_snapshot = True
+            
+            if take_snapshot and user.mix_rank_position is not None:
+                user.mix_rank_position_last_week = user.mix_rank_position
+                user.mix_rank_snapshot_at = now
+            
+            user.mix_rank_position = new_rank
+            user.save(update_fields=['mix_rank_position', 'mix_rank_position_last_week', 'mix_rank_snapshot_at'])
+            
+            # Set the mix rank trend icon for this entry
+            entry['rank_trend_icon'] = user.mix_rank_trend_icon()
 
         # Now filter by search query if provided, but preserve actual ranks
         if search_query:
