@@ -176,7 +176,6 @@
                 <h1 class="text-3xl sm:text-4xl font-bold text-white mb-2" id="profile-display-name">{{ display_name }}</h1>
                 
                 <!-- Profile Display Mode Switcher -->
-                {% if available_channels %}
                 <div class="mt-4 mb-2">
                     <div class="inline-flex items-center gap-2 bg-gray-800/50 rounded-lg p-1 border border-gray-700">
                         <button type="button" 
@@ -193,23 +192,6 @@
                         </button>
                     </div>
                 </div>
-                
-                <!-- Channel Selector (shown when channel mode is active and user has multiple channels) -->
-                {% if user.profile_display_mode == 'channel' and available_channels|length > 1 %}
-                <div class="mt-2 mb-4">
-                    <div class="inline-flex items-center gap-2 bg-gray-800/50 rounded-lg p-1 border border-gray-700">
-                        {% for channel in available_channels %}
-                        <button type="button" 
-                                onclick="switchChannelSource('{{ channel.type }}')"
-                                class="px-3 py-1.5 rounded-md text-xs font-medium transition-all {% if user.profile_channel_source == channel.type or not user.profile_channel_source and forloop.first %}bg-blue-600 text-white{% else %}text-gray-300 hover:text-white hover:bg-gray-700/50{% endif %}"
-                                id="channel-source-{{ channel.type }}">
-                            <i class="fab fa-{{ channel.type }} mr-1"></i>{{ channel.type|title }}
-                        </button>
-                        {% endfor %}
-                    </div>
-                </div>
-                {% endif %}
-                {% endif %}
                 
                 <!-- Title (Below Username) -->
                 <p id="current-title-display" class="text-xl sm:text-2xl font-semibold {% if current_title.rarity == 'legendary' %}title-legendary{% elif current_title.rarity == 'epic' %}title-epic text-purple-300{% elif current_title.rarity == 'rare' %}text-blue-300{% else %}text-gray-300{% endif %}">
@@ -574,20 +556,6 @@ function switchProfileMode(mode) {
             document.getElementById('profile-mode-channel').className = 
                 `px-4 py-2 rounded-md text-sm font-medium transition-all ${mode === 'channel' ? 'bg-indigo-600 text-white' : 'text-gray-300 hover:text-white hover:bg-gray-700/50'}`;
             
-            // Show/hide channel selector
-            if (mode === 'channel' && data.has_multiple_channels) {
-                // Show channel selector if it exists
-                const channelSelector = document.querySelector('[id^="channel-source-"]')?.closest('.mt-2');
-                if (channelSelector) {
-                    channelSelector.style.display = 'block';
-                }
-            } else {
-                const channelSelector = document.querySelector('[id^="channel-source-"]')?.closest('.mt-2');
-                if (channelSelector) {
-                    channelSelector.style.display = 'none';
-                }
-            }
-            
             // Show success message
             const message = document.createElement('div');
             message.className = 'fixed top-20 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
@@ -596,52 +564,6 @@ function switchProfileMode(mode) {
             setTimeout(() => message.remove(), 3000);
         } else {
             alert('Error: ' + (data.error || 'Failed to switch profile mode'));
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('Error: ' + (error.message || 'An error occurred. Please try again.'));
-    });
-}
-
-function switchChannelSource(channelType) {
-    const csrftoken = getCookie('csrftoken');
-    fetch('{% url "edithub:switch_profile_mode" %}', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': csrftoken
-        },
-        body: JSON.stringify({ mode: 'channel', channel_source: channelType })
-    })
-    .then(response => {
-        if (!response.ok) {
-            return response.json().then(err => {
-                throw new Error(err.error || 'Failed to switch channel');
-            });
-        }
-        return response.json();
-    })
-    .then(data => {
-        if (data.success) {
-            // Update UI
-            updateProfileDisplay(data.display_name, data.display_picture);
-            
-            // Update channel button states
-            document.querySelectorAll('[id^="channel-source-"]').forEach(btn => {
-                const btnType = btn.id.replace('channel-source-', '');
-                btn.className = 
-                    `px-3 py-1.5 rounded-md text-xs font-medium transition-all ${channelType === btnType ? 'bg-blue-600 text-white' : 'text-gray-300 hover:text-white hover:bg-gray-700/50'}`;
-            });
-            
-            // Show success message
-            const message = document.createElement('div');
-            message.className = 'fixed top-20 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
-            message.textContent = 'Channel updated!';
-            document.body.appendChild(message);
-            setTimeout(() => message.remove(), 3000);
-        } else {
-            alert('Error: ' + (data.error || 'Failed to switch channel'));
         }
     })
     .catch(error => {

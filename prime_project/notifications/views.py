@@ -10,14 +10,20 @@ from .manager import notification_manager
 
 @login_required
 def notification_list(request):
-    """Get list of notifications for the current user"""
+    """Get list of notifications for the current user (API endpoint)"""
     notifications = Notification.objects.filter(user=request.user).order_by('-created_at')
+    
+    # Support limit parameter for dashboard preview
+    limit = request.GET.get('limit')
+    if limit:
+        try:
+            limit = int(limit)
+            notifications = notifications[:limit]
+        except ValueError:
+            pass
     
     # Get unread count
     unread_count = notification_manager.get_unread_count(request.user)
-    
-    # Pagination (optional - can be added later)
-    # For now, return all notifications
     
     notifications_data = []
     for notification in notifications:
@@ -37,6 +43,20 @@ def notification_list(request):
         'notifications': notifications_data,
         'unread_count': unread_count,
     })
+
+
+@login_required
+def notification_list_page(request):
+    """HTML page showing all notifications"""
+    notifications = Notification.objects.filter(user=request.user).order_by('-created_at')
+    unread_count = notification_manager.get_unread_count(request.user)
+    
+    context = {
+        'notifications': notifications,
+        'unread_count': unread_count,
+    }
+    
+    return render(request, 'notifications/notification_list.html', context)
 
 
 @login_required

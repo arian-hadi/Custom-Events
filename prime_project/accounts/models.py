@@ -42,6 +42,16 @@ class CustomUser(AbstractUser):
         null=True,
         help_text="Which channel to use for profile display (if user has both YouTube and TikTok)"
     )
+    
+    # Unified editor title (applies to all platforms)
+    selected_title = models.ForeignKey(
+        'edithub.EditorTitle',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='users',
+        help_text="Selected editor title that applies to all platforms (YouTube and TikTok)"
+    )
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username']  # Only 'username' will be required
@@ -64,21 +74,12 @@ class CustomUser(AbstractUser):
         """
         if self.profile_display_mode == 'channel':
             from edithub.models import EditorApplication
-            # Get the channel application based on profile_channel_source or primary one
-            if self.profile_channel_source:
-                app = EditorApplication.objects.filter(
-                    user=self,
-                    channel_type=self.profile_channel_source,
-                    status='accepted',
-                    removal_requested=False
-                ).first()
-            else:
-                # Get primary application (highest follower count)
-                app = EditorApplication.objects.filter(
-                    user=self,
-                    status='accepted',
-                    removal_requested=False
-                ).order_by('-follower_count').first()
+            # Get primary application (highest follower count)
+            app = EditorApplication.objects.filter(
+                user=self,
+                status='accepted',
+                removal_requested=False
+            ).order_by('-follower_count').first()
             
             if app and app.channel_name:
                 return app.channel_name
@@ -93,21 +94,12 @@ class CustomUser(AbstractUser):
         """
         if self.profile_display_mode == 'channel':
             from edithub.models import EditorApplication
-            # Get the channel application based on profile_channel_source or primary one
-            if self.profile_channel_source:
-                app = EditorApplication.objects.filter(
-                    user=self,
-                    channel_type=self.profile_channel_source,
-                    status='accepted',
-                    removal_requested=False
-                ).first()
-            else:
-                # Get primary application (highest follower count)
-                app = EditorApplication.objects.filter(
-                    user=self,
-                    status='accepted',
-                    removal_requested=False
-                ).order_by('-follower_count').first()
+            # Get primary application (highest follower count)
+            app = EditorApplication.objects.filter(
+                user=self,
+                status='accepted',
+                removal_requested=False
+            ).order_by('-follower_count').first()
             
             if app and app.channel_thumbnail:
                 return app.channel_thumbnail

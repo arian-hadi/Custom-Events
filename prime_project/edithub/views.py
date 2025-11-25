@@ -488,6 +488,17 @@ class RankingTableView(ListView):
                     display_thumbnail = get_fallback_thumbnail(primary_thumb, tiktok_thumb)
                 else:
                     display_thumbnail = primary_thumb if primary_thumb else ''
+            # Get unified editor title - use user's unified title if available, otherwise use primary app's title
+            unified_editor_title = None
+            unified_editor_title_rarity = 'ordinary'
+            if apps[0].user.selected_title:
+                unified_editor_title = apps[0].user.selected_title.name
+                unified_editor_title_rarity = apps[0].user.selected_title.rarity
+            elif primary_app:
+                # Use primary app's editor_title property which handles the fallback logic
+                unified_editor_title = primary_app.editor_title
+                unified_editor_title_rarity = primary_app.editor_title_rarity
+            
             all_entries.append({
                 'user': apps[0].user,
                 'apps': apps,
@@ -503,7 +514,9 @@ class RankingTableView(ListView):
                 'followers': {
                     'youtube': youtube_app.follower_count if youtube_app else 0,
                     'tiktok': tiktok_app.follower_count if tiktok_app else 0,
-                }
+                },
+                'editor_title': unified_editor_title,  # Unified title for all platforms
+                'editor_title_rarity': unified_editor_title_rarity,  # Unified rarity
             })
 
         # Sort and assign actual ranks
@@ -876,9 +889,14 @@ def get_user_stats_ajax(request):
         ).order_by('-calculated_points').first()
         best_points = float(best_rank.calculated_points) if best_rank else 0.0
         
-        # Get editor title (using property which handles custom titles)
-        editor_title = primary_app.editor_title
-        editor_title_rarity = primary_app.editor_title_rarity
+        # Get editor title - check user's unified title first, then fall back to application
+        if edit_user.selected_title:
+            editor_title = edit_user.selected_title.name
+            editor_title_rarity = edit_user.selected_title.rarity
+        else:
+            # Fall back to application-specific title (backward compatibility)
+            editor_title = primary_app.editor_title
+            editor_title_rarity = primary_app.editor_title_rarity
         
         response_data = {
             'success': True,
@@ -955,6 +973,13 @@ def get_available_titles(request):
             from .utils import get_user_achievement_progress
             achievement_progress = get_user_achievement_progress(request.user, title)
         
+        # Check if title is selected (check user's unified title first)
+        is_selected = False
+        if request.user.selected_title:
+            is_selected = request.user.selected_title_id == title.id
+        elif primary_app.selected_title:
+            is_selected = primary_app.selected_title_id == title.id
+        
         title_data = {
             'id': title.id,
             'name': title.name,
@@ -962,7 +987,7 @@ def get_available_titles(request):
             'category': title_category,
             'description': title.description or '',
             'cost_coins': title.cost_coins,
-            'is_selected': primary_app.selected_title_id == title.id if primary_app.selected_title else False,
+            'is_selected': is_selected,
             'is_unlocked': is_unlocked,
             'unlock_requirement': title.unlock_requirement or '',
             'unlock_method': getattr(title, 'unlock_method', 'coins'),
@@ -980,9 +1005,17 @@ def get_available_titles(request):
             category_key = title_category if title_category in titles_by_category else 'general'
             titles_by_category[category_key].append(title_data)
     
-    # Get current title info
+    # Get current title info - check user's unified title first
     current_title = None
-    if primary_app.selected_title:
+    if request.user.selected_title:
+        current_title = {
+            'id': request.user.selected_title.id,
+            'name': request.user.selected_title.name,
+            'rarity': request.user.selected_title.rarity,
+            'category': getattr(request.user.selected_title, 'category', 'general'),
+        }
+    elif primary_app.selected_title:
+        # Fall back to application-specific title (backward compatibility)
         current_title = {
             'id': primary_app.selected_title.id,
             'name': primary_app.selected_title.name,
@@ -1002,7 +1035,7 @@ def get_available_titles(request):
         'success': True,
         'titles_by_category': titles_by_category,
         'current_title': current_title,
-        'current_title_id': primary_app.selected_title_id if primary_app.selected_title else None,
+        'current_title_id': request.user.selected_title_id if request.user.selected_title else (primary_app.selected_title_id if primary_app.selected_title else None),
     })
 
 
@@ -1021,19 +1054,17 @@ def customize_profile(request):
         messages.warning(request, 'You need to have an accepted application to customize your profile.')
         return redirect('edithub:apply')
     
-    # Get all accepted applications for channel switching
-    all_apps = EditorApplication.objects.filter(
-        user=request.user,
-        status='accepted',
-        removal_requested=False
-    ).order_by('-follower_count')
-    
-    # Get available channels for profile switching
-    available_channels = request.user.get_available_channels()
-    
-    # Get current title info
+    # Get current title info - check user's unified title first
     current_title = None
-    if primary_app.selected_title:
+    if request.user.selected_title:
+        current_title = {
+            'id': request.user.selected_title.id,
+            'name': request.user.selected_title.name,
+            'rarity': request.user.selected_title.rarity,
+            'category': getattr(request.user.selected_title, 'category', 'general'),
+        }
+    elif primary_app.selected_title:
+        # Fall back to application-specific title (backward compatibility)
         current_title = {
             'id': primary_app.selected_title.id,
             'name': primary_app.selected_title.name,
@@ -1059,8 +1090,6 @@ def customize_profile(request):
         'user': request.user,
         'display_name': display_name,
         'display_picture': display_picture,
-        'available_channels': available_channels,
-        'all_apps': all_apps,
     }
     
     return render(request, 'edithub/customize_profile.html', context)
@@ -1076,14 +1105,13 @@ def switch_profile_mode(request):
     try:
         data = json.loads(request.body)
         mode = data.get('mode', 'account')
-        channel_source = data.get('channel_source', None)
         
         if mode not in ['account', 'channel']:
             return JsonResponse({'success': False, 'error': 'Invalid mode'}, status=400)
         
         user = request.user
         
-        # Validate channel source if switching to channel mode
+        # Validate if switching to channel mode
         if mode == 'channel':
             # Check if user has any accepted applications
             has_apps = EditorApplication.objects.filter(
@@ -1097,26 +1125,6 @@ def switch_profile_mode(request):
                     'success': False, 
                     'error': 'You need to have an accepted application to use channel profile mode.'
                 }, status=400)
-            
-            # If channel_source is specified, validate it
-            if channel_source:
-                valid_channel = EditorApplication.objects.filter(
-                    user=user,
-                    channel_type=channel_source,
-                    status='accepted',
-                    removal_requested=False
-                ).exists()
-                
-                if not valid_channel:
-                    return JsonResponse({
-                        'success': False,
-                        'error': f'You do not have an accepted {channel_source} application.'
-                    }, status=400)
-                
-                user.profile_channel_source = channel_source
-            else:
-                # If no channel_source specified, clear it (will use primary)
-                user.profile_channel_source = None
         
         # Update profile display mode
         user.profile_display_mode = mode
@@ -1126,18 +1134,10 @@ def switch_profile_mode(request):
         display_name = user.get_display_name()
         display_picture = user.get_display_picture()
         
-        # Check if user has multiple channels
-        channel_count = EditorApplication.objects.filter(
-            user=user,
-            status='accepted',
-            removal_requested=False
-        ).count()
-        
         return JsonResponse({
             'success': True,
             'display_name': display_name,
             'display_picture': display_picture,
-            'has_multiple_channels': channel_count > 1,
         })
         
     except json.JSONDecodeError:
@@ -1203,9 +1203,15 @@ def select_editor_title(request):
                 'is_locked': True
             }, status=403)
         
-        # Update the selected title
-        primary_app.selected_title = title
-        primary_app.save(update_fields=['selected_title'])
+        # Update the selected title on the user (unified for all platforms)
+        request.user.selected_title = title
+        request.user.save(update_fields=['selected_title'])
+        
+        # Also update all user's applications for backward compatibility
+        EditorApplication.objects.filter(
+            user=request.user,
+            status='accepted'
+        ).update(selected_title=title)
         
         return JsonResponse({
             'success': True,
@@ -2127,19 +2133,25 @@ def view_all_edits(request):
         editor_title_rarity = 'ordinary'  # Default
         
         try:
-            # Get the user's EditorApplication(s) - they might have multiple (YouTube and TikTok)
-            # For mix ranking, we use the one with highest follower count
-            # For title, use the one matching the edit's channel type
-            editor_app_for_title = EditorApplication.objects.filter(
-                user=edit_user,
-                status='accepted',
-                removal_requested=False,
-                channel_type=current_edit.channel_type
-            ).first()
-            
-            if editor_app_for_title:
-                editor_title = editor_app_for_title.editor_title
-                editor_title_rarity = editor_app_for_title.editor_title_rarity
+            # First check if user has a unified title (applies to all platforms)
+            if edit_user.selected_title:
+                editor_title = edit_user.selected_title.name
+                editor_title_rarity = edit_user.selected_title.rarity
+            else:
+                # Fall back to application-specific title (backward compatibility)
+                # Get the user's EditorApplication(s) - they might have multiple (YouTube and TikTok)
+                # For mix ranking, we use the one with highest follower count
+                # For title, use the one matching the edit's channel type
+                editor_app_for_title = EditorApplication.objects.filter(
+                    user=edit_user,
+                    status='accepted',
+                    removal_requested=False,
+                    channel_type=current_edit.channel_type
+                ).first()
+                
+                if editor_app_for_title:
+                    editor_title = editor_app_for_title.editor_title
+                    editor_title_rarity = editor_app_for_title.editor_title_rarity
             
             # For mix rank, use the one with highest follower count
             editor_app = EditorApplication.objects.filter(

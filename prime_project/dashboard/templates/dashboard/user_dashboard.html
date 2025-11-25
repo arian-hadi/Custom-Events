@@ -54,6 +54,14 @@
     .title-ordinary {
         color: #4b5563;
     }
+    
+    /* Line clamp utility for notification cards */
+    .line-clamp-3 {
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
 </style>
 {% endblock %}
 
@@ -127,9 +135,9 @@
 
         <!-- Notifications Section -->
         <div class="bg-white rounded-xl shadow-lg mb-8 border border-gray-100">
-            <div class="p-6 border-b border-gray-200">
-                <div class="flex items-center justify-between">
-                    <h2 class="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <div class="p-4 sm:p-6 border-b border-gray-200">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <h2 class="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2">
                         <i class="fas fa-bell text-indigo-600"></i>
                         Notifications
                         {% if unread_notification_count > 0 %}
@@ -138,19 +146,22 @@
                         </span>
                         {% endif %}
                     </h2>
-                    <div class="flex items-center gap-2">
-                        <button onclick="markAllNotificationsRead()" class="px-4 py-2 text-sm font-medium text-gray-700 hover:text-indigo-600 transition-colors">
+                    <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+                        <a href="{% url 'notifications:notification_list_page' %}" class="px-4 py-2 text-sm font-medium text-indigo-600 hover:text-indigo-700 transition-colors border border-indigo-600 rounded-lg hover:bg-indigo-50 text-center">
+                            <i class="fas fa-eye mr-1"></i>View All
+                        </a>
+                        <button onclick="markAllNotificationsRead()" class="px-4 py-2 text-sm font-medium text-gray-700 hover:text-indigo-600 transition-colors border border-gray-300 rounded-lg hover:bg-gray-50">
                             <i class="fas fa-check-double mr-1"></i>Mark all as read
                         </button>
-                        <button onclick="loadNotifications()" class="px-4 py-2 text-sm font-medium text-indigo-600 hover:text-indigo-700 transition-colors">
+                        <button onclick="loadNotifications()" class="px-4 py-2 text-sm font-medium text-indigo-600 hover:text-indigo-700 transition-colors border border-indigo-300 rounded-lg hover:bg-indigo-50">
                             <i class="fas fa-sync-alt mr-1"></i>Refresh
                         </button>
                     </div>
                 </div>
             </div>
-            <div class="p-6">
-                <div id="notifications-container" class="space-y-4">
-                    <div class="flex items-center justify-center py-12">
+            <div class="p-4 sm:p-6">
+                <div id="notifications-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    <div class="col-span-full flex items-center justify-center py-12">
                         <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
                         <span class="ml-3 text-gray-600">Loading notifications...</span>
                     </div>
@@ -662,21 +673,22 @@ function getNotificationIcon(type) {
 
 function loadNotifications() {
     const container = document.getElementById('notifications-container');
-    container.innerHTML = '<div class="flex items-center justify-center py-12"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div><span class="ml-3 text-gray-600">Loading notifications...</span></div>';
+    container.innerHTML = '<div class="col-span-full flex items-center justify-center py-12"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div><span class="ml-3 text-gray-600">Loading notifications...</span></div>';
     
-    fetch('{% url "notifications:notification_list" %}')
+    // Limit to 4 notifications for dashboard preview
+    fetch('{% url "notifications:notification_list" %}?limit=4')
         .then(response => response.json())
         .then(data => {
             if (data.success) {
                 renderNotifications(data.notifications);
                 updateUnreadBadge(data.unread_count);
             } else {
-                container.innerHTML = '<p class="text-gray-500 text-center py-8">Error loading notifications</p>';
+                container.innerHTML = '<div class="col-span-full"><p class="text-gray-500 text-center py-8">Error loading notifications</p></div>';
             }
         })
         .catch(error => {
             console.error('Error loading notifications:', error);
-            container.innerHTML = '<p class="text-red-500 text-center py-8">Error loading notifications. Please try again.</p>';
+            container.innerHTML = '<div class="col-span-full"><p class="text-red-500 text-center py-8">Error loading notifications. Please try again.</p></div>';
         });
 }
 
@@ -684,7 +696,7 @@ function renderNotifications(notifications) {
     const container = document.getElementById('notifications-container');
     
     if (notifications.length === 0) {
-        container.innerHTML = '<p class="text-gray-500 text-center py-12">No notifications yet. You\'ll see updates here when they arrive!</p>';
+        container.innerHTML = '<div class="col-span-full"><p class="text-gray-500 text-center py-12">No notifications yet. You\'ll see updates here when they arrive!</p></div>';
         return;
     }
     
@@ -693,25 +705,42 @@ function renderNotifications(notifications) {
         const iconClass = getNotificationIcon(notification.notification_type);
         const readClass = notification.is_read ? 'bg-gray-50' : 'bg-blue-50 border-l-4 border-indigo-500';
         
+        // Truncate message for card view (show first 100 chars)
+        const messagePreview = notification.message.length > 100 
+            ? notification.message.substring(0, 100) + '...' 
+            : notification.message;
+        
         html += `
-            <div class="notification-item ${readClass} rounded-lg p-4 border border-gray-200 hover:shadow-md transition-all" data-notification-id="${notification.id}">
-                <div class="flex items-start gap-4">
-                    <div class="flex-shrink-0 mt-1">
-                        <i class="fas ${iconClass} text-xl"></i>
+            <div class="notification-item ${readClass} rounded-lg p-3 sm:p-4 border border-gray-200 hover:shadow-md transition-all flex flex-col h-full" data-notification-id="${notification.id}">
+                <!-- Mobile: Only title -->
+                <div class="flex items-center gap-2 md:hidden">
+                    <div class="flex-shrink-0">
+                        <i class="fas ${iconClass} text-lg"></i>
                     </div>
                     <div class="flex-1 min-w-0">
-                        <div class="flex items-start justify-between gap-2">
-                            <h3 class="font-semibold text-gray-900 ${notification.is_read ? '' : 'font-bold'}">${notification.title}</h3>
-                            <div class="flex items-center gap-2">
-                                <span class="text-xs text-gray-500">${formatDate(notification.created_at)}</span>
-                                ${!notification.is_read ? '<span class="w-2 h-2 bg-indigo-500 rounded-full"></span>' : ''}
+                        <h3 class="font-semibold text-gray-900 text-sm ${notification.is_read ? '' : 'font-bold'}" title="${notification.title}">${notification.title}</h3>
+                    </div>
+                    ${!notification.is_read ? '<span class="w-2 h-2 bg-indigo-500 rounded-full flex-shrink-0"></span>' : ''}
+                </div>
+                
+                <!-- Desktop: Full card -->
+                <div class="hidden md:flex flex-col h-full">
+                    <div class="flex items-start gap-3 mb-2">
+                        <div class="flex-shrink-0 mt-1">
+                            <i class="fas ${iconClass} text-xl"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-start justify-between gap-2 mb-1">
+                                <h3 class="font-semibold text-gray-900 text-sm ${notification.is_read ? '' : 'font-bold'}" title="${notification.title}">${notification.title.length > 30 ? notification.title.substring(0, 30) + '...' : notification.title}</h3>
+                                ${!notification.is_read ? '<span class="w-2 h-2 bg-indigo-500 rounded-full flex-shrink-0 mt-1"></span>' : ''}
                             </div>
+                            <span class="text-xs text-gray-500">${formatDate(notification.created_at)}</span>
                         </div>
-                        <p class="text-sm text-gray-700 mt-1 whitespace-pre-line">${notification.message}</p>
-                        <div class="flex items-center gap-2 mt-3">
-                            ${!notification.is_read ? `<button onclick="markNotificationRead(${notification.id})" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium">Mark as read</button>` : ''}
-                            <button onclick="deleteNotification(${notification.id})" class="text-xs text-red-600 hover:text-red-800 font-medium">Delete</button>
-                        </div>
+                    </div>
+                    <p class="text-xs text-gray-700 mt-2 flex-grow line-clamp-3" title="${notification.message}">${messagePreview}</p>
+                    <div class="flex items-center gap-2 mt-3 pt-3 border-t border-gray-200">
+                        ${!notification.is_read ? `<button onclick="markNotificationRead(${notification.id})" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium">Mark read</button>` : ''}
+                        <button onclick="deleteNotification(${notification.id})" class="text-xs text-red-600 hover:text-red-800 font-medium">Delete</button>
                     </div>
                 </div>
             </div>

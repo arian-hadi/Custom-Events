@@ -421,7 +421,28 @@ class EditorApplication(models.Model):
     
     @property
     def editor_title(self):
-        """Get the editor title - custom title if selected, otherwise default based on channel type"""
+        """Get the editor title - always use user's unified title if available, otherwise use primary application's title"""
+        # First check if user has a unified title
+        if self.user.selected_title:
+            return self.user.selected_title.name
+        
+        # If no unified title, get the primary application (highest follower count) for consistency
+        # This ensures the same title is shown across all platforms
+        primary_app = EditorApplication.objects.filter(
+            user=self.user,
+            status='accepted',
+            removal_requested=False
+        ).order_by('-follower_count').first()
+        
+        # Use primary app's title if available (could be from primary app's selected_title or default)
+        if primary_app:
+            # Check if primary app has a selected title
+            if primary_app.selected_title:
+                return primary_app.selected_title.name
+            # Otherwise use default based on primary app's channel type
+            return f"{primary_app.channel_type.title()} Editor"
+        
+        # Fallback: use this application's title (shouldn't happen in normal flow)
         if self.selected_title:
             return self.selected_title.name
         # Default title based on channel type
@@ -429,7 +450,25 @@ class EditorApplication(models.Model):
     
     @property
     def editor_title_rarity(self):
-        """Get the rarity of the selected title"""
+        """Get the rarity of the selected title - always use user's unified title if available"""
+        # First check if user has a unified title
+        if self.user.selected_title:
+            return self.user.selected_title.rarity
+        
+        # If no unified title, get the primary application for consistency
+        primary_app = EditorApplication.objects.filter(
+            user=self.user,
+            status='accepted',
+            removal_requested=False
+        ).order_by('-follower_count').first()
+        
+        # Use primary app's rarity if available
+        if primary_app:
+            if primary_app.selected_title:
+                return primary_app.selected_title.rarity
+            return 'ordinary'
+        
+        # Fallback: use this application's rarity
         if self.selected_title:
             return self.selected_title.rarity
         return 'ordinary'

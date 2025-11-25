@@ -27,135 +27,151 @@ class Command(BaseCommand):
             type=int,
             help='Limit the number of edits to update (useful for testing)',
         )
+        parser.add_argument(
+            '--skip-reports',
+            action='store_true',
+            help='Skip sending daily reports (only update edit points)',
+        )
+        parser.add_argument(
+            '--only-reports',
+            action='store_true',
+            help='Only send daily reports (skip updating edit points)',
+        )
 
     def handle(self, *args, **options):
         force = options.get('force', False)
         limit = options.get('limit')
+        skip_reports = options.get('skip_reports', False)
+        only_reports = options.get('only_reports', False)
         
-        # Get current date to filter by scheduled_week
-        today = timezone.now().date()
-        
-        # Get all verified edits where the scheduled week has started
-        # Points should only be calculated for edits in weeks that have already begun
-        edits = EditSubmission.objects.filter(
-            status='verified',
-            scheduled_week__lte=today  # Only edits for weeks that have started
-        )
-        
-        if not force:
-            # Only update edits that haven't been updated today (DAILY UPDATE)
-            # This ensures each edit is only updated once per day
-            edits = edits.filter(
-                Q(last_points_calculation__isnull=True) |
-                Q(last_points_calculation__date__lt=today)
+        if not only_reports:
+            # Get current date to filter by scheduled_week
+            today = timezone.now().date()
+            
+            # Get all verified edits where the scheduled week has started
+            # Points should only be calculated for edits in weeks that have already begun
+            edits = EditSubmission.objects.filter(
+                status='verified',
+                scheduled_week__lte=today  # Only edits for weeks that have started
             )
-        
-        # Apply limit if specified
-        if limit:
-            edits = edits[:limit]
-        
-        total = edits.count()
-        updated = 0
-        errors = 0
-        
-        self.stdout.write(f'Found {total} edits to update...')
-        
-        for edit in edits:
-            try:
-                # Fetch video statistics
-                if edit.channel_type == 'youtube':
-                    stats = fetch_youtube_video_stats(edit.video_url)
-                    if stats.get('error'):
-                        logger.warning(f"Error fetching YouTube stats for edit {edit.id}: {stats['error']}")
-                        # Continue with existing stats if API fails
-                        continue
+            
+            if not force:
+                # Only update edits that haven't been updated today (DAILY UPDATE)
+                # This ensures each edit is only updated once per day
+                edits = edits.filter(
+                    Q(last_points_calculation__isnull=True) |
+                    Q(last_points_calculation__date__lt=today)
+                )
+            
+            # Apply limit if specified
+            if limit:
+                edits = edits[:limit]
+            
+            total = edits.count()
+            updated = 0
+            errors = 0
+            
+            self.stdout.write(f'Found {total} edits to update...')
+            
+            for edit in edits:
+                try:
+                    # Fetch video statistics
+                    if edit.channel_type == 'youtube':
+                        stats = fetch_youtube_video_stats(edit.video_url)
+                        if stats.get('error'):
+                            logger.warning(f"Error fetching YouTube stats for edit {edit.id}: {stats['error']}")
+                            # Continue with existing stats if API fails
+                            continue
+                        
+                        edit.views = stats.get('views', 0)
+                        edit.likes = stats.get('likes', 0)
+                        edit.comments = stats.get('comments', 0)
+                        # OPTIMIZATION: Reuse subscriber count from EditorApplication instead of fetching again
+                        # This reduces API calls by 50% - channel data is already stored when user applies
+                        if edit.approved_application:
+                            edit.subscriber_count = edit.approved_application.follower_count
+                        else:
+                            # Fallback: use API value if no approved_application exists (shouldn't happen)
+                            edit.subscriber_count = stats.get('subscriber_count', 0)
+                        
+                    elif edit.channel_type == 'tiktok':
+                        stats = fetch_tiktok_video_stats(edit.video_url)
+                        if stats.get('error'):
+                            logger.warning(f"Error fetching TikTok stats for edit {edit.id}: {stats['error']}")
+                            # Continue with existing stats if API fails
+                            continue
+                        
+                        edit.views = stats.get('views', 0)
+                        edit.likes = stats.get('likes', 0)
+                        edit.comments = stats.get('comments', 0)
+                        # OPTIMIZATION: Reuse follower count from EditorApplication instead of fetching again
+                        # This reduces API calls by 50% - channel data is already stored when user applies
+                        if edit.approved_application:
+                            edit.subscriber_count = edit.approved_application.follower_count
+                        else:
+                            # Fallback: use API value if no approved_application exists (shouldn't happen)
+                            edit.subscriber_count = stats.get('follower_count', 0)
                     
-                    edit.views = stats.get('views', 0)
-                    edit.likes = stats.get('likes', 0)
-                    edit.comments = stats.get('comments', 0)
-                    # OPTIMIZATION: Reuse subscriber count from EditorApplication instead of fetching again
-                    # This reduces API calls by 50% - channel data is already stored when user applies
-                    if edit.approved_application:
-                        edit.subscriber_count = edit.approved_application.follower_count
+                    # Update upvote count
+                    edit.update_upvote_count()
+                    
+                    # Calculate and update points
+                    calculated_points = edit.calculate_points()
+                    edit.calculated_points = calculated_points
+                    edit.last_points_calculation = timezone.now()
+                    
+                    # Update weeks_participated (check if user submitted in previous week)
+                    # This is a simplified version - you might want to refine this logic
+                    user_previous_week = EditSubmission.objects.filter(
+                        user=edit.user,
+                        status='verified',
+                        submitted_date__lt=edit.submitted_date - timedelta(days=7)
+                    ).aggregate(Max('submitted_date'))
+                    
+                    if user_previous_week['submitted_date__max']:
+                        # User has submitted before, increment weeks
+                        weeks_ago = (edit.submitted_date.date() - user_previous_week['submitted_date__max'].date()).days // 7
+                        if weeks_ago <= 1:  # Within 1 week of previous submission
+                            edit.weeks_participated = EditSubmission.objects.filter(
+                                user=edit.user,
+                                status='verified',
+                                submitted_date__lte=edit.submitted_date
+                            ).count()
+                        else:
+                            edit.weeks_participated = 1  # Reset if gap is too long
                     else:
-                        # Fallback: use API value if no approved_application exists (shouldn't happen)
-                        edit.subscriber_count = stats.get('subscriber_count', 0)
+                        edit.weeks_participated = 1
                     
-                elif edit.channel_type == 'tiktok':
-                    stats = fetch_tiktok_video_stats(edit.video_url)
-                    if stats.get('error'):
-                        logger.warning(f"Error fetching TikTok stats for edit {edit.id}: {stats['error']}")
-                        # Continue with existing stats if API fails
-                        continue
+                    edit.save()
+                    updated += 1
                     
-                    edit.views = stats.get('views', 0)
-                    edit.likes = stats.get('likes', 0)
-                    edit.comments = stats.get('comments', 0)
-                    # OPTIMIZATION: Reuse follower count from EditorApplication instead of fetching again
-                    # This reduces API calls by 50% - channel data is already stored when user applies
-                    if edit.approved_application:
-                        edit.subscriber_count = edit.approved_application.follower_count
-                    else:
-                        # Fallback: use API value if no approved_application exists (shouldn't happen)
-                        edit.subscriber_count = stats.get('follower_count', 0)
-                
-                # Update upvote count
-                edit.update_upvote_count()
-                
-                # Calculate and update points
-                calculated_points = edit.calculate_points()
-                edit.calculated_points = calculated_points
-                edit.last_points_calculation = timezone.now()
-                
-                # Update weeks_participated (check if user submitted in previous week)
-                # This is a simplified version - you might want to refine this logic
-                user_previous_week = EditSubmission.objects.filter(
-                    user=edit.user,
-                    status='verified',
-                    submitted_date__lt=edit.submitted_date - timedelta(days=7)
-                ).aggregate(Max('submitted_date'))
-                
-                if user_previous_week['submitted_date__max']:
-                    # User has submitted before, increment weeks
-                    weeks_ago = (edit.submitted_date.date() - user_previous_week['submitted_date__max'].date()).days // 7
-                    if weeks_ago <= 1:  # Within 1 week of previous submission
-                        edit.weeks_participated = EditSubmission.objects.filter(
-                            user=edit.user,
-                            status='verified',
-                            submitted_date__lte=edit.submitted_date
-                        ).count()
-                    else:
-                        edit.weeks_participated = 1  # Reset if gap is too long
-                else:
-                    edit.weeks_participated = 1
-                
-                edit.save()
-                updated += 1
-                
-                if updated % 10 == 0:
-                    self.stdout.write(f'Updated {updated}/{total} edits...')
-                    
-            except Exception as e:
-                logger.error(f"Error updating edit {edit.id}: {str(e)}")
-                errors += 1
-                continue
+                    if updated % 10 == 0:
+                        self.stdout.write(f'Updated {updated}/{total} edits...')
+                        
+                except Exception as e:
+                    logger.error(f"Error updating edit {edit.id}: {str(e)}")
+                    errors += 1
+                    continue
+            
+            self.stdout.write(
+                self.style.SUCCESS(
+                    f'Successfully updated {updated} edits. {errors} errors occurred.'
+                )
+            )
         
         # Send daily reports to users with active edits
-        self._send_daily_reports()
-        
-        self.stdout.write(
-            self.style.SUCCESS(
-                f'Successfully updated {updated} edits. {errors} errors occurred.'
-            )
-        )
+        if not skip_reports:
+            self._send_daily_reports()
     
     def _send_daily_reports(self):
         """Send daily Edit of the Week reports to users"""
         from notifications.manager import notification_manager
+        from notifications.models import Notification
         from django.db.models import Q, Max
         from datetime import timedelta
         
         today = timezone.now().date()
+        today_start = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
         
         # Get all users who have verified edits in the current week
         # Get edits from current week (Monday to Sunday)
@@ -209,9 +225,32 @@ class Command(BaseCommand):
                 users_with_edits[user_id]['current_rank'] = rank
                 rank += 1
         
-        # Send notifications
+        # Check which users already received a notification today
+        users_with_notifications_today = set(
+            Notification.objects.filter(
+                notification_type='edit_of_week_daily',
+                created_at__gte=today_start
+            ).values_list('user_id', flat=True)
+        )
+        
+        # Send notifications only to users who haven't received one today
+        sent_count = 0
+        skipped_count = 0
+        skipped_users = []
+        
+        self.stdout.write(f'\n📧 Checking daily reports...')
+        self.stdout.write(f'   Found {len(users_with_edits)} users with verified edits this week')
+        self.stdout.write(f'   Users who already received notification today: {len(users_with_notifications_today)}')
+        
         for user_data in users_with_edits.values():
             user = user_data['user']
+            
+            # Skip if user already received a notification today
+            if user.id in users_with_notifications_today:
+                skipped_count += 1
+                skipped_users.append(user.username)
+                continue
+            
             best_edit = user_data['best_edit']
             total_edits = user_data['total_edits']
             total_points = user_data['total_points']
@@ -235,4 +274,17 @@ class Command(BaseCommand):
                 notification_type='edit_of_week_daily',
                 related_object=best_edit
             )
+            sent_count += 1
+            self.stdout.write(f'   ✓ Sent daily report to {user.username}')
+        
+        if sent_count > 0 or skipped_count > 0:
+            self.stdout.write(
+                self.style.SUCCESS(
+                    f'\n✅ Daily reports completed: {sent_count} sent, {skipped_count} skipped (already sent today)'
+                )
+            )
+            if skipped_users:
+                self.stdout.write(f'   Skipped users: {", ".join(skipped_users[:5])}' + 
+                                (f' and {len(skipped_users) - 5} more' if len(skipped_users) > 5 else ''))
+            logger.info(f"Daily reports: {sent_count} sent, {skipped_count} skipped (already sent today)")
 
