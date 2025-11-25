@@ -207,6 +207,24 @@
             transform: translateX(-50%);
         }
     }
+    
+    /* Top Edits Slider Styles */
+    .scrollbar-hide {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+    .scrollbar-hide::-webkit-scrollbar {
+        display: none;
+    }
+    
+    .top-edits-slider {
+        scroll-snap-type: x mandatory;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .top-edits-slide {
+        scroll-snap-align: center;
+    }
 </style>
 {% endblock %}
 
@@ -1034,118 +1052,214 @@
                     </a>
                 </div>
                 
+            </div>
+
+            {% if top_edits %}
+            <!-- Top Edits Container: Mobile Slider + Desktop Row -->
+            <div class="top-edits-container relative mb-8">
+                <!-- Mobile: Horizontal Slider -->
+                <div class="md:hidden overflow-x-auto top-edits-slider scrollbar-hide -mx-4 px-4 pb-4">
+                    <div class="flex gap-4" id="topEditsSlider">
+                        {% for edit in top_edits %}
+                        <div class="flex-shrink-0 top-edits-slide w-[calc(100vw-2rem)]" data-slide-index="{{ forloop.counter0 }}">
+                            <div class="bg-white rounded-lg shadow-xl overflow-hidden {% if edit.week_rank == 1 %}transform hover:scale-105 transition-transform{% endif %}">
+                                <!-- Video Embed -->
+                                {% if edit.channel_type == 'youtube' %}
+                                <div class="relative aspect-[4/5] bg-gray-900 overflow-hidden video-container" data-video-type="youtube">
+                                    <iframe 
+                                        id="youtube-iframe-{{ forloop.counter0 }}"
+                                        class="w-full h-full"
+                                        src="{{ edit.video_url|youtube_embed_standard }}&enablejsapi=1"
+                                        title="YouTube video player"
+                                        frameborder="0"
+                                        referrerpolicy="strict-origin-when-cross-origin"
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                        allowfullscreen
+                                        playsinline
+                                        loading="lazy">
+                                    </iframe>
+                                </div>
+                                {% else %}
+                                <!-- TikTok Video: Use official TikTok embed -->
+                                <div class="flex items-center justify-center bg-gray-900 py-4 px-2 video-container" data-video-type="tiktok" data-video-url="{{ edit.video_url }}">
+                                    {% if edit.tiktok_embed_html %}
+                                    <div id="tiktok-embed-{{ forloop.counter0 }}">{{ edit.tiktok_embed_html|safe }}</div>
+                                    {% else %}
+                                    <div id="tiktok-embed-{{ forloop.counter0 }}">
+                                        <blockquote class="tiktok-embed" cite="{{ edit.video_url }}" data-video-id="{{ edit.video_url|tiktok_video_id }}" style="max-width: 100%; min-width: 325px;">
+                                            <section></section>
+                                        </blockquote>
+                                        <script async src="https://www.tiktok.com/embed.js"></script>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+                                
+                                <!-- Bottom Container: Medal, Profile Picture, Points -->
+                                <div class="p-4 bg-gradient-to-br from-gray-50 to-white border-t border-gray-200">
+                                    <div class="flex items-center justify-between gap-3">
+                                        <!-- Left: Medal -->
+                                        <div class="flex-shrink-0">
+                                            {% if forloop.counter == 1 %}
+                                            <span class="text-4xl font-bold text-yellow-500">🥇</span>
+                                            {% elif forloop.counter == 2 %}
+                                            <span class="text-3xl font-bold text-gray-400">🥈</span>
+                                            {% else %}
+                                            <span class="text-3xl font-bold text-orange-600">🥉</span>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <!-- Center: Profile Picture -->
+                                        <div class="flex items-center gap-3 flex-1 min-w-0">
+                                            {% if edit.channel_thumbnail %}
+                                            <img src="{{ edit.channel_thumbnail }}" alt="{{ edit.channel_name }}" 
+                                                 class="h-12 w-12 rounded-full object-cover ring-2 ring-gray-200 shadow-sm flex-shrink-0"
+                                                 onerror="this.onerror=null; this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                            <div class="h-12 w-12 rounded-full bg-gradient-to-br {% if edit.channel_type == 'youtube' %}from-red-400 to-orange-400{% else %}from-purple-400 via-pink-400 to-blue-400{% endif %} flex items-center justify-center ring-2 ring-gray-200 shadow-sm flex-shrink-0" style="display: none;">
+                                                <span class="text-white font-bold text-sm">{{ edit.channel_name|first|upper|default:"E" }}</span>
+                                            </div>
+                                            {% else %}
+                                            <div class="h-12 w-12 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center ring-2 ring-gray-200 shadow-sm flex-shrink-0">
+                                                <span class="text-white font-bold text-lg">{{ edit.channel_name|first|upper }}</span>
+                                            </div>
+                                            {% endif %}
+                                            <div class="min-w-0 flex-1">
+                                                <p class="text-sm font-semibold text-gray-900 truncate">{{ edit.channel_name }}</p>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Right: Points -->
+                                        <div class="flex items-center gap-1.5 flex-shrink-0">
+                                            <i class="fas fa-star text-yellow-500"></i>
+                                            <span class="font-bold text-gray-900 text-lg">{{ edit.calculated_points|floatformat:1 }}</span>
+                                            <span class="text-gray-500 text-xs">pts</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <!-- Navigation Dots for Mobile -->
+                <div class="md:hidden flex justify-center gap-2 mt-4" id="topEditsDots">
+                    {% for edit in top_edits %}
+                    <div class="top-edit-dot w-2 h-2 rounded-full bg-gray-300 transition-all duration-300 {% if forloop.first %}bg-purple-500 w-6{% endif %}" data-slide="{{ forloop.counter0 }}"></div>
+                    {% endfor %}
+                </div>
+                
+                <!-- Desktop: Original Row Layout -->
+                <div class="hidden md:flex flex-row items-center justify-center gap-4">
+                    {% for edit in top_edits %}
+                    <div class="relative {% if forloop.counter == 1 %}w-[38%] order-2{% else %}w-[31%] {% if forloop.counter == 2 %}order-1{% else %}order-3{% endif %}{% endif %}">
+                        <div class="bg-white rounded-lg shadow-xl overflow-hidden {% if edit.week_rank == 1 %}transform hover:scale-105 transition-transform{% endif %}">
+                            <!-- Video Embed -->
+                            {% if edit.channel_type == 'youtube' %}
+                            <div class="relative aspect-[4/5] bg-gray-900 overflow-hidden">
+                                <iframe 
+                                    class="w-full h-full"
+                                    src="{{ edit.video_url|youtube_embed_standard }}"
+                                    title="YouTube video player"
+                                    frameborder="0"
+                                    referrerpolicy="strict-origin-when-cross-origin"
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                    allowfullscreen
+                                    playsinline
+                                    loading="lazy">
+                                </iframe>
+                            </div>
+                            {% else %}
+                            <!-- TikTok Video: Use official TikTok embed -->
+                            <div class="flex items-center justify-center bg-gray-900 py-4 px-2">
+                                {% if edit.tiktok_embed_html %}
+                                {{ edit.tiktok_embed_html|safe }}
+                                {% else %}
+                                <blockquote class="tiktok-embed" cite="{{ edit.video_url }}" data-video-id="{{ edit.video_url|tiktok_video_id }}" style="max-width: 100%; min-width: 325px;">
+                                    <section></section>
+                                </blockquote>
+                                <script async src="https://www.tiktok.com/embed.js"></script>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                            
+                            <!-- Bottom Container: Medal, Profile Picture, Points -->
+                            <div class="p-4 bg-gradient-to-br from-gray-50 to-white border-t border-gray-200">
+                                <div class="flex items-center justify-between gap-3">
+                                    <!-- Left: Medal -->
+                                    <div class="flex-shrink-0">
+                                        {% if forloop.counter == 1 %}
+                                        <span class="text-4xl font-bold text-yellow-500">🥇</span>
+                                        {% elif forloop.counter == 2 %}
+                                        <span class="text-3xl font-bold text-gray-400">🥈</span>
+                                        {% else %}
+                                        <span class="text-3xl font-bold text-orange-600">🥉</span>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <!-- Center: Profile Picture -->
+                                    <div class="flex items-center gap-3 flex-1 min-w-0">
+                                        {% if edit.channel_thumbnail %}
+                                        <img src="{{ edit.channel_thumbnail }}" alt="{{ edit.channel_name }}" 
+                                             class="h-12 w-12 rounded-full object-cover ring-2 ring-gray-200 shadow-sm flex-shrink-0"
+                                             onerror="this.onerror=null; this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                        <div class="h-12 w-12 rounded-full bg-gradient-to-br {% if edit.channel_type == 'youtube' %}from-red-400 to-orange-400{% else %}from-purple-400 via-pink-400 to-blue-400{% endif %} flex items-center justify-center ring-2 ring-gray-200 shadow-sm flex-shrink-0" style="display: none;">
+                                            <span class="text-white font-bold text-sm">{{ edit.channel_name|first|upper|default:"E" }}</span>
+                                        </div>
+                                        {% else %}
+                                        <div class="h-12 w-12 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center ring-2 ring-gray-200 shadow-sm flex-shrink-0">
+                                            <span class="text-white font-bold text-lg">{{ edit.channel_name|first|upper }}</span>
+                                        </div>
+                                        {% endif %}
+                                        <div class="min-w-0 flex-1">
+                                            <p class="text-sm font-semibold text-gray-900 truncate">{{ edit.channel_name }}</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Right: Points -->
+                                    <div class="flex items-center gap-1.5 flex-shrink-0">
+                                        <i class="fas fa-star text-yellow-500"></i>
+                                        <span class="font-bold text-gray-900 text-lg">{{ edit.calculated_points|floatformat:1 }}</span>
+                                        <span class="text-gray-500 text-xs">pts</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Action Buttons Row: View All Edits (left) and Submit Edit (right) -->
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-2 mt-8">
+                <!-- View All Edits Button (Left) -->
+                <a href="{% url 'edithub:view_all_edits' %}?platform={{ edit_platform }}" 
+                   class="flex-1 sm:flex-none inline-block px-6 sm:px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-semibold hover:from-blue-700 hover:to-purple-700 transform hover:scale-105 transition-all duration-300 shadow-lg text-center">
+                    <i class="fas fa-video mr-2"></i>View All Edits
+                </a>
+                
+                <!-- Submit Edit Button (Right) -->
                 {% if not competition_state or competition_state.state == 'live' %}
-                <div class="mt-4">
                     {% if user.is_authenticated and user.role == 'user' %}
                         {% if user_has_submitted_this_week %}
                         <button type="button" disabled
-                                class="inline-block px-6 py-3 bg-gray-400 text-white rounded-lg font-semibold cursor-not-allowed opacity-75 shadow-lg">
+                                class="flex-1 sm:flex-none inline-block px-6 py-3 bg-gray-400 text-white rounded-lg font-semibold cursor-not-allowed opacity-75 shadow-lg text-center">
                             <i class="fas fa-check-circle mr-2"></i>
                             You Have Applied
                         </button>
                         {% else %}
                         <a href="{% url 'edithub:submit_edit' %}" 
-                           class="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transform hover:scale-105 transition-all duration-300 shadow-lg">
-                            Submit Your Edit
+                           class="flex-1 sm:flex-none inline-block px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg font-semibold hover:from-green-700 hover:to-emerald-700 transform hover:scale-105 transition-all duration-300 shadow-lg text-center">
+                            <i class="fas fa-upload mr-2"></i>Submit Your Edit
                         </a>
                         {% endif %}
                     {% elif not user.is_authenticated %}
                     <a href="{% url 'edithub:submit_edit' %}" 
-                       class="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transform hover:scale-105 transition-all duration-300 shadow-lg">
-                        Submit Your Edit (Login Required)
+                       class="flex-1 sm:flex-none inline-block px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg font-semibold hover:from-green-700 hover:to-emerald-700 transform hover:scale-105 transition-all duration-300 shadow-lg text-center">
+                        <i class="fas fa-upload mr-2"></i>Submit Your Edit
                     </a>
                     {% endif %}
-                </div>
                 {% endif %}
-            </div>
-
-            {% if top_edits %}
-            <div class="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-4 mb-8">
-                {% for edit in top_edits %}
-                <div class="relative {% if forloop.counter == 1 %}w-full md:w-[38%] order-1 md:order-2{% else %}w-full md:w-[31%] {% if forloop.counter == 2 %}order-2 md:order-1{% else %}order-3 md:order-3{% endif %}{% endif %}">
-                    <div class="bg-white rounded-lg shadow-xl overflow-hidden {% if edit.week_rank == 1 %}transform hover:scale-105 transition-transform{% endif %}">
-                        <!-- Video Embed -->
-                        {% if edit.channel_type == 'youtube' %}
-                        <div class="relative aspect-[4/5] bg-gray-900 overflow-hidden">
-                            <iframe 
-                                class="w-full h-full"
-                                src="{{ edit.video_url|youtube_embed_standard }}"
-                                title="YouTube video player"
-                                frameborder="0"
-                                referrerpolicy="strict-origin-when-cross-origin"
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                                allowfullscreen
-                                playsinline
-                                loading="lazy">
-                            </iframe>
-                        </div>
-                        {% else %}
-                        <!-- TikTok Video: Use official TikTok embed - let it size itself for full quality -->
-                        <div class="flex items-center justify-center bg-gray-900 py-4 px-2">
-                            {% if edit.tiktok_embed_html %}
-                            <!-- Use TikTok's official embed HTML directly - no constraints, full quality -->
-                            {{ edit.tiktok_embed_html|safe }}
-                            {% else %}
-                            <!-- Fallback: Manual embed if oEmbed HTML not available -->
-                            <blockquote class="tiktok-embed" cite="{{ edit.video_url }}" data-video-id="{{ edit.video_url|tiktok_video_id }}" style="max-width: 100%; min-width: 325px;">
-                                <section></section>
-                            </blockquote>
-                            <script async src="https://www.tiktok.com/embed.js"></script>
-                            {% endif %}
-                        </div>
-                        {% endif %}
-                        
-                        <!-- Bottom Container: Medal, Profile Picture, Points -->
-                        <div class="p-4 bg-gradient-to-br from-gray-50 to-white border-t border-gray-200">
-                            <div class="flex items-center justify-between gap-3">
-                                <!-- Left: Medal -->
-                                <div class="flex-shrink-0">
-                                    {% if forloop.counter == 1 %}
-                                    <span class="text-4xl font-bold text-yellow-500">🥇</span>
-                                    {% elif forloop.counter == 2 %}
-                                    <span class="text-3xl font-bold text-gray-400">🥈</span>
-                                    {% else %}
-                                    <span class="text-3xl font-bold text-orange-600">🥉</span>
-                                    {% endif %}
-                                </div>
-                                
-                                <!-- Center: Profile Picture -->
-                                <div class="flex items-center gap-3 flex-1 min-w-0">
-                                    {% if edit.channel_thumbnail %}
-                                    <img src="{{ edit.channel_thumbnail }}" alt="{{ edit.channel_name }}" 
-                                         class="h-12 w-12 rounded-full object-cover ring-2 ring-gray-200 shadow-sm flex-shrink-0"
-                                         onerror="this.onerror=null; this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                                    <div class="h-12 w-12 rounded-full bg-gradient-to-br {% if edit.channel_type == 'youtube' %}from-red-400 to-orange-400{% else %}from-purple-400 via-pink-400 to-blue-400{% endif %} flex items-center justify-center ring-2 ring-gray-200 shadow-sm flex-shrink-0" style="display: none;">
-                                        <span class="text-white font-bold text-sm">{{ edit.channel_name|first|upper|default:"E" }}</span>
-                                    </div>
-                                    {% else %}
-                                    <div class="h-12 w-12 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center ring-2 ring-gray-200 shadow-sm flex-shrink-0">
-                                        <span class="text-white font-bold text-lg">{{ edit.channel_name|first|upper }}</span>
-                                    </div>
-                                    {% endif %}
-                                    <div class="min-w-0 flex-1">
-                                        <p class="text-sm font-semibold text-gray-900 truncate">{{ edit.channel_name }}</p>
-                                    </div>
-                                </div>
-                                
-                                <!-- Right: Points -->
-                                <div class="flex items-center gap-1.5 flex-shrink-0">
-                                    <i class="fas fa-star text-yellow-500"></i>
-                                    <span class="font-bold text-gray-900 text-lg">{{ edit.calculated_points|floatformat:1 }}</span>
-                                    <span class="text-gray-500 text-xs">pts</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-
-            <div class="text-center mt-8">
-                <a href="{% url 'edithub:view_all_edits' %}?platform={{ edit_platform }}" 
-                   class="inline-block px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-semibold hover:from-blue-700 hover:to-purple-700 transform hover:scale-105 transition-all duration-300 shadow-lg">
-                    View All Edits
-                </a>
             </div>
             {% else %}
             <div class="text-center py-12 bg-white rounded-lg shadow-lg">
@@ -1360,7 +1474,167 @@
     };
     
     // Close modal when clicking outside
+    // Top Edits Slider - Update dots based on scroll position
+    function initTopEditsSlider() {
+        const sliderContainer = document.querySelector('.top-edits-slider'); // The scrollable container
+        const slider = document.getElementById('topEditsSlider'); // The flex container
+        const dots = document.querySelectorAll('.top-edit-dot');
+        
+        if (sliderContainer && slider && dots.length > 0) {
+            // Listen to scroll on the scrollable container, not the flex container
+            sliderContainer.addEventListener('scroll', () => {
+                const scrollLeft = sliderContainer.scrollLeft;
+                const firstSlide = slider.querySelector('.top-edits-slide');
+                if (firstSlide) {
+                    const cardWidth = firstSlide.offsetWidth + 16; // card width + gap
+                    const activeIndex = Math.round(scrollLeft / cardWidth);
+                    
+                    dots.forEach((dot, index) => {
+                        if (index === activeIndex) {
+                            dot.classList.add('bg-purple-500', 'w-6');
+                            dot.classList.remove('bg-gray-300', 'w-2');
+                        } else {
+                            dot.classList.remove('bg-purple-500', 'w-6');
+                            dot.classList.add('bg-gray-300', 'w-2');
+                        }
+                    });
+                }
+            });
+            
+            // Click on dots to scroll to slide
+            dots.forEach((dot, index) => {
+                dot.addEventListener('click', () => {
+                    const firstSlide = slider.querySelector('.top-edits-slide');
+                    if (firstSlide) {
+                        const cardWidth = firstSlide.offsetWidth + 16; // card width + gap
+                        sliderContainer.scrollTo({ // Scroll the container, not the flex div
+                            left: index * cardWidth,
+                            behavior: 'smooth'
+                        });
+                    }
+                });
+            });
+        }
+    }
+    
+    // Pause videos when they go out of view
+    function initVideoPauseOnScroll() {
+        const sliderContainer = document.querySelector('.top-edits-slider');
+        if (!sliderContainer) return;
+        
+        const videoContainers = sliderContainer.querySelectorAll('.video-container');
+        
+        const observerOptions = {
+            root: sliderContainer,
+            rootMargin: '0px',
+            threshold: 0.5 // Pause when less than 50% visible
+        };
+        
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                const container = entry.target;
+                const videoType = container.dataset.videoType;
+                
+                if (!entry.isIntersecting) {
+                    // Video is out of view - pause it
+                    if (videoType === 'youtube') {
+                        pauseYouTubeVideo(container);
+                    } else if (videoType === 'tiktok') {
+                        pauseTikTokVideo(container);
+                    }
+                } else {
+                    // Video is back in view - restore TikTok if needed
+                    if (videoType === 'tiktok') {
+                        restoreTikTokVideo(container);
+                    }
+                }
+            });
+        }, observerOptions);
+        
+        videoContainers.forEach(container => {
+            observer.observe(container);
+        });
+    }
+    
+    // Pause YouTube video
+    function pauseYouTubeVideo(container) {
+        const iframe = container.querySelector('iframe');
+        if (iframe && iframe.contentWindow) {
+            try {
+                // Send pause command to YouTube iframe
+                iframe.contentWindow.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
+            } catch (e) {
+                console.log('Could not pause YouTube video:', e);
+            }
+        }
+    }
+    
+    // Pause TikTok video by removing iframe src (workaround for sandbox restrictions)
+    function pauseTikTokVideo(container) {
+        // TikTok embeds are heavily sandboxed, so direct pause control doesn't work
+        // Workaround: Store original HTML and clear the embed to stop playback
+        const embedDiv = container.querySelector('[id^="tiktok-embed-"]');
+        if (embedDiv) {
+            // Store original HTML if not already stored
+            if (!embedDiv.dataset.originalHtml) {
+                embedDiv.dataset.originalHtml = embedDiv.innerHTML;
+            }
+            // Clear the embed content to stop playback
+            embedDiv.innerHTML = '';
+        }
+    }
+    
+    // Restore TikTok video when it comes back into view
+    function restoreTikTokVideo(container) {
+        const embedDiv = container.querySelector('[id^="tiktok-embed-"]');
+        if (embedDiv && embedDiv.dataset.originalHtml) {
+            // Save only vertical page scroll position (not horizontal slider scroll)
+            const pageScrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            
+            // Restore the original HTML
+            embedDiv.innerHTML = embedDiv.dataset.originalHtml;
+            
+            // Restore only vertical page scroll to prevent layout shift scrolling
+            // Don't touch horizontal slider scroll - let user swipe freely
+            window.scrollTo(0, pageScrollTop);
+            
+            // Re-initialize TikTok embed script
+            const blockquote = embedDiv.querySelector('blockquote.tiktok-embed');
+            if (blockquote) {
+                setTimeout(() => {
+                    // Save vertical scroll again before script manipulation
+                    const currentPageScroll = window.pageYOffset || document.documentElement.scrollTop;
+                    
+                    let tiktokScript = document.querySelector('script[src*="tiktok.com/embed.js"]');
+                    
+                    if (tiktokScript) {
+                        const newScript = document.createElement('script');
+                        newScript.src = 'https://www.tiktok.com/embed.js';
+                        newScript.async = true;
+                        tiktokScript.remove();
+                        document.body.appendChild(newScript);
+                    } else {
+                        const script = document.createElement('script');
+                        script.src = 'https://www.tiktok.com/embed.js';
+                        script.async = true;
+                        document.body.appendChild(script);
+                    }
+                    
+                    // Restore only vertical scroll after script loads (with a delay to let embed render)
+                    setTimeout(() => {
+                        window.scrollTo(0, currentPageScroll);
+                    }, 200);
+                }, 100);
+            }
+        }
+    }
+    
     document.addEventListener('DOMContentLoaded', function() {
+        // Initialize top edits slider
+        initTopEditsSlider();
+        // Initialize video pause on scroll
+        initVideoPauseOnScroll();
+        
         const howItWorksModal = document.getElementById('howItWorksModal');
         if (howItWorksModal) {
             howItWorksModal.addEventListener('click', function(e) {
