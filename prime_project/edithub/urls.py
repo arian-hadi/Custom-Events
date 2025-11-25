@@ -13,9 +13,15 @@ urlpatterns = [
     path('application/<int:pk>/', views.application_detail, name='application_detail'),
     path('application/<int:pk>/remove/', views.request_removal, name='request_removal'),
     
+    # Profile customization
+    path('customize-profile/', views.customize_profile, name='customize_profile'),
+    
     # AJAX endpoints
     path('verify-channel/', views.verify_channel_ajax, name='verify_channel'),
     path('user-stats/', views.get_user_stats_ajax, name='get_user_stats'),
+    path('titles/', views.get_available_titles, name='get_available_titles'),
+    path('select-title/', views.select_editor_title, name='select_editor_title'),
+    path('switch-profile-mode/', views.switch_profile_mode, name='switch_profile_mode'),
     
     # Admin views
     path('admin/', views.admin_applications, name='admin_applications'),
@@ -23,6 +29,10 @@ urlpatterns = [
     
     # Edit of the Week views
     path('submit-edit/', views.submit_edit, name='submit_edit'),
+    path('edit-submission/<int:pk>/preview/', views.preview_edit_submission, name='preview_edit_submission'),
+    path('edit-submission/<int:pk>/success/', views.edit_submission_success, name='edit_submission_success'),
+    path('edit-submission/<int:pk>/edit/', views.edit_submission, name='edit_submission'),
+    path('edit-submission/<int:pk>/delete/', views.delete_submission, name='delete_submission'),
     path('confirm-edit/', views.confirm_edit_submission, name='confirm_edit_submission'),
     path('edits/', views.view_all_edits, name='view_all_edits'),
     path('edit/<int:pk>/upvote/', views.upvote_edit, name='upvote_edit'),

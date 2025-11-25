@@ -63,6 +63,17 @@
         animation: pulseGlow 3s ease-in-out infinite;
     }
     
+    /* Editor Title Rarity Styling - Now centralized in base.html */
+    
+    .title-card {
+        cursor: pointer;
+    }
+    
+    .title-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    
     .form-section {
         background: white;
         border-radius: 16px;
@@ -432,6 +443,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+    
 });
 </script>
 {% endblock %}

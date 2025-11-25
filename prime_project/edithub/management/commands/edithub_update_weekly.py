@@ -107,8 +107,9 @@ class Command(BaseCommand):
                 )
 
         # Recalculate and snapshot ranks (weekly snapshot logic lives in model method)
+        # Send notifications when ranks are updated
         with transaction.atomic():
-            EditorApplication.update_rank_positions()
+            EditorApplication.update_rank_positions(send_notifications=True)
 
         elapsed = (timezone.now() - started_at).total_seconds()
         self.stdout.write(

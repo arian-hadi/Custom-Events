@@ -361,12 +361,6 @@ class RankingTableView(ListView):
                 participants = active_tournament.get_participants()
                 for app in participants:
                     if app:
-                        channel_type_label = (app.channel_type or '').strip()
-                        if channel_type_label:
-                            channel_type_label = f"{channel_type_label.title()} Editor"
-                        else:
-                            channel_type_label = "Editor"
-                        
                         tournament_participants.append({
                             'user': app.user,
                             'app': app,
@@ -375,7 +369,8 @@ class RankingTableView(ListView):
                             'profile_picture': app.user.profile_picture.url if app.user.profile_picture else None,
                             'channel_thumbnail': (app.channel_thumbnail or '').strip(),
                             'channel_type': app.channel_type,
-                            'editor_title': channel_type_label,
+                            'editor_title': app.editor_title,  # Use property which handles custom titles
+                            'editor_title_rarity': app.editor_title_rarity,  # Include rarity for styling
                         })
                     else:
                         tournament_participants.append(None)
@@ -388,12 +383,6 @@ class RankingTableView(ListView):
                 finalists = active_tournament.get_finalists()
                 for app in finalists:
                     if app:
-                        channel_type_label = (app.channel_type or '').strip()
-                        if channel_type_label:
-                            channel_type_label = f"{channel_type_label.title()} Editor"
-                        else:
-                            channel_type_label = "Editor"
-                        
                         tournament_finalists.append({
                             'user': app.user,
                             'app': app,
@@ -402,7 +391,8 @@ class RankingTableView(ListView):
                             'profile_picture': app.user.profile_picture.url if app.user.profile_picture else None,
                             'channel_thumbnail': (app.channel_thumbnail or '').strip(),
                             'channel_type': app.channel_type,
-                            'editor_title': channel_type_label,
+                            'editor_title': app.editor_title,  # Use property which handles custom titles
+                            'editor_title_rarity': app.editor_title_rarity,  # Include rarity for styling
                         })
                     else:
                         tournament_finalists.append(None)
@@ -471,6 +461,13 @@ class RankingTableView(ListView):
                     'label': app.get_editing_area_display(),
                     'extra': app.editing_area_other if app.editing_area == 'others' else '',
                 })
+            # Deduplicate editing tools - only show unique tools
+            seen_tools = set()
+            unique_tools = []
+            for app in apps:
+                if app.editing_tool not in seen_tools:
+                    seen_tools.add(app.editing_tool)
+                    unique_tools.append(app)
             display_user_name = apps[0].user.get_full_name() or apps[0].user.username
             # Get thumbnail - prefer primary app, but fallback to other platform if primary has no thumbnail
             from .utils import get_fallback_thumbnail
@@ -491,9 +488,21 @@ class RankingTableView(ListView):
                     display_thumbnail = get_fallback_thumbnail(primary_thumb, tiktok_thumb)
                 else:
                     display_thumbnail = primary_thumb if primary_thumb else ''
+            # Get unified editor title - use user's unified title if available, otherwise use primary app's title
+            unified_editor_title = None
+            unified_editor_title_rarity = 'ordinary'
+            if apps[0].user.selected_title:
+                unified_editor_title = apps[0].user.selected_title.name
+                unified_editor_title_rarity = apps[0].user.selected_title.rarity
+            elif primary_app:
+                # Use primary app's editor_title property which handles the fallback logic
+                unified_editor_title = primary_app.editor_title
+                unified_editor_title_rarity = primary_app.editor_title_rarity
+            
             all_entries.append({
                 'user': apps[0].user,
                 'apps': apps,
+                'unique_tools': unique_tools,  # Deduplicated list of apps with unique editing tools
                 'youtube': youtube_app,
                 'tiktok': tiktok_app,
                 'primary': primary_app,
@@ -505,7 +514,9 @@ class RankingTableView(ListView):
                 'followers': {
                     'youtube': youtube_app.follower_count if youtube_app else 0,
                     'tiktok': tiktok_app.follower_count if tiktok_app else 0,
-                }
+                },
+                'editor_title': unified_editor_title,  # Unified title for all platforms
+                'editor_title_rarity': unified_editor_title_rarity,  # Unified rarity
             })
 
         # Sort and assign actual ranks
@@ -805,14 +816,23 @@ def get_user_stats_ajax(request):
         except CustomUser.DoesNotExist:
             return JsonResponse({'error': 'User not found'}, status=404)
         
-        # Get primary channel info from EditorApplication
-        primary_app = EditorApplication.objects.filter(
+        # Get all accepted channel applications for this user
+        accepted_apps = EditorApplication.objects.filter(
             user=edit_user,
             status='accepted'
-        ).order_by('-follower_count').first()
+        )
         
-        if not primary_app:
+        if not accepted_apps.exists():
             return JsonResponse({'error': 'No channel found for this user'}, status=404)
+        
+        # Get primary channel (highest follower count)
+        primary_app = accepted_apps.order_by('-follower_count').first()
+        
+        # Check if user has both YouTube and TikTok
+        youtube_app = accepted_apps.filter(channel_type='youtube').first()
+        tiktok_app = accepted_apps.filter(channel_type='tiktok').first()
+        
+        has_both = youtube_app is not None and tiktok_app is not None
         
         # Calculate user statistics
         total_edits = EditSubmission.objects.filter(
@@ -859,31 +879,350 @@ def get_user_stats_ajax(request):
             if top_edit and top_edit.user == edit_user:
                 edit_of_month_wins += 1
         
-        # Get user's best rank
+        # Get user's best rank (only from weeks that have started)
+        from datetime import date
+        today = date.today()
         best_rank = EditSubmission.objects.filter(
             user=edit_user,
-            status='verified'
+            status='verified',
+            scheduled_week__lte=today  # Only count points from weeks that have started
         ).order_by('-calculated_points').first()
         best_points = float(best_rank.calculated_points) if best_rank else 0.0
         
-        # Get editor title
-        editor_title = f"{primary_app.channel_type.title()} Editor"
+        # Get editor title - check user's unified title first, then fall back to application
+        if edit_user.selected_title:
+            editor_title = edit_user.selected_title.name
+            editor_title_rarity = edit_user.selected_title.rarity
+        else:
+            # Fall back to application-specific title (backward compatibility)
+            editor_title = primary_app.editor_title
+            editor_title_rarity = primary_app.editor_title_rarity
         
-        return JsonResponse({
+        response_data = {
             'success': True,
             'username': primary_app.channel_name or edit_user.username,
             'profile_picture': (primary_app.channel_thumbnail or '').strip(),
             'channel_type': primary_app.channel_type,
             'channel_link': primary_app.channel_link,
             'editor_title': editor_title,
+            'editor_title_rarity': editor_title_rarity,
             'total_edits': total_edits,
             'edit_of_week_wins': edit_of_week_wins,
             'edit_of_month_wins': edit_of_month_wins,
             'best_points': best_points,
-        })
+        }
+        
+        # Add both channel links if user has both platforms
+        if has_both:
+            response_data['has_both_platforms'] = True
+            response_data['youtube_link'] = youtube_app.channel_link if youtube_app else None
+            response_data['tiktok_link'] = tiktok_app.channel_link if tiktok_app else None
+        else:
+            response_data['has_both_platforms'] = False
+        
+        return JsonResponse(response_data)
     
     except Exception as e:
         logger.error(f"Error fetching user stats: {str(e)}")
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+def get_available_titles(request):
+    """Get available editor titles for the current user, grouped by category"""
+    from .models import EditorTitle, EditorApplication
+    from .utils import is_title_unlocked_for_user
+    
+    # Get user's primary application
+    primary_app = EditorApplication.objects.filter(
+        user=request.user,
+        status='accepted'
+    ).order_by('-follower_count').first()
+    
+    if not primary_app:
+        return JsonResponse({
+            'success': False,
+            'error': 'No accepted application found. Please apply to join the rankings first.'
+        }, status=404)
+    
+    # Get all active titles grouped by category
+    try:
+        titles = EditorTitle.objects.filter(is_active=True).order_by('category', 'rarity', 'cost_coins', 'name')
+    except Exception as e:
+        # If category field doesn't exist yet (migration not run), fall back to old query
+        logger.warning(f"Error querying titles with category: {e}")
+        titles = EditorTitle.objects.filter(is_active=True).order_by('rarity', 'cost_coins', 'name')
+    
+    # Group titles by category
+    titles_by_category = {
+        'reel': [],
+        'comment': [],
+        'general': []
+    }
+    
+    for title in titles:
+        # Get category, defaulting to 'general' if field doesn't exist
+        title_category = getattr(title, 'category', 'general')
+        
+        # Check if title is unlocked
+        is_unlocked = is_title_unlocked_for_user(request.user, title)
+        
+        # Get achievement progress if applicable
+        achievement_progress = None
+        if not is_unlocked and getattr(title, 'achievement_type', None) and getattr(title, 'unlock_method', 'coins') in ['achievement', 'both']:
+            from .utils import get_user_achievement_progress
+            achievement_progress = get_user_achievement_progress(request.user, title)
+        
+        # Check if title is selected (check user's unified title first)
+        is_selected = False
+        if request.user.selected_title:
+            is_selected = request.user.selected_title_id == title.id
+        elif primary_app.selected_title:
+            is_selected = primary_app.selected_title_id == title.id
+        
+        title_data = {
+            'id': title.id,
+            'name': title.name,
+            'rarity': title.rarity,
+            'category': title_category,
+            'description': title.description or '',
+            'cost_coins': title.cost_coins,
+            'is_selected': is_selected,
+            'is_unlocked': is_unlocked,
+            'unlock_requirement': title.unlock_requirement or '',
+            'unlock_method': getattr(title, 'unlock_method', 'coins'),
+            'achievement_type': getattr(title, 'achievement_type', None),
+            'achievement_threshold': getattr(title, 'achievement_threshold', 0),
+            'achievement_progress': achievement_progress,  # Current progress towards achievement
+        }
+        
+        # For comment titles, only show YouTube/TikTok Editor based on user's channel type
+        if title_category == 'comment':
+            if title.name.lower() == f"{primary_app.channel_type} editor":
+                titles_by_category['comment'].append(title_data)
+        else:
+            # Ensure category exists in our dict, default to 'general' if not
+            category_key = title_category if title_category in titles_by_category else 'general'
+            titles_by_category[category_key].append(title_data)
+    
+    # Get current title info - check user's unified title first
+    current_title = None
+    if request.user.selected_title:
+        current_title = {
+            'id': request.user.selected_title.id,
+            'name': request.user.selected_title.name,
+            'rarity': request.user.selected_title.rarity,
+            'category': getattr(request.user.selected_title, 'category', 'general'),
+        }
+    elif primary_app.selected_title:
+        # Fall back to application-specific title (backward compatibility)
+        current_title = {
+            'id': primary_app.selected_title.id,
+            'name': primary_app.selected_title.name,
+            'rarity': primary_app.selected_title.rarity,
+            'category': getattr(primary_app.selected_title, 'category', 'general'),
+        }
+    else:
+        # Default title based on channel type
+        current_title = {
+            'id': None,
+            'name': f"{primary_app.channel_type.title()} Editor",
+            'rarity': 'ordinary',
+            'category': 'comment',
+        }
+    
+    return JsonResponse({
+        'success': True,
+        'titles_by_category': titles_by_category,
+        'current_title': current_title,
+        'current_title_id': request.user.selected_title_id if request.user.selected_title else (primary_app.selected_title_id if primary_app.selected_title else None),
+    })
+
+
+@login_required
+def customize_profile(request):
+    """Profile customization page with title selection"""
+    from .models import EditorApplication
+    
+    # Get user's primary application
+    primary_app = EditorApplication.objects.filter(
+        user=request.user,
+        status='accepted'
+    ).order_by('-follower_count').first()
+    
+    if not primary_app:
+        messages.warning(request, 'You need to have an accepted application to customize your profile.')
+        return redirect('edithub:apply')
+    
+    # Get current title info - check user's unified title first
+    current_title = None
+    if request.user.selected_title:
+        current_title = {
+            'id': request.user.selected_title.id,
+            'name': request.user.selected_title.name,
+            'rarity': request.user.selected_title.rarity,
+            'category': getattr(request.user.selected_title, 'category', 'general'),
+        }
+    elif primary_app.selected_title:
+        # Fall back to application-specific title (backward compatibility)
+        current_title = {
+            'id': primary_app.selected_title.id,
+            'name': primary_app.selected_title.name,
+            'rarity': primary_app.selected_title.rarity,
+            'category': getattr(primary_app.selected_title, 'category', 'general'),
+        }
+    else:
+        # Default title based on channel type
+        current_title = {
+            'id': None,
+            'name': f"{primary_app.channel_type.title()} Editor",
+            'rarity': 'ordinary',
+            'category': 'comment',
+        }
+    
+    # Get display name and picture based on current mode
+    display_name = request.user.get_display_name()
+    display_picture = request.user.get_display_picture()
+    
+    context = {
+        'primary_app': primary_app,
+        'current_title': current_title,
+        'user': request.user,
+        'display_name': display_name,
+        'display_picture': display_picture,
+    }
+    
+    return render(request, 'edithub/customize_profile.html', context)
+
+
+@login_required
+@require_http_methods(["POST"])
+def switch_profile_mode(request):
+    """Switch between account and channel profile display"""
+    import json
+    from .models import EditorApplication
+    
+    try:
+        data = json.loads(request.body)
+        mode = data.get('mode', 'account')
+        
+        if mode not in ['account', 'channel']:
+            return JsonResponse({'success': False, 'error': 'Invalid mode'}, status=400)
+        
+        user = request.user
+        
+        # Validate if switching to channel mode
+        if mode == 'channel':
+            # Check if user has any accepted applications
+            has_apps = EditorApplication.objects.filter(
+                user=user,
+                status='accepted',
+                removal_requested=False
+            ).exists()
+            
+            if not has_apps:
+                return JsonResponse({
+                    'success': False, 
+                    'error': 'You need to have an accepted application to use channel profile mode.'
+                }, status=400)
+        
+        # Update profile display mode
+        user.profile_display_mode = mode
+        user.save()
+        
+        # Get updated display info
+        display_name = user.get_display_name()
+        display_picture = user.get_display_picture()
+        
+        return JsonResponse({
+            'success': True,
+            'display_name': display_name,
+            'display_picture': display_picture,
+        })
+        
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'error': 'Invalid JSON'}, status=400)
+    except Exception as e:
+        logger.error(f"Error switching profile mode: {str(e)}")
+        return JsonResponse({'success': False, 'error': 'An error occurred'}, status=500)
+
+
+@login_required
+@require_http_methods(["POST"])
+def select_editor_title(request):
+    """Select an editor title for the user"""
+    from .models import EditorTitle, EditorApplication, UserTitleUnlock
+    from .utils import is_title_unlocked_for_user
+    import json
+    
+    try:
+        data = json.loads(request.body)
+        title_id = data.get('title_id')
+        
+        if not title_id:
+            return JsonResponse({'error': 'Title ID is required'}, status=400)
+        
+        # Get user's primary application
+        primary_app = EditorApplication.objects.filter(
+            user=request.user,
+            status='accepted'
+        ).order_by('-follower_count').first()
+        
+        if not primary_app:
+            return JsonResponse({'error': 'No accepted application found'}, status=404)
+        
+        # Get the title
+        try:
+            title = EditorTitle.objects.get(id=title_id, is_active=True)
+        except EditorTitle.DoesNotExist:
+            return JsonResponse({'error': 'Title not found'}, status=404)
+        
+        # Update the selected title (only for reel and general categories)
+        # Comment titles are automatically set based on channel type
+        if title.category == 'comment':
+            return JsonResponse({
+                'error': 'Comment titles cannot be manually selected. They are automatically set based on your channel type.'
+            }, status=400)
+        
+        # Check if title is unlocked
+        is_unlocked = is_title_unlocked_for_user(request.user, title)
+        
+        if not is_unlocked:
+            # Provide helpful error message
+            if title.unlock_method == 'achievement':
+                error_msg = f"This title is locked. {title.unlock_requirement or 'Complete the achievement requirements to unlock.'}"
+            elif title.unlock_method == 'coins':
+                error_msg = f"This title costs {title.cost_coins} coins. You don't have enough coins to unlock it."
+            elif title.unlock_method == 'both':
+                error_msg = f"This title requires either {title.cost_coins} coins or completing: {title.unlock_requirement or 'the achievement requirements'}."
+            else:
+                error_msg = f"This title is locked. {title.unlock_requirement or 'Complete the requirements to unlock.'}"
+            
+            return JsonResponse({
+                'error': error_msg,
+                'is_locked': True
+            }, status=403)
+        
+        # Update the selected title on the user (unified for all platforms)
+        request.user.selected_title = title
+        request.user.save(update_fields=['selected_title'])
+        
+        # Also update all user's applications for backward compatibility
+        EditorApplication.objects.filter(
+            user=request.user,
+            status='accepted'
+        ).update(selected_title=title)
+        
+        return JsonResponse({
+            'success': True,
+            'title_name': title.name,
+            'title_rarity': title.rarity,
+        })
+    
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid JSON'}, status=400)
+    except Exception as e:
+        logger.error(f"Error selecting title: {str(e)}")
         return JsonResponse({'error': str(e)}, status=500)
 
 
@@ -1129,6 +1468,7 @@ def admin_update_status(request, pk):
         return JsonResponse({'error': 'Unauthorized'}, status=403)
     
     application = get_object_or_404(EditorApplication, pk=pk)
+    old_status = application.status
     new_status = request.POST.get('status')
     
     if new_status not in dict(EditorApplication.STATUS_CHOICES):
@@ -1145,6 +1485,27 @@ def admin_update_status(request, pk):
     # Update rankings if status changed to accepted
     if new_status == 'accepted':
         EditorApplication.update_rank_positions()
+    
+    # Send notification to user about status change
+    if old_status != new_status and new_status in ['accepted', 'rejected']:
+        from notifications.manager import notification_manager
+        
+        if new_status == 'accepted':
+            notification_manager.create_notification(
+                user=application.user,
+                title="Application Approved! 🎉",
+                message=f"Great news! Your {application.channel_type.title()} channel application has been approved. You can now participate in the EditingHub rankings and submit edits for Edit of the Week!",
+                notification_type='application_approved',
+                related_object=application
+            )
+        elif new_status == 'rejected':
+            notification_manager.create_notification(
+                user=application.user,
+                title="Application Status Update",
+                message=f"Your {application.channel_type.title()} channel application has been reviewed. Unfortunately, it was not approved at this time. Please review the requirements and feel free to apply again in the future.",
+                notification_type='application_disapproved',
+                related_object=application
+            )
     
     messages.success(request, f"Application status updated to {application.get_status_display()}")
     
@@ -1186,7 +1547,8 @@ def submit_edit(request):
         return redirect('edithub:apply')
     
     from .utils import get_week_start_end
-    from django.utils import timezone
+    from django.utils import timezone as django_timezone
+    from datetime import timezone as dt_timezone
     
     week_start_dt, week_end_dt = get_week_start_end()
     current_week_start = week_start_dt.date()
@@ -1194,21 +1556,49 @@ def submit_edit(request):
     next_week_end = next_week_start + timedelta(days=4)
     next_week_label = f"{next_week_start.strftime('%b %d')} – {next_week_end.strftime('%b %d')}"
     
-    youtube_future_submission = False
-    tiktok_future_submission = False
+    # Get existing submissions for next week (only verified ones)
+    # Check for pending submissions first - redirect to preview if found
+    pending_youtube = EditSubmission.objects.filter(
+        user=request.user,
+        channel_type='youtube',
+        scheduled_week=next_week_start,
+        status='pending'
+    ).first()
+    pending_tiktok = EditSubmission.objects.filter(
+        user=request.user,
+        channel_type='tiktok',
+        scheduled_week=next_week_start,
+        status='pending'
+    ).first()
+    
+    # If there's a pending submission, redirect to preview
+    if pending_youtube or pending_tiktok:
+        pending_submission = pending_youtube or pending_tiktok
+        return redirect('edithub:preview_edit_submission', pk=pending_submission.pk)
+    
+    # Get verified submissions for display
+    youtube_future_submission = None
+    tiktok_future_submission = None
     
     if youtube_app:
         youtube_future_submission = EditSubmission.objects.filter(
             user=request.user,
             channel_type='youtube',
-            scheduled_week=next_week_start
-        ).exists()
+            scheduled_week=next_week_start,
+            status='verified'
+        ).first()
     if tiktok_app:
         tiktok_future_submission = EditSubmission.objects.filter(
             user=request.user,
             channel_type='tiktok',
-            scheduled_week=next_week_start
-        ).exists()
+            scheduled_week=next_week_start,
+            status='verified'
+        ).first()
+    
+    # Check if we're before the deadline (before Monday 00:00 of next week)
+    now = datetime.now(dt_timezone.utc)
+    deadline = datetime.combine(next_week_start, datetime.min.time()).replace(tzinfo=dt_timezone.utc)
+    can_edit_delete = now < deadline
     
     youtube_form = None
     tiktok_form = None
@@ -1225,9 +1615,14 @@ def submit_edit(request):
             messages.error(request, "Invalid platform or you don't have an approved application for this platform.")
             return redirect('edithub:submit_edit')
         
-        if (platform == 'youtube' and youtube_future_submission) or (platform == 'tiktok' and tiktok_future_submission):
-            messages.warning(request, f"You have already submitted a {approved_app.get_channel_type_display()} edit for the week of {next_week_label}.")
-            return redirect('edithub:submit_edit')
+        # Check if submission exists and if we can still edit it
+        existing_submission = youtube_future_submission if platform == 'youtube' else tiktok_future_submission
+        if existing_submission:
+            if not can_edit_delete:
+                messages.warning(request, f"You have already submitted a {approved_app.get_channel_type_display()} edit for the week of {next_week_label}. The deadline has passed, so you cannot modify it.")
+                return redirect('edithub:submit_edit')
+            # If we can edit, redirect to edit view instead
+            return redirect('edithub:edit_submission', pk=existing_submission.pk)
         
         form = EditSubmissionForm(data=request.POST, files=request.FILES, approved_application=approved_app)
         
@@ -1269,15 +1664,12 @@ def submit_edit(request):
                     direct_video_url=direct_video_url,
                     title=video_title,
                     description=form.cleaned_data.get('description', ''),
-                    status='verified'
+                    status='pending'  # Save as pending until user confirms
                 )
                 submission.save()
                 
-                submission.verified_date = timezone.now()
-                submission.save(update_fields=['verified_date'])
-                
-                messages.success(request, f"Edit submitted successfully for {approved_app.get_channel_type_display()}! It will participate in the week of {next_week_label}.")
-                return redirect('edithub:view_all_edits')
+                # Redirect to preview page
+                return redirect('edithub:preview_edit_submission', pk=submission.pk)
             
             except Exception as error:
                 logger.error("Error creating edit submission", exc_info=True)
@@ -1310,6 +1702,235 @@ def submit_edit(request):
         'target_week_start': next_week_start,
         'target_week_end': next_week_end,
         'default_platform': default_platform,
+        'can_edit_delete': can_edit_delete,
+        'deadline': deadline,
+    })
+
+
+@login_required
+def edit_submission(request, pk):
+    """Edit an existing edit submission before the deadline"""
+    if request.user.role != 'user':
+        messages.error(request, "Only regular users can edit submissions.")
+        return redirect('edithub:ranking_table')
+    
+    try:
+        submission = EditSubmission.objects.get(pk=pk, user=request.user)
+    except EditSubmission.DoesNotExist:
+        messages.error(request, "Submission not found.")
+        return redirect('edithub:submit_edit')
+    
+    # For pending submissions, allow editing without deadline check
+    is_pending = submission.status == 'pending'
+    deadline = None
+    
+    # Check if we're before the deadline (only for verified submissions)
+    if not is_pending:
+        from datetime import datetime, timezone as dt_timezone
+        from .utils import get_week_start_end
+        now = datetime.now(dt_timezone.utc)
+        if submission.scheduled_week:
+            deadline = datetime.combine(submission.scheduled_week, datetime.min.time()).replace(tzinfo=dt_timezone.utc)
+        else:
+            # Fallback: use next week start
+            week_start_dt, _ = get_week_start_end()
+            deadline = (week_start_dt + timedelta(days=7)).replace(hour=0, minute=0, second=0, microsecond=0)
+        
+        if now >= deadline:
+            messages.error(request, "The deadline has passed. You can no longer edit this submission.")
+            return redirect('edithub:submit_edit')
+    else:
+        # For pending submissions, calculate deadline for display purposes
+        from datetime import datetime, timezone as dt_timezone
+        from .utils import get_week_start_end
+        if submission.scheduled_week:
+            deadline = datetime.combine(submission.scheduled_week, datetime.min.time()).replace(tzinfo=dt_timezone.utc)
+        else:
+            week_start_dt, _ = get_week_start_end()
+            deadline = (week_start_dt + timedelta(days=7)).replace(hour=0, minute=0, second=0, microsecond=0)
+    
+    approved_app = submission.approved_application
+    if not approved_app:
+        messages.error(request, "Cannot edit submission without an approved application.")
+        return redirect('edithub:submit_edit')
+    
+    if request.method == 'POST':
+        form = EditSubmissionForm(data=request.POST, files=request.FILES, approved_application=approved_app, instance=submission)
+        
+        if form.is_valid():
+            try:
+                direct_video_url = submission.direct_video_url
+                video_title = form.cleaned_data.get('title', '').strip()
+                
+                if approved_app.channel_type == 'tiktok':
+                    from .utils import extract_tiktok_video_url, fetch_tiktok_video_title
+                    video_data = extract_tiktok_video_url(form.cleaned_data['video_url'])
+                    if video_data.get('video_url') and not video_data.get('error'):
+                        direct_video_url = video_data['video_url']
+                    if not video_title:
+                        fetched_title = fetch_tiktok_video_title(form.cleaned_data['video_url'])
+                        if fetched_title:
+                            video_title = fetched_title
+                
+                submission.video_url = form.cleaned_data['video_url']
+                submission.direct_video_url = direct_video_url
+                submission.title = video_title
+                submission.description = form.cleaned_data.get('description', '')
+                # Update channel thumbnail if needed
+                from .utils import get_fallback_thumbnail
+                existing_thumb = (submission.channel_thumbnail or '').strip()
+                new_thumb = (approved_app.channel_thumbnail or '').strip()
+                best_thumb = get_fallback_thumbnail(existing_thumb, new_thumb)
+                submission.channel_thumbnail = best_thumb
+                
+                submission.save()
+                
+                # If pending, redirect back to preview; otherwise redirect to submit_edit
+                if submission.status == 'pending':
+                    messages.success(request, f"Edit updated successfully! Please review and confirm your submission.")
+                    return redirect('edithub:preview_edit_submission', pk=submission.pk)
+                else:
+                    messages.success(request, f"Edit updated successfully for {approved_app.get_channel_type_display()}!")
+                    return redirect('edithub:submit_edit')
+            
+            except Exception as error:
+                logger.error("Error updating edit submission", exc_info=True)
+                messages.error(request, f"An error occurred: {error}")
+    else:
+        form = EditSubmissionForm(approved_application=approved_app, instance=submission)
+    
+    week_start_dt, _ = get_week_start_end()
+    next_week_start = (week_start_dt + timedelta(days=7)).date()
+    next_week_end = next_week_start + timedelta(days=4)
+    next_week_label = f"{next_week_start.strftime('%b %d')} – {next_week_end.strftime('%b %d')}"
+    
+    return render(request, 'edithub/edit_submission.html', {
+        'form': form,
+        'submission': submission,
+        'approved_app': approved_app,
+        'target_week_label': next_week_label,
+        'deadline': deadline,
+    })
+
+
+@login_required
+@require_http_methods(["POST"])
+def delete_submission(request, pk):
+    """Delete an edit submission before the deadline"""
+    if request.user.role != 'user':
+        messages.error(request, "Only regular users can delete submissions.")
+        return redirect('edithub:ranking_table')
+    
+    try:
+        submission = EditSubmission.objects.get(pk=pk, user=request.user)
+    except EditSubmission.DoesNotExist:
+        messages.error(request, "Submission not found.")
+        return redirect('edithub:submit_edit')
+    
+    # Check if we're before the deadline
+    from datetime import datetime, timezone
+    from .utils import get_week_start_end
+    now = datetime.now(timezone.utc)
+    if submission.scheduled_week:
+        deadline = datetime.combine(submission.scheduled_week, datetime.min.time()).replace(tzinfo=timezone.utc)
+    else:
+        week_start_dt, _ = get_week_start_end()
+        deadline = (week_start_dt + timedelta(days=7)).replace(hour=0, minute=0, second=0, microsecond=0)
+    
+    if now >= deadline:
+        messages.error(request, "The deadline has passed. You can no longer delete this submission.")
+        return redirect('edithub:submit_edit')
+    
+    platform = submission.channel_type
+    submission.delete()
+    messages.success(request, f"Your {platform.title()} edit submission has been deleted.")
+    return redirect('edithub:submit_edit')
+
+
+@login_required
+def preview_edit_submission(request, pk):
+    """Step 2: Preview the video before confirming submission"""
+    if request.user.role != 'user':
+        messages.error(request, "Only regular users can submit edits.")
+        return redirect('edithub:ranking_table')
+    
+    from django.utils import timezone as django_timezone
+    
+    try:
+        submission = EditSubmission.objects.get(pk=pk, user=request.user, status='pending')
+    except EditSubmission.DoesNotExist:
+        messages.error(request, "Submission not found or already confirmed.")
+        return redirect('edithub:submit_edit')
+    
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        
+        if action == 'confirm':
+            # Confirm the submission - mark as verified
+            submission.status = 'verified'
+            submission.verified_date = django_timezone.now()
+            submission.save()
+            
+            messages.success(request, f"Edit submitted successfully for {submission.get_channel_type_display()}! It will participate in the week of {submission.scheduled_week.strftime('%b %d')}.")
+            return redirect('edithub:edit_submission_success', pk=submission.pk)
+        
+        elif action == 'edit':
+            # Go back to edit the submission
+            return redirect('edithub:edit_submission', pk=submission.pk)
+        
+        elif action == 'cancel':
+            # Cancel and delete the submission
+            submission.delete()
+            messages.info(request, "Submission cancelled.")
+            return redirect('edithub:submit_edit')
+    
+    from .utils import get_week_start_end
+    week_start_dt, _ = get_week_start_end()
+    next_week_start = (week_start_dt + timedelta(days=7)).date()
+    next_week_end = next_week_start + timedelta(days=4)
+    next_week_label = f"{next_week_start.strftime('%b %d')} – {next_week_end.strftime('%b %d')}"
+    
+    return render(request, 'edithub/preview_edit_submission.html', {
+        'submission': submission,
+        'target_week_label': next_week_label,
+    })
+
+
+@login_required
+def edit_submission_success(request, pk):
+    """Step 3: Success page after confirming submission"""
+    if request.user.role != 'user':
+        messages.error(request, "Only regular users can submit edits.")
+        return redirect('edithub:ranking_table')
+    
+    try:
+        submission = EditSubmission.objects.get(pk=pk, user=request.user, status='verified')
+    except EditSubmission.DoesNotExist:
+        messages.error(request, "Submission not found.")
+        return redirect('edithub:submit_edit')
+    
+    # Check if we're before the deadline (before Monday 00:00 of next week)
+    from datetime import datetime, timezone as dt_timezone
+    from .utils import get_week_start_end
+    now = datetime.now(dt_timezone.utc)
+    if submission.scheduled_week:
+        deadline = datetime.combine(submission.scheduled_week, datetime.min.time()).replace(tzinfo=dt_timezone.utc)
+    else:
+        week_start_dt, _ = get_week_start_end()
+        deadline = (week_start_dt + timedelta(days=7)).replace(hour=0, minute=0, second=0, microsecond=0)
+    
+    can_edit_delete = now < deadline
+    
+    week_start_dt, _ = get_week_start_end()
+    next_week_start = (week_start_dt + timedelta(days=7)).date()
+    next_week_end = next_week_start + timedelta(days=4)
+    next_week_label = f"{next_week_start.strftime('%b %d')} – {next_week_end.strftime('%b %d')}"
+    
+    return render(request, 'edithub/edit_submission_success.html', {
+        'submission': submission,
+        'target_week_label': next_week_label,
+        'can_edit_delete': can_edit_delete,
+        'deadline': deadline,
     })
 
 
@@ -1496,21 +2117,43 @@ def view_all_edits(request):
             if top_edit and top_edit.user == edit_user:
                 edit_of_month_wins += 1
         
-        # Get user's best rank
+        # Get user's best rank (only from weeks that have started)
+        from datetime import date
+        today = date.today()
         best_rank = EditSubmission.objects.filter(
             user=edit_user,
-            status='verified'
+            status='verified',
+            scheduled_week__lte=today  # Only count points from weeks that have started
         ).order_by('-calculated_points').first()
         best_points = best_rank.calculated_points if best_rank else 0
         
-        # Get editor title (default based on channel type, can be customized later)
-        editor_title = f"{current_edit.channel_type.title()} Editor"  # e.g., "TikTok Editor" or "YouTube Editor"
-        
-        # Get mix rank (overall ranking in editors table, regardless of platform)
+        # Get mix rank and editor title from EditorApplication
         mix_rank = None
+        editor_title = f"{current_edit.channel_type.title()} Editor"  # Default
+        editor_title_rarity = 'ordinary'  # Default
+        
         try:
-            # Get the user's EditorApplication(s) - they might have multiple (YouTube and TikTok)
-            # For mix ranking, we use the one with highest follower count
+            # First check if user has a unified title (applies to all platforms)
+            if edit_user.selected_title:
+                editor_title = edit_user.selected_title.name
+                editor_title_rarity = edit_user.selected_title.rarity
+            else:
+                # Fall back to application-specific title (backward compatibility)
+                # Get the user's EditorApplication(s) - they might have multiple (YouTube and TikTok)
+                # For mix ranking, we use the one with highest follower count
+                # For title, use the one matching the edit's channel type
+                editor_app_for_title = EditorApplication.objects.filter(
+                    user=edit_user,
+                    status='accepted',
+                    removal_requested=False,
+                    channel_type=current_edit.channel_type
+                ).first()
+                
+                if editor_app_for_title:
+                    editor_title = editor_app_for_title.editor_title
+                    editor_title_rarity = editor_app_for_title.editor_title_rarity
+            
+            # For mix rank, use the one with highest follower count
             editor_app = EditorApplication.objects.filter(
                 user=edit_user,
                 status='accepted',
@@ -1520,7 +2163,7 @@ def view_all_edits(request):
             if editor_app and editor_app.rank_position:
                 mix_rank = editor_app.rank_position
         except Exception:
-            mix_rank = None
+            pass
         
         # Use channel thumbnail and channel name from the edit (YouTube/TikTok profile)
         channel_stats = {
@@ -1533,6 +2176,7 @@ def view_all_edits(request):
             'username': current_edit.channel_name,  # Use YouTube/TikTok channel name
             'channel_type': current_edit.channel_type,
             'editor_title': editor_title,  # Customizable editor title
+            'editor_title_rarity': editor_title_rarity,  # Include rarity for styling
             'mix_rank': mix_rank,  # Rank in mix (overall) editors table
         }
     
@@ -1757,11 +2401,6 @@ def tournament_matches(request):
             def prepare_participant_data(participant):
                 if not participant:
                     return None
-                channel_type_label = (participant.channel_type or '').strip()
-                if channel_type_label:
-                    channel_type_label = f"{channel_type_label.title()} Editor"
-                else:
-                    channel_type_label = "Editor"
                 
                 return {
                     'user': participant.user,
@@ -1771,7 +2410,8 @@ def tournament_matches(request):
                     'profile_picture': participant.user.profile_picture.url if participant.user.profile_picture else None,
                     'channel_thumbnail': (participant.channel_thumbnail or '').strip(),
                     'channel_type': participant.channel_type,
-                    'editor_title': channel_type_label,
+                    'editor_title': participant.editor_title,  # Use property which handles custom titles
+                    'editor_title_rarity': participant.editor_title_rarity,  # Include rarity for styling
                 }
             
             match['participant_1'] = prepare_participant_data(match['participant_1'])
@@ -1860,11 +2500,6 @@ def tournament_match_detail(request, match_type):
     def prepare_participant_data(participant, edit_link):
         if not participant:
             return None
-        channel_type_label = (participant.channel_type or '').strip()
-        if channel_type_label:
-            channel_type_label = f"{channel_type_label.title()} Editor"
-        else:
-            channel_type_label = "Editor"
         
         # Determine if edit link is YouTube or TikTok
         is_youtube = False
@@ -1883,7 +2518,8 @@ def tournament_match_detail(request, match_type):
             'profile_picture': participant.user.profile_picture.url if participant.user.profile_picture else None,
             'channel_thumbnail': (participant.channel_thumbnail or '').strip(),
             'channel_type': participant.channel_type,
-            'editor_title': channel_type_label,
+            'editor_title': participant.editor_title,  # Use property which handles custom titles
+            'editor_title_rarity': participant.editor_title_rarity,  # Include rarity for styling
             'edit_link': edit_link,
             'is_youtube': is_youtube,
             'is_tiktok': is_tiktok,

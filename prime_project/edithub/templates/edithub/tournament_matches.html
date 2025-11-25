@@ -3,6 +3,12 @@
 
 {% block title %}Tournament Matches - 2.0Transformers{% endblock %}
 
+{% block extra_css %}
+<style>
+  /* Editor Title Rarity Styling - Now centralized in base.html */
+</style>
+{% endblock %}
+
 {% block content %}
 <main class="bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 min-h-screen pt-16">
     <div class="container mx-auto px-4 py-8">
@@ -49,7 +55,7 @@
                                 </div>
                                 <div class="flex-1 min-w-0">
                                     <p class="font-semibold text-gray-900 truncate">{{ match.participant_1.channel_name }}</p>
-                                    <p class="text-sm text-gray-600 truncate">{{ match.participant_1.editor_title }}</p>
+                                    <p class="text-sm truncate {% if match.participant_1.editor_title_rarity == 'legendary' %}title-legendary{% elif match.participant_1.editor_title_rarity == 'epic' %}title-epic{% elif match.participant_1.editor_title_rarity == 'rare' %}text-blue-600{% else %}text-gray-600{% endif %}">{{ match.participant_1.editor_title }}</p>
                                 </div>
                             </div>
                             {% endif %}
@@ -76,7 +82,7 @@
                                 </div>
                                 <div class="flex-1 min-w-0">
                                     <p class="font-semibold text-gray-900 truncate">{{ match.participant_2.channel_name }}</p>
-                                    <p class="text-sm text-gray-600 truncate">{{ match.participant_2.editor_title }}</p>
+                                    <p class="text-sm truncate {% if match.participant_2.editor_title_rarity == 'legendary' %}title-legendary{% elif match.participant_2.editor_title_rarity == 'epic' %}title-epic{% elif match.participant_2.editor_title_rarity == 'rare' %}text-blue-600{% else %}text-gray-600{% endif %}">{{ match.participant_2.editor_title }}</p>
                                 </div>
                             </div>
                             {% endif %}

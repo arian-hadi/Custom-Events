@@ -30,7 +30,7 @@ Parameters:
             {% else %}
             <span class="hexagon-avatar__fallback">{{ participant.channel_name|first|upper }}</span>
             {% endif %}
-            <span class="tournament-card__badge">{{ participant.editor_title }}</span>
+            <span class="tournament-card__badge {% if participant.editor_title_rarity == 'legendary' %}title-legendary{% elif participant.editor_title_rarity == 'epic' %}title-epic{% elif participant.editor_title_rarity == 'rare' %}text-blue-600{% endif %}">{{ participant.editor_title }}</span>
         </div>
     </div>
 </div>

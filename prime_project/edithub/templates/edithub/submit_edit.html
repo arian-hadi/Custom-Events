@@ -89,18 +89,52 @@
                                 </div>
 
                                 {% if youtube_future_submission %}
-                                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-                                    <div class="flex items-start gap-2">
-                                        <i class="fas fa-info-circle text-yellow-600 mt-0.5"></i>
-                                        <div>
-                                            <p class="text-sm font-semibold text-yellow-800">Already Submitted</p>
-                                            <p class="text-xs text-yellow-700 mt-1">You have already submitted a YouTube edit for the week of {{ target_week_label }}.</p>
+                                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                                    <div class="flex items-start gap-3">
+                                        <i class="fas fa-check-circle text-blue-600 mt-0.5 text-lg"></i>
+                                        <div class="flex-1">
+                                            <p class="text-sm font-semibold text-blue-800 mb-2">Edit Submitted for {{ target_week_label }}</p>
+                                            <div class="bg-white rounded-lg p-3 mb-3 border border-blue-100">
+                                                <p class="text-xs text-gray-600 mb-1"><strong>Video:</strong></p>
+                                                <a href="{{ youtube_future_submission.video_url }}" target="_blank" class="text-xs text-blue-600 hover:underline break-all">
+                                                    {{ youtube_future_submission.video_url|truncatechars:60 }}
+                                                </a>
+                                                {% if youtube_future_submission.title %}
+                                                <p class="text-xs text-gray-700 mt-2"><strong>Title:</strong> {{ youtube_future_submission.title }}</p>
+                                                {% endif %}
+                                            </div>
+                                            {% if can_edit_delete %}
+                                            <div class="flex gap-2">
+                                                <a href="{% url 'edithub:edit_submission' youtube_future_submission.pk %}" 
+                                                   class="flex-1 text-center px-3 py-2 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700 transition-colors">
+                                                    <i class="fas fa-edit mr-1"></i> Edit
+                                                </a>
+                                                <form method="POST" action="{% url 'edithub:delete_submission' youtube_future_submission.pk %}" 
+                                                      onsubmit="return confirm('Are you sure you want to delete this submission?');" 
+                                                      class="flex-1">
+                                                    {% csrf_token %}
+                                                    <button type="submit" 
+                                                            class="w-full px-3 py-2 bg-red-600 text-white text-xs font-semibold rounded-lg hover:bg-red-700 transition-colors">
+                                                        <i class="fas fa-trash mr-1"></i> Delete
+                                                    </button>
+                                                </form>
+                                            </div>
+                                            <p class="text-xs text-gray-500 mt-2">
+                                                <i class="fas fa-clock mr-1"></i>
+                                                You can edit or delete until {{ deadline|date:"M d, Y H:i" }} UTC
+                                            </p>
+                                            {% else %}
+                                            <p class="text-xs text-yellow-700 mt-2">
+                                                <i class="fas fa-lock mr-1"></i>
+                                                The deadline has passed. This edit will participate in the competition.
+                                            </p>
+                                            {% endif %}
                                         </div>
                                     </div>
                                 </div>
                                 {% endif %}
 
-                                {% if youtube_form %}
+                                {% if youtube_form and not youtube_future_submission %}
                                 <form method="POST" enctype="multipart/form-data" class="space-y-4">
                                     {% csrf_token %}
                                     <input type="hidden" name="platform" value="youtube">
@@ -201,18 +235,52 @@
                                 </div>
 
                                 {% if tiktok_future_submission %}
-                                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-                                    <div class="flex items-start gap-2">
-                                        <i class="fas fa-info-circle text-yellow-600 mt-0.5"></i>
-                                        <div>
-                                            <p class="text-sm font-semibold text-yellow-800">Already Submitted</p>
-                                            <p class="text-xs text-yellow-700 mt-1">You have already submitted a TikTok edit for the week of {{ target_week_label }}.</p>
+                                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                                    <div class="flex items-start gap-3">
+                                        <i class="fas fa-check-circle text-blue-600 mt-0.5 text-lg"></i>
+                                        <div class="flex-1">
+                                            <p class="text-sm font-semibold text-blue-800 mb-2">Edit Submitted for {{ target_week_label }}</p>
+                                            <div class="bg-white rounded-lg p-3 mb-3 border border-blue-100">
+                                                <p class="text-xs text-gray-600 mb-1"><strong>Video:</strong></p>
+                                                <a href="{{ tiktok_future_submission.video_url }}" target="_blank" class="text-xs text-blue-600 hover:underline break-all">
+                                                    {{ tiktok_future_submission.video_url|truncatechars:60 }}
+                                                </a>
+                                                {% if tiktok_future_submission.title %}
+                                                <p class="text-xs text-gray-700 mt-2"><strong>Title:</strong> {{ tiktok_future_submission.title }}</p>
+                                                {% endif %}
+                                            </div>
+                                            {% if can_edit_delete %}
+                                            <div class="flex gap-2">
+                                                <a href="{% url 'edithub:edit_submission' tiktok_future_submission.pk %}" 
+                                                   class="flex-1 text-center px-3 py-2 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700 transition-colors">
+                                                    <i class="fas fa-edit mr-1"></i> Edit
+                                                </a>
+                                                <form method="POST" action="{% url 'edithub:delete_submission' tiktok_future_submission.pk %}" 
+                                                      onsubmit="return confirm('Are you sure you want to delete this submission?');" 
+                                                      class="flex-1">
+                                                    {% csrf_token %}
+                                                    <button type="submit" 
+                                                            class="w-full px-3 py-2 bg-red-600 text-white text-xs font-semibold rounded-lg hover:bg-red-700 transition-colors">
+                                                        <i class="fas fa-trash mr-1"></i> Delete
+                                                    </button>
+                                                </form>
+                                            </div>
+                                            <p class="text-xs text-gray-500 mt-2">
+                                                <i class="fas fa-clock mr-1"></i>
+                                                You can edit or delete until {{ deadline|date:"M d, Y H:i" }} UTC
+                                            </p>
+                                            {% else %}
+                                            <p class="text-xs text-yellow-700 mt-2">
+                                                <i class="fas fa-lock mr-1"></i>
+                                                The deadline has passed. This edit will participate in the competition.
+                                            </p>
+                                            {% endif %}
                                         </div>
                                     </div>
                                 </div>
                                 {% endif %}
 
-                                {% if tiktok_form %}
+                                {% if tiktok_form and not tiktok_future_submission %}
                                 <form method="POST" enctype="multipart/form-data" class="space-y-4">
                                     {% csrf_token %}
                                     <input type="hidden" name="platform" value="tiktok">

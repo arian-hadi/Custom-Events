@@ -2,6 +2,20 @@
 
 {% block title %}User Dashboard - Event Platform{% endblock %}
 
+{% block extra_css %}
+<style>
+    /* Editor Title Rarity Styling - Now centralized in base.html */
+    
+    /* Line clamp utility for notification cards */
+    .line-clamp-3 {
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <main class="pt-16 bg-gradient-to-br from-gray-50 via-white to-gray-50 min-h-screen">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -12,8 +26,8 @@
                 <div class="flex flex-col md:flex-row items-center md:items-start gap-6">
                     <!-- Profile Picture -->
                     <div class="relative">
-                        {% if user.profile_picture %}
-                        <img src="{{ user.profile_picture.url }}" alt="{{ user.username }}" 
+                        {% if display_picture %}
+                        <img src="{{ display_picture }}" alt="{{ display_name }}" 
                              class="w-24 h-24 sm:w-32 sm:h-32 rounded-full object-cover ring-4 ring-white/30 shadow-2xl" />
                         {% else %}
                         <div class="w-24 h-24 sm:w-32 sm:h-32 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center ring-4 ring-white/30 shadow-2xl">
@@ -28,8 +42,17 @@
                     <div class="flex-1 text-center md:text-left">
                         <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                             <div>
-                                <h1 class="text-3xl sm:text-4xl font-bold mb-2">{{ user.username }}</h1>
+                                <h1 class="text-3xl sm:text-4xl font-bold mb-2">{{ display_name }}</h1>
+                                {% if current_title %}
+                                <p class="text-xl sm:text-2xl font-semibold mb-2 {% if current_title.rarity == 'legendary' %}title-legendary{% elif current_title.rarity == 'epic' %}title-epic text-purple-200{% elif current_title.rarity == 'rare' %}text-blue-200{% else %}text-blue-100{% endif %}">
+                                    {{ current_title.name }}
+                                </p>
+                                {% endif %}
                                 <p class="text-blue-100 text-lg">Welcome back to your dashboard</p>
+                                <a href="{% url 'edithub:customize_profile' %}" class="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-lg text-white text-sm font-semibold transition-all">
+                                    <i class="fas fa-edit"></i>
+                                    <span>Edit Your Profile</span>
+                                </a>
                             </div>
                             
                             <!-- Rank Badge (only if user has applied for ranking) -->
@@ -56,6 +79,42 @@
                             </div>
                             {% endif %}
                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notifications Section -->
+        <div class="bg-white rounded-xl shadow-lg mb-8 border border-gray-100">
+            <div class="p-4 sm:p-6 border-b border-gray-200">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <h2 class="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2">
+                        <i class="fas fa-bell text-indigo-600"></i>
+                        Notifications
+                        {% if unread_notification_count > 0 %}
+                        <span class="ml-2 px-2 py-1 bg-red-500 text-white text-sm font-bold rounded-full" id="notification-badge">
+                            {{ unread_notification_count }}
+                        </span>
+                        {% endif %}
+                    </h2>
+                    <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+                        <a href="{% url 'notifications:notification_list_page' %}" class="px-4 py-2 text-sm font-medium text-indigo-600 hover:text-indigo-700 transition-colors border border-indigo-600 rounded-lg hover:bg-indigo-50 text-center">
+                            <i class="fas fa-eye mr-1"></i>View All
+                        </a>
+                        <button onclick="markAllNotificationsRead()" class="px-4 py-2 text-sm font-medium text-gray-700 hover:text-indigo-600 transition-colors border border-gray-300 rounded-lg hover:bg-gray-50">
+                            <i class="fas fa-check-double mr-1"></i>Mark all as read
+                        </button>
+                        <button onclick="loadNotifications()" class="px-4 py-2 text-sm font-medium text-indigo-600 hover:text-indigo-700 transition-colors border border-indigo-300 rounded-lg hover:bg-indigo-50">
+                            <i class="fas fa-sync-alt mr-1"></i>Refresh
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="p-4 sm:p-6">
+                <div id="notifications-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    <div class="col-span-full flex items-center justify-center py-12">
+                        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                        <span class="ml-3 text-gray-600">Loading notifications...</span>
                     </div>
                 </div>
             </div>
@@ -355,9 +414,27 @@
                             <div class="bg-white/20 backdrop-blur-sm rounded-lg p-3">
                                 <i class="fas fa-video text-2xl"></i>
                             </div>
-                            <div>
+                            <div class="flex-1">
                                 <h2 class="text-xl font-bold">Edit Submissions</h2>
-                                <p class="text-green-100 text-sm">Edit of the Week</p>
+                                <div class="flex flex-wrap items-center gap-2 sm:gap-3 mt-1.5">
+                                    <p class="text-green-100 text-sm">Edit of the Week</p>
+                                    <span class="text-green-200 hidden sm:inline">•</span>
+                                    {% if can_edit_delete %}
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white/20 backdrop-blur-sm rounded-full text-xs font-semibold">
+                                        <span class="w-2 h-2 bg-green-300 rounded-full animate-pulse"></span>
+                                        Submissions Open
+                                    </span>
+                                    {% else %}
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white/20 backdrop-blur-sm rounded-full text-xs font-semibold">
+                                        <i class="fas fa-lock text-xs"></i>
+                                        Submissions Closed
+                                    </span>
+                                    {% endif %}
+                                    <span class="text-green-200 hidden sm:inline">•</span>
+                                    <p class="text-green-100 text-xs">
+                                        Deadline: {{ deadline|date:"M d, Y H:i" }} UTC
+                                    </p>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -379,7 +456,7 @@
                         </div>
                     </div>
                     
-                    <div class="flex gap-3">
+                    <div class="flex gap-3 mb-6">
                         <a href="{% url 'edithub:submit_edit' %}" 
                            class="flex-1 text-center px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white font-semibold rounded-lg hover:from-green-600 hover:to-emerald-600 transition-all duration-300 transform hover:scale-105 shadow-md">
                             <span>Submit Edit</span>
@@ -389,6 +466,63 @@
                             <span>View All</span>
                         </a>
                     </div>
+                    
+                    <!-- Upcoming Week Submissions -->
+                    {% if upcoming_submissions %}
+                    <div class="border-t border-gray-200 pt-6 mt-6">
+                        <h3 class="text-sm font-semibold text-gray-900 mb-3">Upcoming Week Submissions</h3>
+                        <div class="space-y-2">
+                            {% for submission in upcoming_submissions %}
+                            <div class="{% if submission.channel_type == 'youtube' %}bg-red-50 border border-red-200{% else %}bg-gray-50 border border-gray-300{% endif %} rounded-lg p-3 hover:shadow-md transition-shadow">
+                                <div class="flex items-center justify-between gap-3">
+                                    <div class="flex items-center gap-3 flex-1 min-w-0">
+                                        <!-- Platform Logo -->
+                                        {% if submission.channel_type == 'youtube' %}
+                                        <div class="flex-shrink-0">
+                                            <svg class="w-6 h-6 text-red-600" fill="currentColor" viewBox="0 0 24 24">
+                                                <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                                            </svg>
+                                        </div>
+                                        {% else %}
+                                        <div class="flex-shrink-0">
+                                            <svg class="w-6 h-6 text-gray-900" fill="currentColor" viewBox="0 0 24 24">
+                                                <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
+                                            </svg>
+                                        </div>
+                                        {% endif %}
+                                        <!-- Title -->
+                                        <div class="flex-1 min-w-0">
+                                            <p class="text-sm font-medium {% if submission.channel_type == 'youtube' %}text-gray-900{% else %}text-gray-900{% endif %} truncate">
+                                                {{ submission.title|default:submission.video_url|truncatechars:60 }}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <!-- Action Icons -->
+                                    {% if can_edit_delete %}
+                                    <div class="flex items-center gap-2 flex-shrink-0">
+                                        <a href="{% url 'edithub:edit_submission' submission.pk %}" 
+                                           class="p-2 {% if submission.channel_type == 'youtube' %}text-red-600 hover:bg-red-100{% else %}text-gray-700 hover:bg-gray-200{% endif %} rounded-lg transition-colors"
+                                           title="Edit">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <form method="POST" action="{% url 'edithub:delete_submission' submission.pk %}" 
+                                              onsubmit="return confirm('Are you sure you want to delete this submission?');"
+                                              class="inline">
+                                            {% csrf_token %}
+                                            <button type="submit" 
+                                                    class="p-2 text-red-600 {% if submission.channel_type == 'youtube' %}hover:bg-red-100{% else %}hover:bg-red-50{% endif %} rounded-lg transition-colors"
+                                                    title="Delete">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
 
@@ -441,5 +575,223 @@
         </div>
     </div>
 </main>
+
+<script>
+// Notification Management Functions
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function formatDate(dateString) {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+    
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+    
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function getNotificationIcon(type) {
+    const icons = {
+        'application_approved': 'fa-check-circle text-green-500',
+        'application_disapproved': 'fa-times-circle text-red-500',
+        'ranking_updated': 'fa-trophy text-yellow-500',
+        'edit_of_week_daily': 'fa-chart-line text-blue-500',
+        'title_unlocked': 'fa-star text-purple-500',
+        'edit_verified': 'fa-check text-green-500',
+        'edit_rejected': 'fa-times text-red-500',
+    };
+    return icons[type] || 'fa-bell text-gray-500';
+}
+
+function loadNotifications() {
+    const container = document.getElementById('notifications-container');
+    container.innerHTML = '<div class="col-span-full flex items-center justify-center py-12"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div><span class="ml-3 text-gray-600">Loading notifications...</span></div>';
+    
+    // Limit to 4 notifications for dashboard preview
+    fetch('{% url "notifications:notification_list" %}?limit=4')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                renderNotifications(data.notifications);
+                updateUnreadBadge(data.unread_count);
+            } else {
+                container.innerHTML = '<div class="col-span-full"><p class="text-gray-500 text-center py-8">Error loading notifications</p></div>';
+            }
+        })
+        .catch(error => {
+            console.error('Error loading notifications:', error);
+            container.innerHTML = '<div class="col-span-full"><p class="text-red-500 text-center py-8">Error loading notifications. Please try again.</p></div>';
+        });
+}
+
+function renderNotifications(notifications) {
+    const container = document.getElementById('notifications-container');
+    
+    if (notifications.length === 0) {
+        container.innerHTML = '<div class="col-span-full"><p class="text-gray-500 text-center py-12">No notifications yet. You\'ll see updates here when they arrive!</p></div>';
+        return;
+    }
+    
+    let html = '';
+    notifications.forEach(notification => {
+        const iconClass = getNotificationIcon(notification.notification_type);
+        const readClass = notification.is_read ? 'bg-gray-50' : 'bg-blue-50 border-l-4 border-indigo-500';
+        
+        // Truncate message for card view (show first 100 chars)
+        const messagePreview = notification.message.length > 100 
+            ? notification.message.substring(0, 100) + '...' 
+            : notification.message;
+        
+        html += `
+            <div class="notification-item ${readClass} rounded-lg p-3 sm:p-4 border border-gray-200 hover:shadow-md transition-all flex flex-col h-full" data-notification-id="${notification.id}">
+                <!-- Mobile: Only title -->
+                <div class="flex items-center gap-2 md:hidden">
+                    <div class="flex-shrink-0">
+                        <i class="fas ${iconClass} text-lg"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <h3 class="font-semibold text-gray-900 text-sm ${notification.is_read ? '' : 'font-bold'}" title="${notification.title}">${notification.title}</h3>
+                    </div>
+                    ${!notification.is_read ? '<span class="w-2 h-2 bg-indigo-500 rounded-full flex-shrink-0"></span>' : ''}
+                </div>
+                
+                <!-- Desktop: Full card -->
+                <div class="hidden md:flex flex-col h-full">
+                    <div class="flex items-start gap-3 mb-2">
+                        <div class="flex-shrink-0 mt-1">
+                            <i class="fas ${iconClass} text-xl"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-start justify-between gap-2 mb-1">
+                                <h3 class="font-semibold text-gray-900 text-sm ${notification.is_read ? '' : 'font-bold'}" title="${notification.title}">${notification.title.length > 30 ? notification.title.substring(0, 30) + '...' : notification.title}</h3>
+                                ${!notification.is_read ? '<span class="w-2 h-2 bg-indigo-500 rounded-full flex-shrink-0 mt-1"></span>' : ''}
+                            </div>
+                            <span class="text-xs text-gray-500">${formatDate(notification.created_at)}</span>
+                        </div>
+                    </div>
+                    <p class="text-xs text-gray-700 mt-2 flex-grow line-clamp-3" title="${notification.message}">${messagePreview}</p>
+                    <div class="flex items-center gap-2 mt-3 pt-3 border-t border-gray-200">
+                        ${!notification.is_read ? `<button onclick="markNotificationRead(${notification.id})" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium">Mark read</button>` : ''}
+                        <button onclick="deleteNotification(${notification.id})" class="text-xs text-red-600 hover:text-red-800 font-medium">Delete</button>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
+
+function markNotificationRead(notificationId) {
+    const csrftoken = getCookie('csrftoken');
+    fetch(`{% url "notifications:mark_read" notification_id=0 %}`.replace('0', notificationId), {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrftoken
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            loadNotifications();
+        }
+    })
+    .catch(error => {
+        console.error('Error marking notification as read:', error);
+    });
+}
+
+function markAllNotificationsRead() {
+    const csrftoken = getCookie('csrftoken');
+    fetch('{% url "notifications:mark_all_read" %}', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrftoken
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            loadNotifications();
+        }
+    })
+    .catch(error => {
+        console.error('Error marking all notifications as read:', error);
+    });
+}
+
+function deleteNotification(notificationId) {
+    if (!confirm('Are you sure you want to delete this notification?')) {
+        return;
+    }
+    
+    const csrftoken = getCookie('csrftoken');
+    fetch(`{% url "notifications:delete_notification" notification_id=0 %}`.replace('0', notificationId), {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrftoken
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            loadNotifications();
+        }
+    })
+    .catch(error => {
+        console.error('Error deleting notification:', error);
+    });
+}
+
+function updateUnreadBadge(count) {
+    const badge = document.getElementById('notification-badge');
+    if (count > 0) {
+        if (badge) {
+            badge.textContent = count;
+        } else {
+            // Create badge if it doesn't exist
+            const title = document.querySelector('h2');
+            if (title) {
+                const newBadge = document.createElement('span');
+                newBadge.id = 'notification-badge';
+                newBadge.className = 'ml-2 px-2 py-1 bg-red-500 text-white text-sm font-bold rounded-full';
+                newBadge.textContent = count;
+                title.appendChild(newBadge);
+            }
+        }
+    } else {
+        if (badge) {
+            badge.remove();
+        }
+    }
+}
+
+// Load notifications on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadNotifications();
+    
+    // Auto-refresh notifications every 5 minutes
+    setInterval(loadNotifications, 300000);
+});
+</script>
 
 {% endblock %}

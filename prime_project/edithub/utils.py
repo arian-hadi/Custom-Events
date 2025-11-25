@@ -6,6 +6,10 @@ import logging
 import json
 import math
 from datetime import datetime, timedelta, timezone
+from django.core.files.base import ContentFile
+from django.core.files.images import ImageFile
+from io import BytesIO
+from PIL import Image
 
 logger = logging.getLogger(__name__)
 
@@ -1341,6 +1345,75 @@ def get_fallback_thumbnail(existing_thumbnail: str, new_thumbnail: str, *additio
     return ''
 
 
+def download_image_from_url(image_url: str) -> Optional[ContentFile]:
+    """
+    Download an image from a URL and return it as a Django ContentFile.
+    
+    Args:
+        image_url: URL of the image to download
+        
+    Returns:
+        ContentFile object with the image data, or None if download fails
+    """
+    if not image_url or not is_valid_thumbnail_url(image_url):
+        return None
+    
+    try:
+        # Download the image
+        response = requests.get(image_url, timeout=10, stream=True)
+        response.raise_for_status()
+        
+        # Check content type
+        content_type = response.headers.get('content-type', '')
+        if not content_type.startswith('image/'):
+            logger.warning(f"URL {image_url} does not return an image (content-type: {content_type})")
+            return None
+        
+        # Read image data
+        image_data = BytesIO(response.content)
+        
+        # Verify it's a valid image by opening with PIL
+        try:
+            img = Image.open(image_data)
+            img.verify()  # Verify it's a valid image
+        except Exception as e:
+            logger.warning(f"Invalid image data from {image_url}: {e}")
+            return None
+        
+        # Reset BytesIO position after verify
+        image_data.seek(0)
+        
+        # Get file extension from URL or content type
+        ext = 'jpg'  # default
+        if '.jpg' in image_url.lower() or '.jpeg' in image_url.lower():
+            ext = 'jpg'
+        elif '.png' in image_url.lower():
+            ext = 'png'
+        elif '.gif' in image_url.lower():
+            ext = 'gif'
+        elif '.webp' in image_url.lower():
+            ext = 'webp'
+        elif 'png' in content_type.lower():
+            ext = 'png'
+        elif 'gif' in content_type.lower():
+            ext = 'gif'
+        elif 'webp' in content_type.lower():
+            ext = 'webp'
+        
+        # Create filename
+        filename = f"profile_picture_{datetime.now().strftime('%Y%m%d_%H%M%S')}.{ext}"
+        
+        # Create ContentFile
+        return ContentFile(image_data.read(), name=filename)
+        
+    except requests.RequestException as e:
+        logger.error(f"Error downloading image from {image_url}: {e}")
+        return None
+    except Exception as e:
+        logger.error(f"Unexpected error downloading image from {image_url}: {e}")
+        return None
+
+
 def fetch_tiktok_video_title(video_url: str) -> Optional[str]:
     """
     Fetch TikTok video title using oEmbed API (simplest method)
@@ -2020,30 +2093,142 @@ def get_competition_state(now: datetime = None) -> Dict[str, any]:
 
 
 def format_countdown(timedelta_obj: timedelta) -> str:
-    """
-    Format a timedelta as a countdown string (e.g., "2d 4h 30m").
+    """Format a timedelta object as a countdown string"""
+    if timedelta_obj.total_seconds() < 0:
+        return "00:00:00"
     
-    Args:
-        timedelta_obj: timedelta object to format
-    
-    Returns:
-        Formatted string like "2d 4h 30m" or "4h 30m" or "30m"
-    """
     total_seconds = int(timedelta_obj.total_seconds())
-    
-    if total_seconds <= 0:
-        return "Ended"
-    
-    days = total_seconds // 86400
-    hours = (total_seconds % 86400) // 3600
+    hours = total_seconds // 3600
     minutes = (total_seconds % 3600) // 60
+    seconds = total_seconds % 60
     
-    parts = []
-    if days > 0:
-        parts.append(f"{days}d")
-    if hours > 0:
-        parts.append(f"{hours}h")
-    if minutes > 0 or not parts:
-        parts.append(f"{minutes}m")
+    return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+
+
+def check_user_achievements(user):
+    """
+    Check all achievement-based titles and unlock them if user qualifies.
+    Returns list of newly unlocked titles.
+    """
+    from .models import EditorTitle, UserTitleUnlock, WeekWinner, EditSubmission
+    from django.db.models import Sum, Avg, Max
     
-    return " ".join(parts)
+    achievement_titles = EditorTitle.objects.filter(
+        unlock_method__in=['achievement', 'both'],
+        achievement_type__isnull=False,
+        is_active=True
+    )
+    
+    unlocked_titles = []
+    
+    for title in achievement_titles:
+        # Skip if already unlocked
+        if UserTitleUnlock.objects.filter(user=user, title=title).exists():
+            continue
+        
+        qualifies = False
+        
+        try:
+            if title.achievement_type == 'rank_1_wins':
+                # Count only rank #1 (first place) wins - becoming Edit of the Week
+                win_count = WeekWinner.objects.filter(user=user, week_rank=1).count()
+                qualifies = win_count >= title.achievement_threshold
+                
+            elif title.achievement_type == 'total_points':
+                # Sum of all calculated_points from verified submissions (overall total)
+                total_points = EditSubmission.objects.filter(
+                    user=user,
+                    status='verified'
+                ).aggregate(Sum('calculated_points'))['calculated_points__sum'] or 0
+                qualifies = float(total_points) >= title.achievement_threshold
+                
+            elif title.achievement_type == 'points_per_edit':
+                # Points for a single edit - check if user has at least one edit with this many points
+                max_points = EditSubmission.objects.filter(
+                    user=user,
+                    status='verified'
+                ).aggregate(Max('calculated_points'))['calculated_points__max'] or 0
+                qualifies = float(max_points) >= title.achievement_threshold
+            
+            if qualifies:
+                UserTitleUnlock.objects.get_or_create(
+                    user=user,
+                    title=title,
+                    defaults={'unlock_method': 'achievement'}
+                )
+                unlocked_titles.append(title)
+                logger.info(f"User {user.username} unlocked title '{title.name}' via achievement")
+                
+        except Exception as e:
+            logger.error(f"Error checking achievement for title {title.name} and user {user.username}: {str(e)}")
+            continue
+    
+    return unlocked_titles
+
+
+def is_title_unlocked_for_user(user, title):
+    """
+    Check if a title is unlocked for a user.
+    Returns True if unlocked, False otherwise.
+    """
+    from .models import UserTitleUnlock
+    
+    # Free titles are always unlocked
+    if title.cost_coins == 0 and title.unlock_method == 'coins':
+        return True
+    
+    # Check if unlocked via achievement or coins
+    return UserTitleUnlock.objects.filter(user=user, title=title).exists()
+
+
+def get_user_achievement_progress(user, title):
+    """
+    Get the user's current progress towards unlocking an achievement-based title.
+    Returns a dict with current_value, threshold, and progress_percentage.
+    """
+    from .models import WeekWinner, EditSubmission
+    from django.db.models import Sum, Avg, Max
+    
+    if not title.achievement_type or title.unlock_method not in ['achievement', 'both']:
+        return None
+    
+    current_value = 0
+    threshold = title.achievement_threshold
+    
+    try:
+        if title.achievement_type == 'rank_1_wins':
+            # Count only rank #1 (first place) wins - becoming Edit of the Week
+            current_value = WeekWinner.objects.filter(user=user, week_rank=1).count()
+            
+        elif title.achievement_type == 'total_points':
+            # Sum of all calculated_points from verified submissions (overall total)
+            total_points = EditSubmission.objects.filter(
+                user=user,
+                status='verified'
+            ).aggregate(Sum('calculated_points'))['calculated_points__sum'] or 0
+            current_value = float(total_points)
+            
+        elif title.achievement_type == 'points_per_edit':
+            # Points for a single edit - get the maximum points from any single edit
+            max_points = EditSubmission.objects.filter(
+                user=user,
+                status='verified'
+            ).aggregate(Max('calculated_points'))['calculated_points__max'] or 0
+            current_value = float(max_points)
+        
+        # Calculate progress percentage
+        if threshold > 0:
+            progress_percentage = min(100, (current_value / threshold) * 100)
+        else:
+            progress_percentage = 0
+        
+        return {
+            'current_value': current_value,
+            'threshold': threshold,
+            'progress_percentage': round(progress_percentage, 1),
+            'is_complete': current_value >= threshold
+        }
+        
+    except Exception as e:
+        logger.error(f"Error calculating progress for title {title.name} and user {user.username}: {str(e)}")
+        return None
