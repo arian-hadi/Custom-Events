@@ -229,7 +229,7 @@
 {% endblock %}
 
 {% block content %}
-<main class="pt-16 bg-gradient-to-b from-white via-gray-50 to-gray-100 min-h-screen">
+<main class="pt-16 pb-24 bg-gradient-to-b from-white via-gray-50 to-gray-100 min-h-screen">
     <!-- Header Section -->
     <section class="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-12">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -1305,6 +1305,84 @@
         </div>
     </section>
     {% endif %}
+
+    <!-- Coming Soon Footer Section -->
+    <section class="py-14">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-950 via-purple-900 to-blue-950 text-white shadow-2xl border border-purple-700/40">
+                <!-- Subtle glow accents -->
+                <div class="pointer-events-none absolute inset-0 opacity-30 mix-blend-screen">
+                    <div class="absolute -top-20 -right-10 w-52 h-52 bg-purple-600 rounded-full blur-3xl"></div>
+                    <div class="absolute -bottom-24 -left-12 w-64 h-64 bg-blue-600 rounded-full blur-3xl"></div>
+                </div>
+
+                <div class="relative px-6 py-10 sm:px-10 sm:py-12">
+                    <div class="text-center mb-8">
+                        <p class="text-[0.7rem] sm:text-xs font-semibold tracking-[0.35em] text-purple-200/90 uppercase mb-3">
+                            EditingHub Roadmap
+                        </p>
+                        <h2 class="text-2xl sm:text-3xl md:text-4xl font-extrabold">
+                            More Coming Soon
+                        </h2>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+                        <!-- Different Edit Events -->
+                        <div class="bg-slate-900/70 border border-purple-500/50 rounded-2xl px-4 py-5 flex flex-col justify-between">
+                            <div>
+                                <p class="text-xs font-semibold tracking-[0.18em] text-purple-200 uppercase mb-2">
+                                    Different Edit Events
+                                </p>
+                                <p class="text-xs sm:text-sm text-purple-100/85">
+                                    Rotating formats and themes so you’re not only judged on one type of edit.
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Edit of the Month -->
+                        <div class="bg-slate-900/70 border border-indigo-500/60 rounded-2xl px-4 py-5 flex flex-col justify-between">
+                            <div>
+                                <p class="text-xs font-semibold tracking-[0.18em] text-indigo-200 uppercase mb-2">
+                                    Edit of the Month
+                                </p>
+                                <p class="text-xs sm:text-sm text-indigo-100/90">
+                                    A bigger, slower, high–stakes event focused on your very best project of the month.
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Friendly Matches -->
+                        <div class="bg-slate-900/70 border border-blue-500/60 rounded-2xl px-4 py-5 flex flex-col justify-between">
+                            <div>
+                                <p class="text-xs font-semibold tracking-[0.18em] text-blue-200 uppercase mb-2">
+                                    Friendly Matches
+                                </p>
+                                <p class="text-xs sm:text-sm text-blue-100/90">
+                                    1v1 and squad-style matchups so you can challenge friends and rivals directly.
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- More Features -->
+                        <div class="bg-slate-900/70 border border-fuchsia-500/60 rounded-2xl px-4 py-5 flex flex-col justify-between">
+                            <div>
+                                <p class="text-xs font-semibold tracking-[0.18em] text-fuchsia-200 uppercase mb-2">
+                                    More Features
+                                </p>
+                                <p class="text-xs sm:text-sm text-fuchsia-100/90">
+                                    Extra event types, creator tools and progression systems are under active development.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <p class="mt-6 text-[0.7rem] sm:text-xs text-purple-100/70 text-center">
+                        These features are in development and will be introduced gradually as EditingHub evolves.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
 
     <!-- How It Works Modal -->
     <div id="howItWorksModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-[100]" style="display: none;">
