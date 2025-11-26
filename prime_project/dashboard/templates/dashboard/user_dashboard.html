@@ -229,16 +229,20 @@
                            {% if ranking_tab == 'mix' %}bg-white text-indigo-600 shadow-sm{% else %}text-gray-600 hover:text-gray-900{% endif %}">
                             Mix
                         </a>
+                        {% if youtube_rank is not None %}
                         <a href="?ranking_tab=youtube" 
                            class="flex-1 text-center px-3 py-2 rounded-md text-sm font-semibold transition-all duration-200
                            {% if ranking_tab == 'youtube' %}bg-white text-red-600 shadow-sm{% else %}text-gray-600 hover:text-gray-900{% endif %}">
                             <i class="fab fa-youtube mr-1"></i>YouTube
                         </a>
+                        {% endif %}
+                        {% if tiktok_rank is not None %}
                         <a href="?ranking_tab=tiktok" 
                            class="flex-1 text-center px-3 py-2 rounded-md text-sm font-semibold transition-all duration-200
                            {% if ranking_tab == 'tiktok' %}bg-white text-gray-900 shadow-sm{% else %}text-gray-600 hover:text-gray-900{% endif %}">
                             <i class="fab fa-tiktok mr-1"></i>TikTok
                         </a>
+                        {% endif %}
                     </div>
                     
                     <!-- Ranking Preview: Above, Current, Below -->
@@ -269,8 +273,16 @@
                                     <div class="flex-1 min-w-0">
                                         <p class="font-semibold text-gray-900 truncate">{{ rank_above.channel_name }}</p>
                                         <p class="text-xs text-gray-500">
-                                            <i class="fab fa-{{ rank_above.channel_type }} mr-1"></i>
-                                            {{ rank_above.follower_count|floatformat:0 }} followers
+                                            {% if ranking_tab == 'mix' and rank_above.platforms|length > 1 %}
+                                                <i class="fab fa-youtube mr-1 text-red-600"></i><i class="fab fa-tiktok mr-1"></i>
+                                                {{ rank_above.follower_count|floatformat:0 }} total followers
+                                            {% elif ranking_tab == 'mix' and rank_above.platforms|length == 1 %}
+                                                <i class="fab fa-{{ rank_above.platforms.0 }} mr-1"></i>
+                                                {{ rank_above.follower_count|floatformat:0 }} followers
+                                            {% else %}
+                                                <i class="fab fa-{{ rank_above.channel_type }} mr-1"></i>
+                                                {{ rank_above.follower_count|floatformat:0 }} followers
+                                            {% endif %}
                                         </p>
                                     </div>
                                 </div>
@@ -302,8 +314,16 @@
                                             <span class="px-2 py-0.5 bg-indigo-500 text-white text-xs font-semibold rounded-full flex-shrink-0">You</span>
                                         </div>
                                         <p class="text-xs text-gray-600">
-                                            <i class="fab fa-{{ user_rank_app.channel_type }} mr-1"></i>
-                                            {{ user_rank_app.follower_count|floatformat:0 }} followers
+                                            {% if ranking_tab == 'mix' and user_platforms|length > 1 %}
+                                                <i class="fab fa-youtube mr-1 text-red-600"></i><i class="fab fa-tiktok mr-1"></i>
+                                                {{ user_rank_app.follower_count|floatformat:0 }} total followers
+                                            {% elif ranking_tab == 'mix' and user_platforms|length == 1 %}
+                                                <i class="fab fa-{{ user_platforms.0 }} mr-1"></i>
+                                                {{ user_rank_app.follower_count|floatformat:0 }} followers
+                                            {% else %}
+                                                <i class="fab fa-{{ user_rank_app.channel_type }} mr-1"></i>
+                                                {{ user_rank_app.follower_count|floatformat:0 }} followers
+                                            {% endif %}
                                         </p>
                                     </div>
                                 </div>
@@ -336,8 +356,16 @@
                                     <div class="flex-1 min-w-0">
                                         <p class="font-semibold text-gray-900 truncate">{{ rank_below.channel_name }}</p>
                                         <p class="text-xs text-gray-500">
-                                            <i class="fab fa-{{ rank_below.channel_type }} mr-1"></i>
-                                            {{ rank_below.follower_count|floatformat:0 }} followers
+                                            {% if ranking_tab == 'mix' and rank_below.platforms|length > 1 %}
+                                                <i class="fab fa-youtube mr-1 text-red-600"></i><i class="fab fa-tiktok mr-1"></i>
+                                                {{ rank_below.follower_count|floatformat:0 }} total followers
+                                            {% elif ranking_tab == 'mix' and rank_below.platforms|length == 1 %}
+                                                <i class="fab fa-{{ rank_below.platforms.0 }} mr-1"></i>
+                                                {{ rank_below.follower_count|floatformat:0 }} followers
+                                            {% else %}
+                                                <i class="fab fa-{{ rank_below.channel_type }} mr-1"></i>
+                                                {{ rank_below.follower_count|floatformat:0 }} followers
+                                            {% endif %}
                                         </p>
                                     </div>
                                 </div>

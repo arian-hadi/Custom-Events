@@ -110,19 +110,54 @@ def user_dashboard(request):
         rank_above = None
         rank_below = None
         
+        # EditorApplication is already imported at function scope (line 57)
+        # Use it directly without re-importing
+        
         if tab_type == 'mix':
-            # Mix ranking: group by user and get best application per user
-            all_apps = EditorApplication.objects.filter(
+            # Mix ranking: group by user and sum followers from both platforms
+            # For users with both YouTube and TikTok, sum the followers
+            # For users with only one platform, use that platform's followers
+            from django.db.models import Sum
+            
+            # Get all users with accepted applications
+            users_with_apps = EditorApplication.objects.filter(
                 status='accepted',
                 removal_requested=False
-            ).select_related('user').order_by('-follower_count', 'applied_date')
+            ).values('user_id').distinct()
             
-            user_best_apps = {}
-            for app in all_apps:
-                if app.user_id not in user_best_apps:
-                    user_best_apps[app.user_id] = app
+            user_totals = []
+            for user_data in users_with_apps:
+                user_id = user_data['user_id']
+                # Get all applications for this user
+                user_apps = EditorApplication.objects.filter(
+                    user_id=user_id,
+                    status='accepted',
+                    removal_requested=False
+                ).select_related('user')
+                
+                # Sum followers from all platforms
+                total_followers = sum(app.follower_count for app in user_apps)
+                
+                # Get the primary app (highest follower count) for display purposes
+                primary_app = max(user_apps, key=lambda x: x.follower_count)
+                
+                # Get earliest applied_date for tie-breaking
+                earliest_app = min(user_apps, key=lambda x: x.applied_date)
+                
+                user_totals.append({
+                    'user_id': user_id,
+                    'total_followers': total_followers,
+                    'app': primary_app,
+                    'applied_date': earliest_app.applied_date
+                })
             
-            sorted_users = sorted(user_best_apps.items(), key=lambda x: (-x[1].follower_count, x[1].applied_date))
+            # Sort by total followers (descending), then by applied_date (ascending)
+            sorted_users = sorted(
+                user_totals, 
+                key=lambda x: (-x['total_followers'], x['applied_date'])
+            )
+            # Convert to the format expected by the rest of the function
+            sorted_users = [(item['user_id'], item['app']) for item in sorted_users]
             
         elif tab_type == 'youtube':
             # YouTube ranking
@@ -142,36 +177,88 @@ def user_dashboard(request):
             ).select_related('user').order_by('-follower_count', 'applied_date'))
             sorted_users = [(app.user_id, app) for app in sorted_apps]
         
+        # Helper function to get total followers and platform info for a user (for mix ranking)
+        def get_user_total_followers(user_id):
+            if tab_type == 'mix':
+                user_apps = EditorApplication.objects.filter(
+                    user_id=user_id,
+                    status='accepted',
+                    removal_requested=False
+                )
+                return sum(app.follower_count for app in user_apps)
+            return None
+        
+        def get_user_platforms(user_id):
+            """Get list of platforms a user has (for mix ranking display)"""
+            if tab_type == 'mix':
+                user_apps = EditorApplication.objects.filter(
+                    user_id=user_id,
+                    status='accepted',
+                    removal_requested=False
+                )
+                return [app.channel_type for app in user_apps]
+            return []
+        
         # Find current user's position and get users above/below
         for index, (user_id, app) in enumerate(sorted_users, start=1):
             if user_id == request.user.id:
                 user_rank = index
                 user_rank_app = app
+                user_platforms = []
+                # For mix ranking, get total followers and platforms
+                if tab_type == 'mix':
+                    total_followers = get_user_total_followers(user_id)
+                    user_platforms = get_user_platforms(user_id)
+                    # Create a modified app object with total followers for display
+                    class AppWithTotalFollowers:
+                        def __init__(self, app, total_followers, platforms):
+                            self.user = app.user
+                            self.channel_name = app.channel_name
+                            self.channel_type = app.channel_type
+                            self.channel_thumbnail = app.channel_thumbnail
+                            self.follower_count = total_followers
+                            self.platforms = platforms
+                    user_rank_app = AppWithTotalFollowers(app, total_followers, user_platforms)
+                else:
+                    user_platforms = [app.channel_type]
+                
                 # Get user above (index - 1)
                 if index > 1:
                     rank_above_app = sorted_users[index - 2][1]
+                    above_follower_count = rank_above_app.follower_count
+                    above_platforms = []
+                    if tab_type == 'mix':
+                        above_follower_count = get_user_total_followers(rank_above_app.user_id)
+                        above_platforms = get_user_platforms(rank_above_app.user_id)
                     rank_above = {
                         'app': rank_above_app,
                         'rank': index - 1,
                         'user': rank_above_app.user,
                         'channel_name': rank_above_app.channel_name or rank_above_app.user.username,
-                        'follower_count': rank_above_app.follower_count,
+                        'follower_count': above_follower_count,
                         'channel_type': rank_above_app.channel_type,
                         'channel_thumbnail': rank_above_app.channel_thumbnail or '',
                         'profile_picture': rank_above_app.user.profile_picture.url if rank_above_app.user.profile_picture else '',
+                        'platforms': above_platforms if tab_type == 'mix' else [rank_above_app.channel_type],
                     }
                 # Get user below (index + 1)
                 if index < len(sorted_users):
                     rank_below_app = sorted_users[index][1]
+                    below_follower_count = rank_below_app.follower_count
+                    below_platforms = []
+                    if tab_type == 'mix':
+                        below_follower_count = get_user_total_followers(rank_below_app.user_id)
+                        below_platforms = get_user_platforms(rank_below_app.user_id)
                     rank_below = {
                         'app': rank_below_app,
                         'rank': index + 1,
                         'user': rank_below_app.user,
                         'channel_name': rank_below_app.channel_name or rank_below_app.user.username,
-                        'follower_count': rank_below_app.follower_count,
+                        'follower_count': below_follower_count,
                         'channel_type': rank_below_app.channel_type,
                         'channel_thumbnail': rank_below_app.channel_thumbnail or '',
                         'profile_picture': rank_below_app.user.profile_picture.url if rank_below_app.user.profile_picture else '',
+                        'platforms': below_platforms if tab_type == 'mix' else [rank_below_app.channel_type],
                     }
                 break
         
@@ -180,6 +267,7 @@ def user_dashboard(request):
             'user_rank_app': user_rank_app,
             'rank_above': rank_above,
             'rank_below': rank_below,
+            'user_platforms': user_platforms if 'user_platforms' in locals() else [],
         }
     
     # Get ranking data for the selected tab
@@ -188,6 +276,7 @@ def user_dashboard(request):
     user_rank_app = ranking_data['user_rank_app']
     rank_above = ranking_data['rank_above']
     rank_below = ranking_data['rank_below']
+    user_platforms = ranking_data.get('user_platforms', [])
     
     # Fallback: if user not found in selected tab, try mix ranking
     if user_rank is None and ranking_tab != 'mix':
@@ -196,6 +285,7 @@ def user_dashboard(request):
         user_rank_app = ranking_data['user_rank_app']
         rank_above = ranking_data['rank_above']
         rank_below = ranking_data['rank_below']
+        user_platforms = ranking_data.get('user_platforms', [])
         ranking_tab = 'mix'  # Switch to mix if user not in selected tab
     
     # Get edit submissions count
@@ -281,6 +371,7 @@ def user_dashboard(request):
         'display_picture': display_picture,
         'current_title': current_title,
         'unread_notification_count': unread_notification_count,
+        'user_platforms': user_platforms,
     }
     return render(request, 'dashboard/user_dashboard.html', context)
 
