@@ -20,12 +20,30 @@ class Command(BaseCommand):
             type=int,
             help='Process only a specific user ID',
         )
+        parser.add_argument(
+            '--force',
+            action='store_true',
+            help='Force re-download even if user already has a profile picture',
+        )
+        parser.add_argument(
+            '--tiktok-only',
+            action='store_true',
+            help='Only process TikTok applications',
+        )
+        parser.add_argument(
+            '--verbose',
+            action='store_true',
+            help='Show detailed diagnostic information',
+        )
 
     def handle(self, *args, **options):
         dry_run = options['dry_run']
         user_id = options.get('user_id')
+        force = options.get('force', False)
+        tiktok_only = options.get('tiktok_only', False)
+        verbose = options.get('verbose', False)
         
-        # Find all accepted applications where user doesn't have a profile picture
+        # Find all accepted applications with channel thumbnails
         queryset = EditorApplication.objects.filter(
             status='accepted',
             channel_thumbnail__isnull=False
@@ -33,17 +51,47 @@ class Command(BaseCommand):
             channel_thumbnail=''
         ).select_related('user')
         
+        if tiktok_only:
+            queryset = queryset.filter(channel_type='tiktok')
+        
         if user_id:
             queryset = queryset.filter(user_id=user_id)
-        else:
+        elif not force:
             # Only get applications where user doesn't have profile picture
             queryset = queryset.filter(user__profile_picture__isnull=True)
         
         total = queryset.count()
+        
+        if verbose:
+            # Show diagnostic info
+            all_accepted = EditorApplication.objects.filter(
+                status='accepted',
+                channel_thumbnail__isnull=False
+            ).exclude(channel_thumbnail='').count()
+            with_pic = EditorApplication.objects.filter(
+                status='accepted',
+                channel_thumbnail__isnull=False
+            ).exclude(channel_thumbnail='').exclude(user__profile_picture__isnull=True).count()
+            without_pic = EditorApplication.objects.filter(
+                status='accepted',
+                channel_thumbnail__isnull=False
+            ).exclude(channel_thumbnail='').filter(user__profile_picture__isnull=True).count()
+            
+            self.stdout.write(f'Diagnostic info:')
+            self.stdout.write(f'  Total accepted apps with thumbnails: {all_accepted}')
+            self.stdout.write(f'  Users with profile_picture: {with_pic}')
+            self.stdout.write(f'  Users without profile_picture: {without_pic}')
+            self.stdout.write(f'  Will process: {total}')
+            self.stdout.write('')
+        
         if total == 0:
             self.stdout.write(
                 self.style.WARNING('No users found that need profile pictures set.')
             )
+            if not force:
+                self.stdout.write(
+                    self.style.WARNING('Tip: Use --force to re-download for users who already have profile pictures.')
+                )
             return
         
         self.stdout.write(f'Found {total} user(s) to process...')
@@ -56,15 +104,22 @@ class Command(BaseCommand):
             user = app.user
             channel_thumbnail = app.channel_thumbnail
             
-            # Double-check user doesn't have profile picture (in case of race condition)
-            if user.profile_picture:
+            # Skip if user already has profile picture (unless force is enabled)
+            if user.profile_picture and not force:
                 self.stdout.write(
                     self.style.WARNING(
-                        f'  Skipping user {user.username} (ID: {user.id}) - already has profile picture'
+                        f'  Skipping user {user.username} (ID: {user.id}) - already has profile picture: {user.profile_picture.name}'
                     )
                 )
                 skipped += 1
                 continue
+            
+            if user.profile_picture and force:
+                self.stdout.write(
+                    self.style.NOTICE(
+                        f'  [FORCE] Re-downloading for user {user.username} (ID: {user.id}) - current: {user.profile_picture.name}'
+                    )
+                )
             
             self.stdout.write(
                 f'  Processing user {user.username} (ID: {user.id}) - {app.channel_type} application'

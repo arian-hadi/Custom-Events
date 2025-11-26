@@ -107,8 +107,19 @@ class CustomUser(AbstractUser):
     def get_display_picture(self):
         """
         Get the display picture URL based on profile_display_mode.
-        Returns account profile picture or channel thumbnail.
+        
+        Preference order:
+        - If a local profile picture is stored on the user, always prefer that
+        - Otherwise, for channel mode, fall back to the primary application's channel thumbnail
         """
+        # Always prefer locally stored profile picture (downloaded from YouTube/TikTok)
+        if self.profile_picture:
+            try:
+                return self.profile_picture.url
+            except Exception:
+                # If for some reason the file URL cannot be resolved, continue to fallbacks
+                pass
+
         if self.profile_display_mode == 'channel':
             from edithub.models import EditorApplication
             # Get primary application (highest follower count)
@@ -121,9 +132,7 @@ class CustomUser(AbstractUser):
             if app and app.channel_thumbnail:
                 return app.channel_thumbnail
         
-        # Default to account profile picture
-        if self.profile_picture:
-            return self.profile_picture.url
+        # No image available
         return None
     
     def get_available_channels(self):

@@ -768,8 +768,8 @@
                                 </td>
                                 <td class="px-4 py-4">
                                     <div class="flex items-center gap-3">
-                                        {% if ranking.display_thumbnail %}
-                                        <img src="{{ ranking.display_thumbnail }}" 
+                                        {% if ranking.display_picture %}
+                                        <img src="{{ ranking.display_picture }}" 
                                              alt="{{ ranking.display_user_name }}" 
                                              class="h-12 w-12 rounded-full object-cover shadow-sm"
                                              onerror="this.onerror=null; this.style.display='none'; this.nextElementSibling.style.display='flex';">
@@ -777,9 +777,19 @@
                                             {{ ranking.display_user_name|first|upper }}
                                         </div>
                                         {% else %}
-                                        <div class="h-12 w-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-semibold shadow-sm">
-                                            {{ ranking.display_user_name|first|upper }}
-                                        </div>
+                                            {% if ranking.display_thumbnail %}
+                                            <img src="{{ ranking.display_thumbnail }}" 
+                                                 alt="{{ ranking.display_user_name }}" 
+                                                 class="h-12 w-12 rounded-full object-cover shadow-sm"
+                                                 onerror="this.onerror=null; this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                            <div class="h-12 w-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-semibold shadow-sm" style="display: none;">
+                                                {{ ranking.display_user_name|first|upper }}
+                                            </div>
+                                            {% else %}
+                                            <div class="h-12 w-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-semibold shadow-sm">
+                                                {{ ranking.display_user_name|first|upper }}
+                                            </div>
+                                            {% endif %}
                                         {% endif %}
                                         <div>
                                             <button type="button"
@@ -889,19 +899,29 @@
                                 </td>
                                 <td class="px-4 py-4">
                                     <div class="flex items-center gap-3">
-                                        {% if ranking.channel_thumbnail %}
-                                        <img src="{{ ranking.channel_thumbnail }}" 
-                                             alt="{{ ranking.channel_name }}" 
-                                             class="h-12 w-12 rounded-full object-cover shadow-sm"
-                                             onerror="this.onerror=null; this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                                        <div class="h-12 w-12 rounded-full bg-gradient-to-br {% if ranking.channel_type == 'youtube' %}from-red-400 to-orange-400{% else %}from-purple-400 via-pink-400 to-blue-400{% endif %} flex items-center justify-center font-semibold shadow-sm" style="display: none;">
-                                            <span class="text-white font-bold">{{ ranking.channel_name|first|upper|default:"U" }}</span>
-                                        </div>
-                                        {% else %}
-                                        <div class="h-12 w-12 rounded-full bg-gradient-to-br {% if ranking.channel_type == 'youtube' %}from-red-400 to-orange-400{% else %}from-purple-400 via-pink-400 to-blue-400{% endif %} flex items-center justify-center font-semibold shadow-sm">
-                                            <span class="text-white font-bold">{{ ranking.channel_name|first|upper|default:"U" }}</span>
-                                        </div>
-                                        {% endif %}
+                                        {% with display_pic=ranking.user.get_display_picture %}
+                                            {% if display_pic %}
+                                            <img src="{{ display_pic }}"
+                                                 alt="{{ ranking.channel_name }}"
+                                                 class="h-12 w-12 rounded-full object-cover shadow-sm"
+                                                 onerror="this.onerror=null; this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                            <div class="h-12 w-12 rounded-full bg-gradient-to-br {% if ranking.channel_type == 'youtube' %}from-red-400 to-orange-400{% else %}from-purple-400 via-pink-400 to-blue-400{% endif %} flex items-center justify-center font-semibold shadow-sm" style="display: none;">
+                                                <span class="text-white font-bold">{{ ranking.channel_name|first|upper|default:"U" }}</span>
+                                            </div>
+                                            {% elif ranking.channel_thumbnail %}
+                                            <img src="{{ ranking.channel_thumbnail }}" 
+                                                 alt="{{ ranking.channel_name }}" 
+                                                 class="h-12 w-12 rounded-full object-cover shadow-sm"
+                                                 onerror="this.onerror=null; this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                            <div class="h-12 w-12 rounded-full bg-gradient-to-br {% if ranking.channel_type == 'youtube' %}from-red-400 to-orange-400{% else %}from-purple-400 via-pink-400 to-blue-400{% endif %} flex items-center justify-center font-semibold shadow-sm" style="display: none;">
+                                                <span class="text-white font-bold">{{ ranking.channel_name|first|upper|default:"U" }}</span>
+                                            </div>
+                                            {% else %}
+                                            <div class="h-12 w-12 rounded-full bg-gradient-to-br {% if ranking.channel_type == 'youtube' %}from-red-400 to-orange-400{% else %}from-purple-400 via-pink-400 to-blue-400{% endif %} flex items-center justify-center font-semibold shadow-sm">
+                                                <span class="text-white font-bold">{{ ranking.channel_name|first|upper|default:"U" }}</span>
+                                            </div>
+                                            {% endif %}
+                                        {% endwith %}
                                         <div>
                                             <button type="button"
                                                     class="text-sm font-semibold text-gray-900 hover:underline open-user-stats"

@@ -488,6 +488,14 @@ class RankingTableView(ListView):
                     display_thumbnail = get_fallback_thumbnail(primary_thumb, tiktok_thumb)
                 else:
                     display_thumbnail = primary_thumb if primary_thumb else ''
+
+            # Prefer the user's local profile picture (downloaded from platform) if available
+            # This avoids relying on expiring TikTok/YouTube CDN avatar URLs in the mix table.
+            user_display_picture = apps[0].user.get_display_picture() if hasattr(apps[0].user, 'get_display_picture') else None
+            if user_display_picture:
+                display_picture = user_display_picture
+            else:
+                display_picture = display_thumbnail
             # Get unified editor title - use user's unified title if available, otherwise use primary app's title
             unified_editor_title = None
             unified_editor_title_rarity = 'ordinary'
@@ -507,6 +515,7 @@ class RankingTableView(ListView):
                 'tiktok': tiktok_app,
                 'primary': primary_app,
                 'display_thumbnail': display_thumbnail,
+                'display_picture': display_picture,
                 'display_platform': primary_app.channel_type if primary_app else None,
                 'display_user_name': display_user_name,
                 'total_followers': total_followers,
@@ -929,10 +938,12 @@ def get_user_stats_ajax(request):
             editor_title = primary_app.editor_title
             editor_title_rarity = primary_app.editor_title_rarity
         
+        # Prefer user's local profile picture (downloaded) over platform thumbnail
+        user_display_picture = edit_user.get_display_picture() if hasattr(edit_user, 'get_display_picture') else None
         response_data = {
             'success': True,
             'username': primary_app.channel_name or edit_user.username,
-            'profile_picture': (primary_app.channel_thumbnail or '').strip(),
+            'profile_picture': user_display_picture or (primary_app.channel_thumbnail or '').strip(),
             'channel_type': primary_app.channel_type,
             'channel_link': primary_app.channel_link,
             'editor_title': editor_title,
@@ -2196,14 +2207,16 @@ def view_all_edits(request):
         except Exception:
             pass
         
-        # Use channel thumbnail and channel name from the edit (YouTube/TikTok profile)
+        # Use stable profile picture and channel name for stats banner / modal
+        display_picture = edit_user.get_display_picture() or current_edit.channel_thumbnail
         channel_stats = {
             'user': edit_user,
             'total_edits': total_edits,
             'edit_of_week_wins': edit_of_week_wins,
             'edit_of_month_wins': edit_of_month_wins,
             'best_points': float(best_points),
-            'profile_picture': current_edit.channel_thumbnail,  # Use YouTube/TikTok thumbnail
+            # Prefer locally stored profile picture (downloaded from platform) over expiring CDN URLs
+            'profile_picture': display_picture,
             'username': current_edit.channel_name,  # Use YouTube/TikTok channel name
             'channel_type': current_edit.channel_type,
             'editor_title': editor_title,  # Customizable editor title
