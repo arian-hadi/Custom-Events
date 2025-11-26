@@ -8,6 +8,7 @@ from edithub.models import EditorApplication
 from edithub.utils import (
     fetch_youtube_channel_data,
     fetch_tiktok_channel_data,
+    download_image_from_url,
 )
 
 
@@ -45,6 +46,7 @@ class Command(BaseCommand):
             queryset = queryset[:limit]
 
         total = queryset.count()
+        updated_users = set()  # Track which users had their profile pictures refreshed
         updated = 0
         failed = 0
         started_at = timezone.now()
@@ -90,6 +92,25 @@ class Command(BaseCommand):
                 if api_thumb and api_thumb != (app.channel_thumbnail or "").strip():
                     app.channel_thumbnail = api_thumb
                     fields_to_update.append("channel_thumbnail")
+
+                    # Also refresh the user's stored profile picture from the new thumbnail URL.
+                    # This keeps avatars in sync with the latest platform profile image.
+                    user = app.user
+                    if user_id := getattr(user, "id", None):
+                        # Avoid downloading multiple times per user within a single run
+                        if user_id not in updated_users:
+                            try:
+                                img_file = download_image_from_url(api_thumb)
+                                if img_file:
+                                    user.profile_picture = img_file
+                                    user.save(update_fields=["profile_picture"])
+                                    updated_users.add(user_id)
+                            except Exception as exc:
+                                self.stdout.write(
+                                    self.style.WARNING(
+                                        f"Could not refresh profile picture for user {user_id}: {exc}"
+                                    )
+                                )
                 if new_followers is not None and new_followers != app.follower_count:
                     app.follower_count = new_followers
                     fields_to_update.append("follower_count")

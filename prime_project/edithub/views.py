@@ -290,9 +290,15 @@ class RankingTableView(ListView):
                 thumb = oembed_data.get('thumbnail_url')
                 embed_html = oembed_data.get('html')  # Get TikTok's official embed HTML
             
+            # Prefer user's local profile picture, then channel_thumbnail, then fallback thumbnail
+            user = edit.user
+            user_display_picture = user.get_display_picture() if hasattr(user, 'get_display_picture') else None
+            display_picture = user_display_picture or (edit.channel_thumbnail or '').strip() or thumb
+
             enriched.append({
                 'instance': edit,
                 'id': edit.id,
+                'user': user,
                 'video_url': edit.video_url,
                 'direct_video_url': getattr(edit, 'direct_video_url', None),  # For TikTok HTML5 video player (deprecated, using embed now)
                 'tiktok_embed_html': embed_html,  # TikTok's official embed HTML from oEmbed API
@@ -304,6 +310,7 @@ class RankingTableView(ListView):
                 'calculated_points': float(edit.calculated_points),
                 'week_rank': getattr(edit, 'week_rank', None),
                 'thumbnail_url': thumb,
+                'display_picture': display_picture,
             })
         context['top_edits'] = enriched
         context['edit_platform'] = edit_platform  # Current platform for Edit of the Week section
@@ -488,6 +495,14 @@ class RankingTableView(ListView):
                     display_thumbnail = get_fallback_thumbnail(primary_thumb, tiktok_thumb)
                 else:
                     display_thumbnail = primary_thumb if primary_thumb else ''
+
+            # Prefer the user's local profile picture (downloaded from platform) if available
+            # This avoids relying on expiring TikTok/YouTube CDN avatar URLs in the mix table.
+            user_display_picture = apps[0].user.get_display_picture() if hasattr(apps[0].user, 'get_display_picture') else None
+            if user_display_picture:
+                display_picture = user_display_picture
+            else:
+                display_picture = display_thumbnail
             # Get unified editor title - use user's unified title if available, otherwise use primary app's title
             unified_editor_title = None
             unified_editor_title_rarity = 'ordinary'
@@ -507,6 +522,7 @@ class RankingTableView(ListView):
                 'tiktok': tiktok_app,
                 'primary': primary_app,
                 'display_thumbnail': display_thumbnail,
+                'display_picture': display_picture,
                 'display_platform': primary_app.channel_type if primary_app else None,
                 'display_user_name': display_user_name,
                 'total_followers': total_followers,
@@ -929,10 +945,12 @@ def get_user_stats_ajax(request):
             editor_title = primary_app.editor_title
             editor_title_rarity = primary_app.editor_title_rarity
         
+        # Prefer user's local profile picture (downloaded) over platform thumbnail
+        user_display_picture = edit_user.get_display_picture() if hasattr(edit_user, 'get_display_picture') else None
         response_data = {
             'success': True,
             'username': primary_app.channel_name or edit_user.username,
-            'profile_picture': (primary_app.channel_thumbnail or '').strip(),
+            'profile_picture': user_display_picture or (primary_app.channel_thumbnail or '').strip(),
             'channel_type': primary_app.channel_type,
             'channel_link': primary_app.channel_link,
             'editor_title': editor_title,
@@ -2081,15 +2099,32 @@ def view_all_edits(request):
             'thumbnail_url': thumb,
         })
 
-    # Get ALL edits for ranking panel filtered by platform (with channel thumbnails)
+    # Get ALL edits for ranking panel filtered by platform (with display pictures)
     # Show ALL edits from the current week (Mon-Sun) - no limit, show complete rankings
-    all_edits_ranking = list(EditSubmission.objects.filter(
+    all_edits_qs = EditSubmission.objects.filter(
         status='verified',
         channel_type=platform
     ).filter(
         Q(scheduled_week=display_week_date) |
         (Q(scheduled_week__isnull=True) & Q(submitted_date__gte=display_week_start_dt) & Q(submitted_date__lte=display_week_end_dt))
-    ).order_by('-calculated_points', 'submitted_date').values('id', 'title', 'channel_name', 'calculated_points', 'upvote_count', 'channel_type', 'channel_thumbnail'))  # Show all edits, no limit
+    ).select_related('user').order_by('-calculated_points', 'submitted_date')
+
+    all_edits_ranking = []
+    for e in all_edits_qs:
+        user = e.user
+        user_display_picture = user.get_display_picture() if hasattr(user, 'get_display_picture') else None
+        display_picture = user_display_picture or (e.channel_thumbnail or '').strip()
+
+        all_edits_ranking.append({
+            'id': e.id,
+            'title': getattr(e, 'title', ''),
+            'channel_name': e.channel_name,
+            'calculated_points': float(e.calculated_points),
+            'upvote_count': e.upvote_count,
+            'channel_type': e.channel_type,
+            'channel_thumbnail': e.channel_thumbnail,
+            'display_picture': display_picture,
+        })  # Show all edits, no limit
     
     # Get channel statistics for banner (if viewing a specific edit)
     channel_stats = None
@@ -2196,14 +2231,16 @@ def view_all_edits(request):
         except Exception:
             pass
         
-        # Use channel thumbnail and channel name from the edit (YouTube/TikTok profile)
+        # Use stable profile picture and channel name for stats banner / modal
+        display_picture = edit_user.get_display_picture() or current_edit.channel_thumbnail
         channel_stats = {
             'user': edit_user,
             'total_edits': total_edits,
             'edit_of_week_wins': edit_of_week_wins,
             'edit_of_month_wins': edit_of_month_wins,
             'best_points': float(best_points),
-            'profile_picture': current_edit.channel_thumbnail,  # Use YouTube/TikTok thumbnail
+            # Prefer locally stored profile picture (downloaded from platform) over expiring CDN URLs
+            'profile_picture': display_picture,
             'username': current_edit.channel_name,  # Use YouTube/TikTok channel name
             'channel_type': current_edit.channel_type,
             'editor_title': editor_title,  # Customizable editor title

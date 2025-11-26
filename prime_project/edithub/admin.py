@@ -40,7 +40,7 @@ class EditorApplicationAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
     )
-    
+
     actions = ['accept_applications', 'reject_applications']
 
     def channel_screenshot_preview(self, obj):
@@ -51,16 +51,33 @@ class EditorApplicationAdmin(admin.ModelAdmin):
     channel_screenshot_preview.short_description = "Channel Screenshot"
     
     def accept_applications(self, request, queryset):
-        """Bulk accept applications"""
-        updated = queryset.update(status='accepted')
+        """
+        Bulk accept applications.
+
+        Important: we must call save() after changing status on each instance
+        so that EditorApplication.save() can run its logic to:
+        - Recalculate rankings
+        - Download and set the user's profile_picture from channel_thumbnail
+        """
         from django.utils import timezone
-        from .models import EditorApplication
-        for app in queryset.filter(status='accepted'):
+        updated = 0
+
+        for app in queryset:
+            # Only transition non-accepted applications
+            if app.status != 'accepted':
+                app.status = 'accepted'
+                updated += 1
+
             app.reviewed_date = timezone.now()
             app.reviewed_by = request.user
+            # This will trigger EditorApplication.save(), which handles rank updates
+            # and profile picture downloading for the user when status becomes accepted.
             app.save()
-        EditorApplication.update_rank_positions()
-        self.message_user(request, f'{updated} applications accepted.')
+
+        if updated:
+            self.message_user(request, f'{updated} application(s) accepted.')
+        else:
+            self.message_user(request, 'No applications were changed to accepted.')
     accept_applications.short_description = "Accept selected applications"
     
     def reject_applications(self, request, queryset):
