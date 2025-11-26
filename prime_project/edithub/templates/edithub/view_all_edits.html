@@ -188,10 +188,22 @@
                                 <div class="flex items-center gap-3 flex-1 min-w-0">
                                     <!-- Channel Profile Picture with Rank Badge -->
                                     <div class="relative flex-shrink-0">
-                                        {% if rank_edit.channel_thumbnail %}
+                                        {% if rank_edit.display_picture %}
+                                            <img src="{{ rank_edit.display_picture }}" 
+                                                 alt="{{ rank_edit.channel_name }}" 
+                                                 class="w-10 h-10 rounded-full object-cover border-2 border-gray-200 group-hover:border-purple-500/50 transition-all"
+                                                 onerror="this.onerror=null; this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-purple-400 via-pink-400 to-blue-400 flex items-center justify-center border-2 border-gray-200 group-hover:border-purple-500/50 transition-all" style="display: none;">
+                                                <span class="text-sm font-bold text-white">{{ rank_edit.channel_name|first|upper }}</span>
+                                            </div>
+                                        {% elif rank_edit.channel_thumbnail %}
                                             <img src="{{ rank_edit.channel_thumbnail }}" 
                                                  alt="{{ rank_edit.channel_name }}" 
-                                                 class="w-10 h-10 rounded-full object-cover border-2 border-gray-200 group-hover:border-purple-500/50 transition-all">
+                                                 class="w-10 h-10 rounded-full object-cover border-2 border-gray-200 group-hover:border-purple-500/50 transition-all"
+                                                 onerror="this.onerror=null; this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-purple-400 via-pink-400 to-blue-400 flex items-center justify-center border-2 border-gray-200 group-hover:border-purple-500/50 transition-all" style="display: none;">
+                                                <span class="text-sm font-bold text-white">{{ rank_edit.channel_name|first|upper }}</span>
+                                            </div>
                                         {% else %}
                                             <div class="w-10 h-10 rounded-full bg-gradient-to-br from-purple-400 via-pink-400 to-blue-400 flex items-center justify-center border-2 border-gray-200 group-hover:border-purple-500/50 transition-all">
                                                 <span class="text-sm font-bold text-white">{{ rank_edit.channel_name|first|upper }}</span>

@@ -1132,7 +1132,14 @@
                                         
                                         <!-- Center: Profile Picture -->
                                         <div class="flex items-center gap-3 flex-1 min-w-0">
-                                            {% if edit.channel_thumbnail %}
+                                            {% if edit.display_picture %}
+                                            <img src="{{ edit.display_picture }}" alt="{{ edit.channel_name }}" 
+                                                 class="h-12 w-12 rounded-full object-cover ring-2 ring-gray-200 shadow-sm flex-shrink-0"
+                                                 onerror="this.onerror=null; this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                            <div class="h-12 w-12 rounded-full bg-gradient-to-br {% if edit.channel_type == 'youtube' %}from-red-400 to-orange-400{% else %}from-purple-400 via-pink-400 to-blue-400{% endif %} flex items-center justify-center ring-2 ring-gray-200 shadow-sm flex-shrink-0" style="display: none;">
+                                                <span class="text-white font-bold text-sm">{{ edit.channel_name|first|upper|default:"E" }}</span>
+                                            </div>
+                                            {% elif edit.channel_thumbnail %}
                                             <img src="{{ edit.channel_thumbnail }}" alt="{{ edit.channel_name }}" 
                                                  class="h-12 w-12 rounded-full object-cover ring-2 ring-gray-200 shadow-sm flex-shrink-0"
                                                  onerror="this.onerror=null; this.style.display='none'; this.nextElementSibling.style.display='flex';">

@@ -290,9 +290,15 @@ class RankingTableView(ListView):
                 thumb = oembed_data.get('thumbnail_url')
                 embed_html = oembed_data.get('html')  # Get TikTok's official embed HTML
             
+            # Prefer user's local profile picture, then channel_thumbnail, then fallback thumbnail
+            user = edit.user
+            user_display_picture = user.get_display_picture() if hasattr(user, 'get_display_picture') else None
+            display_picture = user_display_picture or (edit.channel_thumbnail or '').strip() or thumb
+
             enriched.append({
                 'instance': edit,
                 'id': edit.id,
+                'user': user,
                 'video_url': edit.video_url,
                 'direct_video_url': getattr(edit, 'direct_video_url', None),  # For TikTok HTML5 video player (deprecated, using embed now)
                 'tiktok_embed_html': embed_html,  # TikTok's official embed HTML from oEmbed API
@@ -304,6 +310,7 @@ class RankingTableView(ListView):
                 'calculated_points': float(edit.calculated_points),
                 'week_rank': getattr(edit, 'week_rank', None),
                 'thumbnail_url': thumb,
+                'display_picture': display_picture,
             })
         context['top_edits'] = enriched
         context['edit_platform'] = edit_platform  # Current platform for Edit of the Week section
@@ -2092,15 +2099,32 @@ def view_all_edits(request):
             'thumbnail_url': thumb,
         })
 
-    # Get ALL edits for ranking panel filtered by platform (with channel thumbnails)
+    # Get ALL edits for ranking panel filtered by platform (with display pictures)
     # Show ALL edits from the current week (Mon-Sun) - no limit, show complete rankings
-    all_edits_ranking = list(EditSubmission.objects.filter(
+    all_edits_qs = EditSubmission.objects.filter(
         status='verified',
         channel_type=platform
     ).filter(
         Q(scheduled_week=display_week_date) |
         (Q(scheduled_week__isnull=True) & Q(submitted_date__gte=display_week_start_dt) & Q(submitted_date__lte=display_week_end_dt))
-    ).order_by('-calculated_points', 'submitted_date').values('id', 'title', 'channel_name', 'calculated_points', 'upvote_count', 'channel_type', 'channel_thumbnail'))  # Show all edits, no limit
+    ).select_related('user').order_by('-calculated_points', 'submitted_date')
+
+    all_edits_ranking = []
+    for e in all_edits_qs:
+        user = e.user
+        user_display_picture = user.get_display_picture() if hasattr(user, 'get_display_picture') else None
+        display_picture = user_display_picture or (e.channel_thumbnail or '').strip()
+
+        all_edits_ranking.append({
+            'id': e.id,
+            'title': getattr(e, 'title', ''),
+            'channel_name': e.channel_name,
+            'calculated_points': float(e.calculated_points),
+            'upvote_count': e.upvote_count,
+            'channel_type': e.channel_type,
+            'channel_thumbnail': e.channel_thumbnail,
+            'display_picture': display_picture,
+        })  # Show all edits, no limit
     
     # Get channel statistics for banner (if viewing a specific edit)
     channel_stats = None
