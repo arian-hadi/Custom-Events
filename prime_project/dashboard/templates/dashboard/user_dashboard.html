@@ -271,7 +271,8 @@
                                         {% endif %}
                                     </div>
                                     <div class="flex-1 min-w-0">
-                                        <p class="font-semibold text-gray-900 truncate">{{ rank_above.channel_name }}</p>
+                                        <p class="font-semibold text-gray-900 truncate open-user-stats cursor-pointer hover:underline" 
+                                           data-user-id="{{ rank_above.user.id }}">{{ rank_above.channel_name }}</p>
                                         <p class="text-xs text-gray-500">
                                             {% if ranking_tab == 'mix' and rank_above.platforms|length > 1 %}
                                                 <i class="fab fa-youtube mr-1 text-red-600"></i><i class="fab fa-tiktok mr-1"></i>
@@ -310,7 +311,8 @@
                                     </div>
                                     <div class="flex-1 min-w-0">
                                         <div class="flex items-center gap-2 mb-1">
-                                            <p class="font-bold text-gray-900 truncate">{{ user_rank_app.channel_name|default:user.username }}</p>
+                                            <p class="font-bold text-gray-900 truncate open-user-stats cursor-pointer hover:underline" 
+                                               data-user-id="{{ user_rank_app.user.id }}">{{ user_rank_app.channel_name|default:user.username }}</p>
                                             <span class="px-2 py-0.5 bg-indigo-500 text-white text-xs font-semibold rounded-full flex-shrink-0">You</span>
                                         </div>
                                         <p class="text-xs text-gray-600">
@@ -354,7 +356,8 @@
                                         {% endif %}
                                     </div>
                                     <div class="flex-1 min-w-0">
-                                        <p class="font-semibold text-gray-900 truncate">{{ rank_below.channel_name }}</p>
+                                        <p class="font-semibold text-gray-900 truncate open-user-stats cursor-pointer hover:underline" 
+                                           data-user-id="{{ rank_below.user.id }}">{{ rank_below.channel_name }}</p>
                                         <p class="text-xs text-gray-500">
                                             {% if ranking_tab == 'mix' and rank_below.platforms|length > 1 %}
                                                 <i class="fab fa-youtube mr-1 text-red-600"></i><i class="fab fa-tiktok mr-1"></i>
@@ -602,6 +605,23 @@
             </div>
         </div>
     </div>
+
+    <!-- User Stats Modal -->
+    <div id="userStatsModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative m-4 max-h-[90vh] overflow-y-auto">
+            <button type="button" id="closeUserStatsModal" class="absolute top-3 right-3 text-gray-500 hover:text-gray-700">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+            <div id="userStatsContent">
+                <div class="py-8">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
+                    <p class="mt-4 text-gray-600 text-center">Loading...</p>
+                </div>
+            </div>
+        </div>
+    </div>
 </main>
 
 <script>
@@ -819,6 +839,226 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Auto-refresh notifications every 5 minutes
     setInterval(loadNotifications, 300000);
+});
+
+// User Stats Modal functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const modal = document.getElementById('userStatsModal');
+    const closeBtn = document.getElementById('closeUserStatsModal');
+    const contentEl = document.getElementById('userStatsContent');
+
+    if (!modal || !contentEl) {
+        console.error('User stats modal elements not found');
+        return;
+    }
+
+    function openModal() {
+        if (!modal) return false;
+        try {
+            modal.classList.remove('hidden');
+            modal.style.cssText = `
+                display: flex !important;
+                position: fixed !important;
+                top: 0 !important;
+                left: 0 !important;
+                right: 0 !important;
+                bottom: 0 !important;
+                width: 100vw !important;
+                height: 100vh !important;
+                z-index: 50 !important;
+                background-color: rgba(0, 0, 0, 0.5) !important;
+                align-items: center !important;
+                justify-content: center !important;
+            `;
+            if (document.body) {
+                document.body.style.overflow = 'hidden';
+            }
+            return true;
+        } catch (error) {
+            console.error('Error opening modal:', error);
+            return false;
+        }
+    }
+
+    function closeModal() {
+        if (!modal) return;
+        modal.classList.add('hidden');
+        modal.style.display = 'none';
+        if (document.body) {
+            document.body.style.overflow = '';
+        }
+    }
+    
+    // Expose closeModal globally for onclick handlers
+    window.closeModal = closeModal;
+
+    function renderUserStats(data) {
+        const channelType = data.channel_type || 'youtube';
+        const channelLink = data.channel_link || '#';
+        const isYouTube = channelType === 'youtube';
+        const rarity = data.editor_title_rarity || 'ordinary';
+        const hasBothPlatforms = data.has_both_platforms || false;
+        const youtubeLink = data.youtube_link || null;
+        const tiktokLink = data.tiktok_link || null;
+        
+        const rarityClasses = {
+            'ordinary': 'text-lg text-gray-700',
+            'rare': 'text-lg text-blue-600',
+            'epic': 'text-lg title-epic',
+            'legendary': 'text-lg font-bold title-legendary'
+        };
+        const titleClass = rarityClasses[rarity] || rarityClasses['ordinary'];
+        
+        return `
+            <div class="text-center">
+                <div class="relative mb-4 inline-block">
+                    ${data.profile_picture ? 
+                        `<img src="${data.profile_picture}" alt="${data.username}" class="w-20 h-20 rounded-full object-cover ring-4 ${isYouTube ? 'ring-red-200' : 'ring-purple-200'} shadow-lg">` :
+                        `<div class="w-20 h-20 rounded-full ${isYouTube ? 'bg-gradient-to-br from-red-400 to-orange-400' : 'bg-gradient-to-br from-purple-400 via-pink-400 to-blue-400'} flex items-center justify-center ring-4 ${isYouTube ? 'ring-red-200' : 'ring-purple-200'} shadow-lg">
+                            <span class="text-3xl font-bold text-white">${(data.username || 'U')[0].toUpperCase()}</span>
+                        </div>`
+                    }
+                </div>
+                <h3 class="text-2xl font-bold text-gray-900 mb-2">${data.username || 'Unknown'}</h3>
+                <p class="${titleClass} mb-6">${data.editor_title || 'Editor'}</p>
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div class="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-lg p-4 border border-yellow-200">
+                        <div class="flex items-center justify-center gap-2 mb-2">
+                            <i class="fas fa-star text-yellow-500 text-xl"></i>
+                            <span class="text-2xl font-bold text-gray-900">${parseFloat(data.best_points || 0).toFixed(1)}</span>
+                        </div>
+                        <p class="text-xs text-gray-600">Highest Points</p>
+                    </div>
+                    <div class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-4 border border-purple-200">
+                        <div class="text-2xl font-bold text-gray-900 mb-2">${data.total_edits || 0}</div>
+                        <p class="text-xs text-gray-600">Total Edits</p>
+                    </div>
+                    <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 border border-blue-200">
+                        <div class="flex items-center justify-center gap-2 mb-2">
+                            <span class="text-2xl">🏆</span>
+                            <span class="text-2xl font-bold text-gray-900">${data.edit_of_week_wins || 0}</span>
+                        </div>
+                        <p class="text-xs text-gray-600">Edit of the Week</p>
+                    </div>
+                    <div class="bg-gradient-to-br from-pink-50 to-pink-100 rounded-lg p-4 border border-pink-200">
+                        <div class="flex items-center justify-center gap-2 mb-2">
+                            <span class="text-2xl">⭐</span>
+                            <span class="text-2xl font-bold text-gray-900">${data.edit_of_month_wins || 0}</span>
+                        </div>
+                        <p class="text-xs text-gray-600">Edit of the Month</p>
+                    </div>
+                </div>
+                ${(hasBothPlatforms && youtubeLink && tiktokLink) ? `
+                <div class="mt-6 pt-6 border-t border-gray-200 space-y-3">
+                    <a href="${youtubeLink}" target="_blank" rel="noopener noreferrer" class="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg font-semibold hover:opacity-90 transition-all shadow-lg">
+                        <i class="fab fa-youtube text-xl"></i>
+                        <span>Visit YouTube Channel</span>
+                    </a>
+                    <a href="${tiktokLink}" target="_blank" rel="noopener noreferrer" class="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg font-semibold hover:opacity-90 transition-all shadow-lg">
+                        <i class="fab fa-tiktok text-xl"></i>
+                        <span>Visit TikTok Profile</span>
+                    </a>
+                </div>
+                ` : (channelLink && channelLink !== '#' ? `
+                <div class="mt-6 pt-6 border-t border-gray-200">
+                    <a href="${channelLink}" target="_blank" rel="noopener noreferrer" class="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r ${isYouTube ? 'from-red-500 to-red-600' : 'from-purple-500 to-pink-500'} text-white rounded-lg font-semibold hover:opacity-90 transition-all shadow-lg">
+                        ${isYouTube ? '<i class="fab fa-youtube text-xl"></i><span>Visit YouTube Channel</span>' : '<i class="fab fa-tiktok text-xl"></i><span>Visit TikTok Profile</span>'}
+                    </a>
+                </div>
+                ` : '')}
+            </div>
+        `;
+    }
+
+    function handleUserStatsClick(userId) {
+        if (!userId || userId === 'None' || userId === '' || userId === 'null') {
+            console.warn('User ID not found or invalid:', userId);
+            return;
+        }
+        
+        if (contentEl) {
+            contentEl.innerHTML = `
+                <div class="py-8">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
+                    <p class="mt-4 text-gray-600 text-center">Loading...</p>
+                </div>
+            `;
+        }
+        
+        const modalOpened = openModal();
+        if (!modalOpened) {
+            console.error('Failed to open modal!');
+            return;
+        }
+        
+        fetch(`{% url 'edithub:get_user_stats' %}?user_id=${userId}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    if (contentEl) {
+                        contentEl.innerHTML = renderUserStats(data);
+                    }
+                } else {
+                    if (contentEl) {
+                        contentEl.innerHTML = `
+                            <div class="py-8 text-center">
+                                <p class="text-red-600">Error: ${data.error || 'Failed to load user stats'}</p>
+                                <button onclick="closeModal()" class="mt-4 px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300">Close</button>
+                            </div>
+                        `;
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching user stats:', error);
+                if (contentEl) {
+                    contentEl.innerHTML = `
+                        <div class="py-8 text-center">
+                            <p class="text-red-600">Error loading user stats. Please try again.</p>
+                            <button onclick="closeModal()" class="mt-4 px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300">Close</button>
+                        </div>
+                    `;
+                }
+            });
+    }
+
+    // Close modal handlers
+    if (closeBtn) {
+        closeBtn.addEventListener('click', closeModal);
+    }
+    
+    if (modal) {
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) closeModal();
+        });
+    }
+    
+    // Close on Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            if (modal && !modal.classList.contains('hidden')) {
+                closeModal();
+            }
+        }
+    });
+
+    // Attach event listeners to user stats buttons
+    const userStatsButtons = document.querySelectorAll('.open-user-stats');
+    userStatsButtons.forEach((btn) => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const userId = this.getAttribute('data-user-id');
+            if (userId) {
+                handleUserStatsClick(userId);
+            }
+        });
+    });
 });
 </script>
 
