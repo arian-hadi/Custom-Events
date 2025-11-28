@@ -1102,11 +1102,16 @@
                                 </div>
                                 {% else %}
                                 <!-- TikTok Video: Use official TikTok embed -->
-                                <div class="flex items-center justify-center bg-gray-900 py-4 px-2 video-container" data-video-type="tiktok" data-video-url="{{ edit.video_url }}">
+                                <div class="relative flex items-center justify-center bg-gray-900 py-4 px-2 video-container tiktok-loading-container" data-video-type="tiktok" data-video-url="{{ edit.video_url }}" style="min-height: 400px;">
+                                    <!-- Loading Placeholder -->
+                                    <div class="tiktok-loading-placeholder absolute inset-0 flex flex-col items-center justify-center bg-gray-900 z-10">
+                                        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-white mb-4"></div>
+                                        <p class="text-white text-sm font-medium">Loading TikTok video...</p>
+                                    </div>
                                     {% if edit.tiktok_embed_html %}
-                                    <div id="tiktok-embed-{{ forloop.counter0 }}">{{ edit.tiktok_embed_html|safe }}</div>
+                                    <div id="tiktok-embed-{{ forloop.counter0 }}" class="relative z-0">{{ edit.tiktok_embed_html|safe }}</div>
                                     {% else %}
-                                    <div id="tiktok-embed-{{ forloop.counter0 }}">
+                                    <div id="tiktok-embed-{{ forloop.counter0 }}" class="relative z-0">
                                         <blockquote class="tiktok-embed" cite="{{ edit.video_url }}" data-video-id="{{ edit.video_url|tiktok_video_id }}" style="max-width: 100%; min-width: 325px;">
                                             <section></section>
                                         </blockquote>
@@ -1199,11 +1204,16 @@
                             </div>
                             {% else %}
                             <!-- TikTok Video: Use official TikTok embed -->
-                            <div class="flex items-center justify-center bg-gray-900 py-4 px-2">
+                            <div class="relative flex items-center justify-center bg-gray-900 py-4 px-2 tiktok-loading-container" style="min-height: 400px;">
+                                <!-- Loading Placeholder -->
+                                <div class="tiktok-loading-placeholder absolute inset-0 flex flex-col items-center justify-center bg-gray-900 z-10">
+                                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-white mb-4"></div>
+                                    <p class="text-white text-sm font-medium">Loading TikTok video...</p>
+                                </div>
                                 {% if edit.tiktok_embed_html %}
-                                {{ edit.tiktok_embed_html|safe }}
+                                <div class="relative z-0">{{ edit.tiktok_embed_html|safe }}</div>
                                 {% else %}
-                                <blockquote class="tiktok-embed" cite="{{ edit.video_url }}" data-video-id="{{ edit.video_url|tiktok_video_id }}" style="max-width: 100%; min-width: 325px;">
+                                <blockquote class="tiktok-embed relative z-0" cite="{{ edit.video_url }}" data-video-id="{{ edit.video_url|tiktok_video_id }}" style="max-width: 100%; min-width: 325px;">
                                     <section></section>
                                 </blockquote>
                                 <script async src="https://www.tiktok.com/embed.js"></script>
@@ -1227,7 +1237,14 @@
                                     
                                     <!-- Center: Profile Picture -->
                                     <div class="flex items-center gap-3 flex-1 min-w-0">
-                                        {% if edit.channel_thumbnail %}
+                                        {% if edit.display_picture %}
+                                        <img src="{{ edit.display_picture }}" alt="{{ edit.channel_name }}" 
+                                             class="h-12 w-12 rounded-full object-cover ring-2 ring-gray-200 shadow-sm flex-shrink-0"
+                                             onerror="this.onerror=null; this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                        <div class="h-12 w-12 rounded-full bg-gradient-to-br {% if edit.channel_type == 'youtube' %}from-red-400 to-orange-400{% else %}from-purple-400 via-pink-400 to-blue-400{% endif %} flex items-center justify-center ring-2 ring-gray-200 shadow-sm flex-shrink-0" style="display: none;">
+                                            <span class="text-white font-bold text-sm">{{ edit.channel_name|first|upper|default:"E" }}</span>
+                                        </div>
+                                        {% elif edit.channel_thumbnail %}
                                         <img src="{{ edit.channel_thumbnail }}" alt="{{ edit.channel_name }}" 
                                              class="h-12 w-12 rounded-full object-cover ring-2 ring-gray-200 shadow-sm flex-shrink-0"
                                              onerror="this.onerror=null; this.style.display='none'; this.nextElementSibling.style.display='flex';">
@@ -1734,12 +1751,64 @@
             }
         }
     }
+
+    // Show a loading state for TikTok embeds until the iframe/content is ready
+    function initTikTokLoadingDetection() {
+        const containers = document.querySelectorAll('.tiktok-loading-container');
+        if (!containers.length) return;
+
+        containers.forEach(container => {
+            const placeholder = container.querySelector('.tiktok-loading-placeholder');
+            if (!placeholder) return;
+
+            const target = container.querySelector('[id^="tiktok-embed-"]') || container.querySelector('blockquote.tiktok-embed');
+            if (!target) return;
+
+            function hidePlaceholder() {
+                placeholder.style.transition = 'opacity 0.3s ease-out';
+                placeholder.style.opacity = '0';
+                setTimeout(() => {
+                    placeholder.style.display = 'none';
+                    container.style.minHeight = 'auto';
+                }, 300);
+            }
+
+            // Observe changes inside the embed container to detect when TikTok injects its iframe/content
+            const observer = new MutationObserver(mutations => {
+                for (const mutation of mutations) {
+                    if (mutation.addedNodes && mutation.addedNodes.length > 0) {
+                        const iframe = target.querySelector('iframe');
+                        if (iframe) {
+                            // When iframe is present and (eventually) loaded, hide placeholder
+                            iframe.addEventListener('load', () => {
+                                hidePlaceholder();
+                            }, { once: true });
+                            // Fallback: hide after short delay in case load doesn't fire
+                            setTimeout(hidePlaceholder, 1500);
+                            observer.disconnect();
+                            return;
+                        }
+                    }
+                }
+            });
+
+            observer.observe(target, { childList: true, subtree: true });
+
+            // Final fallback: ensure we don't show loader forever
+            setTimeout(() => {
+                observer.disconnect();
+                hidePlaceholder();
+            }, 10000);
+        });
+    }
     
     document.addEventListener('DOMContentLoaded', function() {
         // Initialize top edits slider
         initTopEditsSlider();
         // Initialize video pause on scroll
         initVideoPauseOnScroll();
+        // Initialize TikTok loading states
+        initTikTokLoadingDetection();
         
         const howItWorksModal = document.getElementById('howItWorksModal');
         if (howItWorksModal) {

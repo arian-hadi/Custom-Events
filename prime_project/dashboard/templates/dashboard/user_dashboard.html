@@ -123,6 +123,541 @@
         <!-- Main Dashboard Sections -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
             
+            <!-- Edit Submissions Section -->
+            <div class="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden border border-gray-100">
+                <div class="bg-gradient-to-r from-green-500 to-emerald-500 p-6 text-white">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="bg-white/20 backdrop-blur-sm rounded-lg p-3">
+                                <i class="fas fa-video text-2xl"></i>
+                            </div>
+                            <div class="flex-1">
+                                <h2 class="text-xl font-bold">Edit Submissions</h2>
+                                <div class="flex flex-wrap items-center gap-2 sm:gap-3 mt-1.5">
+                                    <p class="text-green-100 text-sm">Edit of the Week</p>
+                                    <span class="text-green-200 hidden sm:inline">•</span>
+                                    {% if can_edit_delete %}
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white/20 backdrop-blur-sm rounded-full text-xs font-semibold">
+                                        <span class="w-2 h-2 bg-green-300 rounded-full animate-pulse"></span>
+                                        Submissions Open
+                                    </span>
+                                    {% else %}
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white/20 backdrop-blur-sm rounded-full text-xs font-semibold">
+                                        <i class="fas fa-lock text-xs"></i>
+                                        Submissions Closed
+                                    </span>
+                                    {% endif %}
+                                    <span class="text-green-200 hidden sm:inline">•</span>
+                                    <p class="text-green-100 text-xs">
+                                        Deadline: {{ deadline|date:"M d, Y H:i" }} UTC
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="p-6">
+                    <!-- Platform Tabs (only show if user has both platforms) -->
+                    {% if has_youtube_application and has_tiktok_application %}
+                    <div class="flex gap-2 mb-6 bg-gray-100 rounded-lg p-1">
+                        <a href="?edit_platform_tab=mix{% if ranking_tab %}&ranking_tab={{ ranking_tab }}{% endif %}" 
+                           class="flex-1 text-center px-3 py-2 rounded-md text-sm font-semibold transition-all duration-200
+                           {% if edit_platform_tab == 'mix' %}bg-white text-indigo-600 shadow-sm{% else %}text-gray-600 hover:text-gray-900{% endif %}">
+                            Mix
+                        </a>
+                        <a href="?edit_platform_tab=youtube{% if ranking_tab %}&ranking_tab={{ ranking_tab }}{% endif %}" 
+                           class="flex-1 text-center px-3 py-2 rounded-md text-sm font-semibold transition-all duration-200
+                           {% if edit_platform_tab == 'youtube' %}bg-white text-red-600 shadow-sm{% else %}text-gray-600 hover:text-gray-900{% endif %}">
+                            <i class="fab fa-youtube mr-1"></i>YouTube
+                        </a>
+                        <a href="?edit_platform_tab=tiktok{% if ranking_tab %}&ranking_tab={{ ranking_tab }}{% endif %}" 
+                           class="flex-1 text-center px-3 py-2 rounded-md text-sm font-semibold transition-all duration-200
+                           {% if edit_platform_tab == 'tiktok' %}bg-white text-gray-900 shadow-sm{% else %}text-gray-600 hover:text-gray-900{% endif %}">
+                            <i class="fab fa-tiktok mr-1"></i>TikTok
+                        </a>
+                    </div>
+                    {% endif %}
+                    
+                    <p class="text-gray-600 mb-4 text-sm leading-relaxed">
+                        Submit your edits for the weekly competition. Get upvoted by the community and compete 
+                        for the top 3 spots. Winners are featured prominently on the platform!
+                    </p>
+                    
+                    <!-- Stats Grid -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                        <!-- Total Submissions -->
+                        <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 border border-blue-200 shadow-sm hover:shadow-md transition-shadow">
+                            <div class="flex items-center justify-between mb-2">
+                                <div class="bg-blue-500/20 rounded-lg p-2">
+                                    <i class="fas fa-video text-blue-600 text-lg"></i>
+                                </div>
+                            </div>
+                            <p class="text-2xl font-bold text-blue-900">{{ total_edit_submissions }}</p>
+                            <p class="text-xs text-blue-700 mt-1 font-medium">Total Submissions</p>
+                        </div>
+                        
+                        <!-- Verified -->
+                        <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 border border-green-200 shadow-sm hover:shadow-md transition-shadow">
+                            <div class="flex items-center justify-between mb-2">
+                                <div class="bg-green-500/20 rounded-lg p-2">
+                                    <i class="fas fa-check-circle text-green-600 text-lg"></i>
+                                </div>
+                            </div>
+                            <p class="text-2xl font-bold text-green-900">{{ verified_edit_submissions }}</p>
+                            <p class="text-xs text-green-700 mt-1 font-medium">Verified</p>
+                        </div>
+                        
+                        <!-- Best Points -->
+                        <div class="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl p-4 border border-yellow-200 shadow-sm hover:shadow-md transition-shadow">
+                            <div class="flex items-center justify-between mb-2">
+                                <div class="bg-yellow-500/20 rounded-lg p-2">
+                                    <i class="fas fa-star text-yellow-600 text-lg"></i>
+                                </div>
+                            </div>
+                            <p class="text-2xl font-bold text-yellow-900">{{ best_points|floatformat:1 }}</p>
+                            <p class="text-xs text-yellow-700 mt-1 font-medium">Best Points</p>
+                        </div>
+                        
+                        <!-- Current Week Rank -->
+                        <div class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-4 border border-purple-200 shadow-sm hover:shadow-md transition-shadow">
+                            <div class="flex items-center justify-between mb-2">
+                                <div class="bg-purple-500/20 rounded-lg p-2">
+                                    <i class="fas fa-trophy text-purple-600 text-lg"></i>
+                                </div>
+                            </div>
+                            <p class="text-2xl font-bold text-purple-900">
+                                {% if current_week_rank %}#{{ current_week_rank }}{% else %}—{% endif %}
+                            </p>
+                            <p class="text-xs text-purple-700 mt-1 font-medium">This Week Rank</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Additional Stats Row -->
+                    <div class="grid grid-cols-2 gap-4 mb-6">
+                        <!-- Total Upvotes -->
+                        <div class="bg-gradient-to-br from-pink-50 to-pink-100 rounded-xl p-4 border border-pink-200 shadow-sm">
+                            <div class="flex items-center gap-3">
+                                <div class="bg-pink-500/20 rounded-lg p-2">
+                                    <i class="fas fa-arrow-up text-pink-600"></i>
+                                </div>
+                                <div>
+                                    <p class="text-xl font-bold text-pink-900">{{ total_upvotes }}</p>
+                                    <p class="text-xs text-pink-700 font-medium">Total Upvotes</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Current Week Submissions -->
+                        <div class="bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-xl p-4 border border-indigo-200 shadow-sm">
+                            <div class="flex items-center gap-3">
+                                <div class="bg-indigo-500/20 rounded-lg p-2">
+                                    <i class="fas fa-calendar-week text-indigo-600"></i>
+                                </div>
+                                <div>
+                                    <p class="text-xl font-bold text-indigo-900">{{ current_week_submissions|length }}</p>
+                                    <p class="text-xs text-indigo-700 font-medium">This Week</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <div class="flex gap-3 mb-6">
+                        <a href="{% url 'edithub:submit_edit' %}" 
+                           class="flex-1 text-center px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white font-semibold rounded-lg hover:from-green-600 hover:to-emerald-600 transition-all duration-300 transform hover:scale-105 shadow-md">
+                            <i class="fas fa-plus mr-2"></i>
+                            <span>Submit Edit</span>
+                        </a>
+                        <a href="{% url 'edithub:view_all_edits' %}{% if edit_platform_tab != 'mix' %}?platform={{ edit_platform_tab }}{% endif %}" 
+                           class="flex-1 text-center px-4 py-3 bg-gray-100 text-gray-700 font-semibold rounded-lg hover:bg-gray-200 transition-all duration-300 shadow-md">
+                            <i class="fas fa-eye mr-2"></i>
+                            <span>View All</span>
+                        </a>
+                    </div>
+                    
+                    <!-- Current Week Submissions List -->
+                    {% if current_week_submissions %}
+                    <div class="border-t border-gray-200 pt-6 mt-6">
+                        <h3 class="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                            <i class="fas fa-calendar-week text-green-600"></i>
+                            Current Week Submissions
+                        </h3>
+                        <div class="space-y-3">
+                            {% for submission in current_week_submissions %}
+                            <div class="bg-gradient-to-r {% if submission.channel_type == 'youtube' %}from-red-50 to-orange-50 border-red-200{% else %}from-gray-50 to-slate-50 border-gray-300{% endif %} rounded-lg p-4 border hover:shadow-md transition-all">
+                                <div class="flex items-center justify-between gap-4">
+                                    <div class="flex items-center gap-3 flex-1 min-w-0">
+                                        <!-- Platform Icon -->
+                                        <div class="flex-shrink-0">
+                                            {% if submission.channel_type == 'youtube' %}
+                                            <div class="bg-red-100 rounded-lg p-2">
+                                                <i class="fab fa-youtube text-red-600 text-lg"></i>
+                                            </div>
+                                            {% else %}
+                                            <div class="bg-gray-100 rounded-lg p-2">
+                                                <i class="fab fa-tiktok text-gray-900 text-lg"></i>
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <!-- Submission Info -->
+                                        <div class="flex-1 min-w-0">
+                                            <p class="text-sm font-semibold text-gray-900 truncate">
+                                                {{ submission.title|default:"Untitled Edit" }}
+                                            </p>
+                                            <div class="flex items-center gap-3 mt-1">
+                                                <span class="text-xs text-gray-600">
+                                                    {{ submission.submitted_date|date:"M d, Y" }}
+                                                </span>
+                                                {% if submission.week_rank %}
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold {% if submission.week_rank == 1 %}bg-yellow-100 text-yellow-800{% elif submission.week_rank == 2 %}bg-gray-100 text-gray-800{% elif submission.week_rank == 3 %}bg-orange-100 text-orange-800{% else %}bg-blue-100 text-blue-800{% endif %}">
+                                                    {% if submission.week_rank <= 3 %}
+                                                        {% if submission.week_rank == 1 %}🥇{% elif submission.week_rank == 2 %}🥈{% else %}🥉{% endif %}
+                                                    {% endif %}
+                                                    Rank #{{ submission.week_rank }}
+                                                </span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Stats -->
+                                    <div class="flex items-center gap-4 flex-shrink-0">
+                                        <!-- Points -->
+                                        <div class="text-center">
+                                            <div class="flex items-center gap-1 text-yellow-600">
+                                                <i class="fas fa-star text-xs"></i>
+                                                <span class="text-sm font-bold">{{ submission.calculated_points|floatformat:1 }}</span>
+                                            </div>
+                                            <p class="text-xs text-gray-500">Points</p>
+                                        </div>
+                                        
+                                        <!-- Upvotes -->
+                                        <div class="text-center">
+                                            <div class="flex items-center gap-1 text-blue-600">
+                                                <i class="fas fa-arrow-up text-xs"></i>
+                                                <span class="text-sm font-bold">{{ submission.upvote_count }}</span>
+                                            </div>
+                                            <p class="text-xs text-gray-500">Upvotes</p>
+                                        </div>
+                                        
+                                        <!-- Actions -->
+                                        {% if can_edit_delete %}
+                                        <div class="flex items-center gap-1">
+                                            <a href="{% url 'edithub:edit_submission' submission.pk %}" 
+                                               class="p-2 text-gray-600 hover:bg-gray-200 rounded-lg transition-colors"
+                                               title="Edit">
+                                                <i class="fas fa-edit text-sm"></i>
+                                            </a>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Upcoming Week Submissions -->
+                    {% if upcoming_submissions %}
+                    <div class="border-t border-gray-200 pt-6 mt-6">
+                        <h3 class="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                            <i class="fas fa-calendar-plus text-blue-600"></i>
+                            Upcoming Week Submissions
+                        </h3>
+                        <div class="space-y-2">
+                            {% for submission in upcoming_submissions %}
+                            <div class="{% if submission.channel_type == 'youtube' %}bg-red-50 border border-red-200{% else %}bg-gray-50 border border-gray-300{% endif %} rounded-lg p-3 hover:shadow-md transition-shadow">
+                                <div class="flex items-center justify-between gap-3">
+                                    <div class="flex items-center gap-3 flex-1 min-w-0">
+                                        <!-- Platform Logo -->
+                                        {% if submission.channel_type == 'youtube' %}
+                                        <div class="flex-shrink-0">
+                                            <svg class="w-6 h-6 text-red-600" fill="currentColor" viewBox="0 0 24 24">
+                                                <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                                            </svg>
+                                        </div>
+                                        {% else %}
+                                        <div class="flex-shrink-0">
+                                            <svg class="w-6 h-6 text-gray-900" fill="currentColor" viewBox="0 0 24 24">
+                                                <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
+                                            </svg>
+                                        </div>
+                                        {% endif %}
+                                        <!-- Title -->
+                                        <div class="flex-1 min-w-0">
+                                            <p class="text-sm font-medium text-gray-900 truncate">
+                                                {{ submission.title|default:submission.video_url|truncatechars:60 }}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <!-- Action Icons -->
+                                    {% if can_edit_delete %}
+                                    <div class="flex items-center gap-2 flex-shrink-0">
+                                        <a href="{% url 'edithub:edit_submission' submission.pk %}" 
+                                           class="p-2 {% if submission.channel_type == 'youtube' %}text-red-600 hover:bg-red-100{% else %}text-gray-700 hover:bg-gray-200{% endif %} rounded-lg transition-colors"
+                                           title="Edit">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <form method="POST" action="{% url 'edithub:delete_submission' submission.pk %}" 
+                                              onsubmit="return confirm('Are you sure you want to delete this submission?');"
+                                              class="inline">
+                                            {% csrf_token %}
+                                            <button type="submit" 
+                                                    class="p-2 text-red-600 {% if submission.channel_type == 'youtube' %}hover:bg-red-100{% else %}hover:bg-red-50{% endif %} rounded-lg transition-colors"
+                                                    title="Delete">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Ranking Section -->
+            <div class="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden border border-gray-100">
+                <div class="bg-gradient-to-r from-indigo-500 to-purple-500 p-6 text-white">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="bg-white/20 backdrop-blur-sm rounded-lg p-3">
+                                <i class="fas fa-trophy text-2xl"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-xl font-bold">Rankings</h2>
+                                <p class="text-indigo-100 text-sm">View your position & leaderboard</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="p-6">
+                    <p class="text-gray-600 mb-4 text-sm leading-relaxed">
+                        Check your ranking position and see how you compare with other editors. Rankings are based on follower count 
+                        and are updated regularly. Climb the leaderboard by growing your channel!
+                    </p>
+                    
+                    {% if has_rank %}
+                    <!-- Ranking Tabs -->
+                    <div class="flex gap-2 mb-4 bg-gray-100 rounded-lg p-1">
+                        <a href="?ranking_tab=mix" 
+                           class="flex-1 text-center px-3 py-2 rounded-md text-sm font-semibold transition-all duration-200
+                           {% if ranking_tab == 'mix' %}bg-white text-indigo-600 shadow-sm{% else %}text-gray-600 hover:text-gray-900{% endif %}">
+                            Mix
+                        </a>
+                        {% if youtube_rank is not None %}
+                        <a href="?ranking_tab=youtube" 
+                           class="flex-1 text-center px-3 py-2 rounded-md text-sm font-semibold transition-all duration-200
+                           {% if ranking_tab == 'youtube' %}bg-white text-red-600 shadow-sm{% else %}text-gray-600 hover:text-gray-900{% endif %}">
+                            <i class="fab fa-youtube mr-1"></i>YouTube
+                        </a>
+                        {% endif %}
+                        {% if tiktok_rank is not None %}
+                        <a href="?ranking_tab=tiktok" 
+                           class="flex-1 text-center px-3 py-2 rounded-md text-sm font-semibold transition-all duration-200
+                           {% if ranking_tab == 'tiktok' %}bg-white text-gray-900 shadow-sm{% else %}text-gray-600 hover:text-gray-900{% endif %}">
+                            <i class="fab fa-tiktok mr-1"></i>TikTok
+                        </a>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Ranking Preview: Above, Current, Below -->
+                    <div class="space-y-3 mb-6">
+                        <!-- User Above -->
+                        {% if rank_above %}
+                        <div class="bg-gray-50 rounded-lg p-4 border border-gray-200 hover:border-indigo-300 transition-colors">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <div class="relative flex-shrink-0">
+                                        <div class="absolute -top-1 -left-1 w-6 h-6 rounded-full bg-indigo-500 flex items-center justify-center z-10">
+                                            <span class="text-xs font-bold text-white">#{{ rank_above.rank }}</span>
+                                        </div>
+                                        {% if rank_above.display_picture %}
+                                        <img src="{{ rank_above.display_picture }}" 
+                                             alt="{{ rank_above.channel_name }}" 
+                                             class="w-12 h-12 rounded-full object-cover border-2 border-gray-200">
+                                        {% elif rank_above.channel_thumbnail %}
+                                        <img src="{{ rank_above.channel_thumbnail }}" 
+                                             alt="{{ rank_above.channel_name }}" 
+                                             class="w-12 h-12 rounded-full object-cover border-2 border-gray-200">
+                                        {% else %}
+                                        <div class="w-12 h-12 rounded-full {% if rank_above.channel_type == 'youtube' %}bg-gradient-to-br from-red-400 to-orange-400{% else %}bg-gradient-to-br from-purple-400 via-pink-400 to-blue-400{% endif %} flex items-center justify-center border-2 border-gray-200">
+                                            <span class="text-white font-bold text-sm">{{ rank_above.channel_name|first|upper }}</span>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="font-semibold text-gray-900 truncate open-user-stats cursor-pointer hover:underline" 
+                                           data-user-id="{{ rank_above.user.id }}">{{ rank_above.channel_name }}</p>
+                                        <p class="text-xs text-gray-500">
+                                            {% if ranking_tab == 'mix' and rank_above.platforms|length > 1 %}
+                                                <i class="fab fa-youtube mr-1 text-red-600"></i><i class="fab fa-tiktok mr-1"></i>
+                                                {{ rank_above.follower_count|floatformat:0 }} total followers
+                                            {% elif ranking_tab == 'mix' and rank_above.platforms|length == 1 %}
+                                                <i class="fab fa-{{ rank_above.platforms.0 }} mr-1"></i>
+                                                {{ rank_above.follower_count|floatformat:0 }} followers
+                                            {% else %}
+                                                <i class="fab fa-{{ rank_above.channel_type }} mr-1"></i>
+                                                {{ rank_above.follower_count|floatformat:0 }} followers
+                                            {% endif %}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Current User (Highlighted) -->
+                        <div class="bg-gradient-to-br from-indigo-100 to-purple-100 rounded-lg p-4 border-2 border-indigo-400 shadow-md">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <div class="relative flex-shrink-0">
+                                        <div class="absolute -top-1 -left-1 w-7 h-7 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center z-10 shadow-lg">
+                                            <span class="text-xs font-bold text-white">#{{ user_rank }}</span>
+                                        </div>
+                                        {% if current_user_image %}
+                                        <img src="{{ current_user_image }}" 
+                                             alt="{{ user_rank_app.channel_name|default:user.username }}" 
+                                             class="w-14 h-14 rounded-full object-cover border-2 border-indigo-400 shadow-md">
+                                        {% else %}
+                                        <div class="w-14 h-14 rounded-full {% if user_rank_app.channel_type == 'youtube' %}bg-gradient-to-br from-red-400 to-orange-400{% else %}bg-gradient-to-br from-purple-400 via-pink-400 to-blue-400{% endif %} flex items-center justify-center border-2 border-indigo-400 shadow-md">
+                                            <span class="text-white font-bold">{{ user_rank_app.channel_name|default:user.username|first|upper }}</span>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex items-center gap-2 mb-1">
+                                            <p class="font-bold text-gray-900 truncate open-user-stats cursor-pointer hover:underline" 
+                                               data-user-id="{{ user_rank_app.user.id }}">{{ user_rank_app.channel_name|default:user.username }}</p>
+                                            <span class="px-2 py-0.5 bg-indigo-500 text-white text-xs font-semibold rounded-full flex-shrink-0">You</span>
+                                        </div>
+                                        <p class="text-xs text-gray-600">
+                                            {% if ranking_tab == 'mix' and user_platforms|length > 1 %}
+                                                <i class="fab fa-youtube mr-1 text-red-600"></i><i class="fab fa-tiktok mr-1"></i>
+                                                {{ user_rank_app.follower_count|floatformat:0 }} total followers
+                                            {% elif ranking_tab == 'mix' and user_platforms|length == 1 %}
+                                                <i class="fab fa-{{ user_platforms.0 }} mr-1"></i>
+                                                {{ user_rank_app.follower_count|floatformat:0 }} followers
+                                            {% else %}
+                                                <i class="fab fa-{{ user_rank_app.channel_type }} mr-1"></i>
+                                                {{ user_rank_app.follower_count|floatformat:0 }} followers
+                                            {% endif %}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- User Below -->
+                        {% if rank_below %}
+                        <div class="bg-gray-50 rounded-lg p-4 border border-gray-200 hover:border-indigo-300 transition-colors">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <div class="relative flex-shrink-0">
+                                        <div class="absolute -top-1 -left-1 w-6 h-6 rounded-full bg-indigo-500 flex items-center justify-center z-10">
+                                            <span class="text-xs font-bold text-white">#{{ rank_below.rank }}</span>
+                                        </div>
+                                        {% if rank_below.display_picture %}
+                                        <img src="{{ rank_below.display_picture }}" 
+                                             alt="{{ rank_below.channel_name }}" 
+                                             class="w-12 h-12 rounded-full object-cover border-2 border-gray-200">
+                                        {% elif rank_below.channel_thumbnail %}
+                                        <img src="{{ rank_below.channel_thumbnail }}" 
+                                             alt="{{ rank_below.channel_name }}" 
+                                             class="w-12 h-12 rounded-full object-cover border-2 border-gray-200">
+                                        {% else %}
+                                        <div class="w-12 h-12 rounded-full {% if rank_below.channel_type == 'youtube' %}bg-gradient-to-br from-red-400 to-orange-400{% else %}bg-gradient-to-br from-purple-400 via-pink-400 to-blue-400{% endif %} flex items-center justify-center border-2 border-gray-200">
+                                            <span class="text-white font-bold text-sm">{{ rank_below.channel_name|first|upper }}</span>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="font-semibold text-gray-900 truncate open-user-stats cursor-pointer hover:underline" 
+                                           data-user-id="{{ rank_below.user.id }}">{{ rank_below.channel_name }}</p>
+                                        <p class="text-xs text-gray-500">
+                                            {% if ranking_tab == 'mix' and rank_below.platforms|length > 1 %}
+                                                <i class="fab fa-youtube mr-1 text-red-600"></i><i class="fab fa-tiktok mr-1"></i>
+                                                {{ rank_below.follower_count|floatformat:0 }} total followers
+                                            {% elif ranking_tab == 'mix' and rank_below.platforms|length == 1 %}
+                                                <i class="fab fa-{{ rank_below.platforms.0 }} mr-1"></i>
+                                                {{ rank_below.follower_count|floatformat:0 }} followers
+                                            {% else %}
+                                                <i class="fab fa-{{ rank_below.channel_type }} mr-1"></i>
+                                                {{ rank_below.follower_count|floatformat:0 }} followers
+                                            {% endif %}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% else %}
+                    <div class="bg-yellow-50 rounded-lg p-4 mb-6 border border-yellow-200">
+                        <p class="text-sm text-yellow-800">
+                            <i class="fas fa-info-circle mr-2"></i>
+                            Apply to join rankings to see your position here.
+                        </p>
+                    </div>
+                    {% endif %}
+                    
+                    <a href="{% url 'edithub:ranking_table' %}{% if ranking_tab != 'mix' %}?channel_filter={{ ranking_tab }}{% endif %}" 
+                       class="block w-full text-center px-4 py-3 bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-semibold rounded-lg hover:from-indigo-600 hover:to-purple-600 transition-all duration-300 transform hover:scale-105 shadow-md">
+                        <span>View All Rankings</span>
+                        <i class="fas fa-arrow-right ml-2"></i>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Events Section -->
+            <div class="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden border border-gray-100">
+                <div class="bg-gradient-to-r from-blue-500 to-cyan-500 p-6 text-white">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="bg-white/20 backdrop-blur-sm rounded-lg p-3">
+                                <i class="fas fa-calendar-alt text-2xl"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-xl font-bold">Events</h2>
+                                <p class="text-blue-100 text-sm">Your event applications</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="p-6">
+                    <p class="text-gray-600 mb-4 text-sm leading-relaxed">
+                        Track your event applications and see their status. Apply to participate in various events 
+                        and competitions organized on the platform.
+                    </p>
+                    
+                    <div class="grid grid-cols-3 gap-4 mb-6">
+                        <div class="bg-blue-50 rounded-lg p-4 text-center border border-blue-100">
+                            <p class="text-2xl font-bold text-blue-600">{{ total_applications }}</p>
+                            <p class="text-xs text-gray-600 mt-1">Total</p>
+                        </div>
+                        <div class="bg-yellow-50 rounded-lg p-4 text-center border border-yellow-100">
+                            <p class="text-2xl font-bold text-yellow-600">{{ pending_applications }}</p>
+                            <p class="text-xs text-gray-600 mt-1">Pending</p>
+                        </div>
+                        <div class="bg-green-50 rounded-lg p-4 text-center border border-green-100">
+                            <p class="text-2xl font-bold text-green-600">{{ accepted_applications }}</p>
+                            <p class="text-xs text-gray-600 mt-1">Approved</p>
+                        </div>
+                    </div>
+                    
+                    <a href="{% url 'dashboard:user_applications' %}" 
+                       class="block w-full text-center px-4 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-semibold rounded-lg hover:from-blue-600 hover:to-cyan-600 transition-all duration-300 transform hover:scale-105 shadow-md">
+                        <span>View All Details</span>
+                        <i class="fas fa-arrow-right ml-2"></i>
+                    </a>
+                </div>
+            </div>
+
             <!-- Edit Apply Section -->
             <div class="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden border border-gray-100">
                 <div class="bg-gradient-to-r from-red-500 to-pink-500 p-6 text-white">
@@ -200,332 +735,6 @@
                 </div>
             </div>
 
-            <!-- Ranking Section -->
-            <div class="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden border border-gray-100">
-                <div class="bg-gradient-to-r from-indigo-500 to-purple-500 p-6 text-white">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-3">
-                            <div class="bg-white/20 backdrop-blur-sm rounded-lg p-3">
-                                <i class="fas fa-trophy text-2xl"></i>
-                            </div>
-                            <div>
-                                <h2 class="text-xl font-bold">Rankings</h2>
-                                <p class="text-indigo-100 text-sm">View your position & leaderboard</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="p-6">
-                    <p class="text-gray-600 mb-4 text-sm leading-relaxed">
-                        Check your ranking position and see how you compare with other editors. Rankings are based on follower count 
-                        and are updated regularly. Climb the leaderboard by growing your channel!
-                    </p>
-                    
-                    {% if has_rank %}
-                    <!-- Ranking Tabs -->
-                    <div class="flex gap-2 mb-4 bg-gray-100 rounded-lg p-1">
-                        <a href="?ranking_tab=mix" 
-                           class="flex-1 text-center px-3 py-2 rounded-md text-sm font-semibold transition-all duration-200
-                           {% if ranking_tab == 'mix' %}bg-white text-indigo-600 shadow-sm{% else %}text-gray-600 hover:text-gray-900{% endif %}">
-                            Mix
-                        </a>
-                        <a href="?ranking_tab=youtube" 
-                           class="flex-1 text-center px-3 py-2 rounded-md text-sm font-semibold transition-all duration-200
-                           {% if ranking_tab == 'youtube' %}bg-white text-red-600 shadow-sm{% else %}text-gray-600 hover:text-gray-900{% endif %}">
-                            <i class="fab fa-youtube mr-1"></i>YouTube
-                        </a>
-                        <a href="?ranking_tab=tiktok" 
-                           class="flex-1 text-center px-3 py-2 rounded-md text-sm font-semibold transition-all duration-200
-                           {% if ranking_tab == 'tiktok' %}bg-white text-gray-900 shadow-sm{% else %}text-gray-600 hover:text-gray-900{% endif %}">
-                            <i class="fab fa-tiktok mr-1"></i>TikTok
-                        </a>
-                    </div>
-                    
-                    <!-- Ranking Preview: Above, Current, Below -->
-                    <div class="space-y-3 mb-6">
-                        <!-- User Above -->
-                        {% if rank_above %}
-                        <div class="bg-gray-50 rounded-lg p-4 border border-gray-200 hover:border-indigo-300 transition-colors">
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center gap-3">
-                                    <div class="relative flex-shrink-0">
-                                        <div class="absolute -top-1 -left-1 w-6 h-6 rounded-full bg-indigo-500 flex items-center justify-center z-10">
-                                            <span class="text-xs font-bold text-white">#{{ rank_above.rank }}</span>
-                                        </div>
-                                        {% if rank_above.channel_thumbnail %}
-                                        <img src="{{ rank_above.channel_thumbnail }}" 
-                                             alt="{{ rank_above.channel_name }}" 
-                                             class="w-12 h-12 rounded-full object-cover border-2 border-gray-200">
-                                        {% elif rank_above.profile_picture %}
-                                        <img src="{{ rank_above.profile_picture }}" 
-                                             alt="{{ rank_above.channel_name }}" 
-                                             class="w-12 h-12 rounded-full object-cover border-2 border-gray-200">
-                                        {% else %}
-                                        <div class="w-12 h-12 rounded-full {% if rank_above.channel_type == 'youtube' %}bg-gradient-to-br from-red-400 to-orange-400{% else %}bg-gradient-to-br from-purple-400 via-pink-400 to-blue-400{% endif %} flex items-center justify-center border-2 border-gray-200">
-                                            <span class="text-white font-bold text-sm">{{ rank_above.channel_name|first|upper }}</span>
-                                        </div>
-                                        {% endif %}
-                                    </div>
-                                    <div class="flex-1 min-w-0">
-                                        <p class="font-semibold text-gray-900 truncate">{{ rank_above.channel_name }}</p>
-                                        <p class="text-xs text-gray-500">
-                                            <i class="fab fa-{{ rank_above.channel_type }} mr-1"></i>
-                                            {{ rank_above.follower_count|floatformat:0 }} followers
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        {% endif %}
-                        
-                        <!-- Current User (Highlighted) -->
-                        <div class="bg-gradient-to-br from-indigo-100 to-purple-100 rounded-lg p-4 border-2 border-indigo-400 shadow-md">
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center gap-3">
-                                    <div class="relative flex-shrink-0">
-                                        <div class="absolute -top-1 -left-1 w-7 h-7 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center z-10 shadow-lg">
-                                            <span class="text-xs font-bold text-white">#{{ user_rank }}</span>
-                                        </div>
-                                        {% if current_user_image %}
-                                        <img src="{{ current_user_image }}" 
-                                             alt="{{ user_rank_app.channel_name|default:user.username }}" 
-                                             class="w-14 h-14 rounded-full object-cover border-2 border-indigo-400 shadow-md">
-                                        {% else %}
-                                        <div class="w-14 h-14 rounded-full {% if user_rank_app.channel_type == 'youtube' %}bg-gradient-to-br from-red-400 to-orange-400{% else %}bg-gradient-to-br from-purple-400 via-pink-400 to-blue-400{% endif %} flex items-center justify-center border-2 border-indigo-400 shadow-md">
-                                            <span class="text-white font-bold">{{ user_rank_app.channel_name|default:user.username|first|upper }}</span>
-                                        </div>
-                                        {% endif %}
-                                    </div>
-                                    <div class="flex-1 min-w-0">
-                                        <div class="flex items-center gap-2 mb-1">
-                                            <p class="font-bold text-gray-900 truncate">{{ user_rank_app.channel_name|default:user.username }}</p>
-                                            <span class="px-2 py-0.5 bg-indigo-500 text-white text-xs font-semibold rounded-full flex-shrink-0">You</span>
-                                        </div>
-                                        <p class="text-xs text-gray-600">
-                                            <i class="fab fa-{{ user_rank_app.channel_type }} mr-1"></i>
-                                            {{ user_rank_app.follower_count|floatformat:0 }} followers
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- User Below -->
-                        {% if rank_below %}
-                        <div class="bg-gray-50 rounded-lg p-4 border border-gray-200 hover:border-indigo-300 transition-colors">
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center gap-3">
-                                    <div class="relative flex-shrink-0">
-                                        <div class="absolute -top-1 -left-1 w-6 h-6 rounded-full bg-indigo-500 flex items-center justify-center z-10">
-                                            <span class="text-xs font-bold text-white">#{{ rank_below.rank }}</span>
-                                        </div>
-                                        {% if rank_below.channel_thumbnail %}
-                                        <img src="{{ rank_below.channel_thumbnail }}" 
-                                             alt="{{ rank_below.channel_name }}" 
-                                             class="w-12 h-12 rounded-full object-cover border-2 border-gray-200">
-                                        {% elif rank_below.profile_picture %}
-                                        <img src="{{ rank_below.profile_picture }}" 
-                                             alt="{{ rank_below.channel_name }}" 
-                                             class="w-12 h-12 rounded-full object-cover border-2 border-gray-200">
-                                        {% else %}
-                                        <div class="w-12 h-12 rounded-full {% if rank_below.channel_type == 'youtube' %}bg-gradient-to-br from-red-400 to-orange-400{% else %}bg-gradient-to-br from-purple-400 via-pink-400 to-blue-400{% endif %} flex items-center justify-center border-2 border-gray-200">
-                                            <span class="text-white font-bold text-sm">{{ rank_below.channel_name|first|upper }}</span>
-                                        </div>
-                                        {% endif %}
-                                    </div>
-                                    <div class="flex-1 min-w-0">
-                                        <p class="font-semibold text-gray-900 truncate">{{ rank_below.channel_name }}</p>
-                                        <p class="text-xs text-gray-500">
-                                            <i class="fab fa-{{ rank_below.channel_type }} mr-1"></i>
-                                            {{ rank_below.follower_count|floatformat:0 }} followers
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        {% endif %}
-                    </div>
-                    {% else %}
-                    <div class="bg-yellow-50 rounded-lg p-4 mb-6 border border-yellow-200">
-                        <p class="text-sm text-yellow-800">
-                            <i class="fas fa-info-circle mr-2"></i>
-                            Apply to join rankings to see your position here.
-                        </p>
-                    </div>
-                    {% endif %}
-                    
-                    <a href="{% url 'edithub:ranking_table' %}{% if ranking_tab != 'mix' %}?channel_filter={{ ranking_tab }}{% endif %}" 
-                       class="block w-full text-center px-4 py-3 bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-semibold rounded-lg hover:from-indigo-600 hover:to-purple-600 transition-all duration-300 transform hover:scale-105 shadow-md">
-                        <span>View All Rankings</span>
-                        <i class="fas fa-arrow-right ml-2"></i>
-                    </a>
-                </div>
-            </div>
-
-            <!-- Events Section -->
-            <div class="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden border border-gray-100">
-                <div class="bg-gradient-to-r from-blue-500 to-cyan-500 p-6 text-white">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-3">
-                            <div class="bg-white/20 backdrop-blur-sm rounded-lg p-3">
-                                <i class="fas fa-calendar-alt text-2xl"></i>
-                            </div>
-                            <div>
-                                <h2 class="text-xl font-bold">Events</h2>
-                                <p class="text-blue-100 text-sm">Your event applications</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="p-6">
-                    <p class="text-gray-600 mb-4 text-sm leading-relaxed">
-                        Track your event applications and see their status. Apply to participate in various events 
-                        and competitions organized on the platform.
-                    </p>
-                    
-                    <div class="grid grid-cols-3 gap-4 mb-6">
-                        <div class="bg-blue-50 rounded-lg p-4 text-center border border-blue-100">
-                            <p class="text-2xl font-bold text-blue-600">{{ total_applications }}</p>
-                            <p class="text-xs text-gray-600 mt-1">Total</p>
-                        </div>
-                        <div class="bg-yellow-50 rounded-lg p-4 text-center border border-yellow-100">
-                            <p class="text-2xl font-bold text-yellow-600">{{ pending_applications }}</p>
-                            <p class="text-xs text-gray-600 mt-1">Pending</p>
-                        </div>
-                        <div class="bg-green-50 rounded-lg p-4 text-center border border-green-100">
-                            <p class="text-2xl font-bold text-green-600">{{ accepted_applications }}</p>
-                            <p class="text-xs text-gray-600 mt-1">Approved</p>
-                        </div>
-                    </div>
-                    
-                    <a href="{% url 'dashboard:user_applications' %}" 
-                       class="block w-full text-center px-4 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-semibold rounded-lg hover:from-blue-600 hover:to-cyan-600 transition-all duration-300 transform hover:scale-105 shadow-md">
-                        <span>View All Details</span>
-                        <i class="fas fa-arrow-right ml-2"></i>
-                    </a>
-                </div>
-            </div>
-
-            <!-- Edit Submissions Section -->
-            <div class="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden border border-gray-100">
-                <div class="bg-gradient-to-r from-green-500 to-emerald-500 p-6 text-white">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-3">
-                            <div class="bg-white/20 backdrop-blur-sm rounded-lg p-3">
-                                <i class="fas fa-video text-2xl"></i>
-                            </div>
-                            <div class="flex-1">
-                                <h2 class="text-xl font-bold">Edit Submissions</h2>
-                                <div class="flex flex-wrap items-center gap-2 sm:gap-3 mt-1.5">
-                                    <p class="text-green-100 text-sm">Edit of the Week</p>
-                                    <span class="text-green-200 hidden sm:inline">•</span>
-                                    {% if can_edit_delete %}
-                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white/20 backdrop-blur-sm rounded-full text-xs font-semibold">
-                                        <span class="w-2 h-2 bg-green-300 rounded-full animate-pulse"></span>
-                                        Submissions Open
-                                    </span>
-                                    {% else %}
-                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white/20 backdrop-blur-sm rounded-full text-xs font-semibold">
-                                        <i class="fas fa-lock text-xs"></i>
-                                        Submissions Closed
-                                    </span>
-                                    {% endif %}
-                                    <span class="text-green-200 hidden sm:inline">•</span>
-                                    <p class="text-green-100 text-xs">
-                                        Deadline: {{ deadline|date:"M d, Y H:i" }} UTC
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="p-6">
-                    <p class="text-gray-600 mb-4 text-sm leading-relaxed">
-                        Submit your edits for the weekly competition. Get upvoted by the community and compete 
-                        for the top 3 spots. Winners are featured prominently on the platform!
-                    </p>
-                    
-                    <div class="grid grid-cols-2 gap-4 mb-6">
-                        <div class="bg-green-50 rounded-lg p-4 text-center border border-green-100">
-                            <p class="text-2xl font-bold text-green-600">{{ total_edit_submissions }}</p>
-                            <p class="text-xs text-gray-600 mt-1">Total Submissions</p>
-                        </div>
-                        <div class="bg-emerald-50 rounded-lg p-4 text-center border border-emerald-100">
-                            <p class="text-2xl font-bold text-emerald-600">{{ verified_edit_submissions }}</p>
-                            <p class="text-xs text-gray-600 mt-1">Verified</p>
-                        </div>
-                    </div>
-                    
-                    <div class="flex gap-3 mb-6">
-                        <a href="{% url 'edithub:submit_edit' %}" 
-                           class="flex-1 text-center px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white font-semibold rounded-lg hover:from-green-600 hover:to-emerald-600 transition-all duration-300 transform hover:scale-105 shadow-md">
-                            <span>Submit Edit</span>
-                        </a>
-                        <a href="{% url 'edithub:view_all_edits' %}" 
-                           class="flex-1 text-center px-4 py-3 bg-gray-100 text-gray-700 font-semibold rounded-lg hover:bg-gray-200 transition-all duration-300 shadow-md">
-                            <span>View All</span>
-                        </a>
-                    </div>
-                    
-                    <!-- Upcoming Week Submissions -->
-                    {% if upcoming_submissions %}
-                    <div class="border-t border-gray-200 pt-6 mt-6">
-                        <h3 class="text-sm font-semibold text-gray-900 mb-3">Upcoming Week Submissions</h3>
-                        <div class="space-y-2">
-                            {% for submission in upcoming_submissions %}
-                            <div class="{% if submission.channel_type == 'youtube' %}bg-red-50 border border-red-200{% else %}bg-gray-50 border border-gray-300{% endif %} rounded-lg p-3 hover:shadow-md transition-shadow">
-                                <div class="flex items-center justify-between gap-3">
-                                    <div class="flex items-center gap-3 flex-1 min-w-0">
-                                        <!-- Platform Logo -->
-                                        {% if submission.channel_type == 'youtube' %}
-                                        <div class="flex-shrink-0">
-                                            <svg class="w-6 h-6 text-red-600" fill="currentColor" viewBox="0 0 24 24">
-                                                <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
-                                            </svg>
-                                        </div>
-                                        {% else %}
-                                        <div class="flex-shrink-0">
-                                            <svg class="w-6 h-6 text-gray-900" fill="currentColor" viewBox="0 0 24 24">
-                                                <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
-                                            </svg>
-                                        </div>
-                                        {% endif %}
-                                        <!-- Title -->
-                                        <div class="flex-1 min-w-0">
-                                            <p class="text-sm font-medium {% if submission.channel_type == 'youtube' %}text-gray-900{% else %}text-gray-900{% endif %} truncate">
-                                                {{ submission.title|default:submission.video_url|truncatechars:60 }}
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <!-- Action Icons -->
-                                    {% if can_edit_delete %}
-                                    <div class="flex items-center gap-2 flex-shrink-0">
-                                        <a href="{% url 'edithub:edit_submission' submission.pk %}" 
-                                           class="p-2 {% if submission.channel_type == 'youtube' %}text-red-600 hover:bg-red-100{% else %}text-gray-700 hover:bg-gray-200{% endif %} rounded-lg transition-colors"
-                                           title="Edit">
-                                            <i class="fas fa-edit"></i>
-                                        </a>
-                                        <form method="POST" action="{% url 'edithub:delete_submission' submission.pk %}" 
-                                              onsubmit="return confirm('Are you sure you want to delete this submission?');"
-                                              class="inline">
-                                            {% csrf_token %}
-                                            <button type="submit" 
-                                                    class="p-2 text-red-600 {% if submission.channel_type == 'youtube' %}hover:bg-red-100{% else %}hover:bg-red-50{% endif %} rounded-lg transition-colors"
-                                                    title="Delete">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
-                                        </form>
-                                    </div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                            {% endfor %}
-                        </div>
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
-
         </div>
 
         <!-- Additional Quick Actions -->
@@ -571,6 +780,23 @@
                     <i class="fas fa-chevron-right text-gray-400"></i>
                 </a>
                 {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- User Stats Modal -->
+    <div id="userStatsModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative m-4 max-h-[90vh] overflow-y-auto">
+            <button type="button" id="closeUserStatsModal" class="absolute top-3 right-3 text-gray-500 hover:text-gray-700">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+            <div id="userStatsContent">
+                <div class="py-8">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
+                    <p class="mt-4 text-gray-600 text-center">Loading...</p>
+                </div>
             </div>
         </div>
     </div>
@@ -791,6 +1017,226 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Auto-refresh notifications every 5 minutes
     setInterval(loadNotifications, 300000);
+});
+
+// User Stats Modal functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const modal = document.getElementById('userStatsModal');
+    const closeBtn = document.getElementById('closeUserStatsModal');
+    const contentEl = document.getElementById('userStatsContent');
+
+    if (!modal || !contentEl) {
+        console.error('User stats modal elements not found');
+        return;
+    }
+
+    function openModal() {
+        if (!modal) return false;
+        try {
+            modal.classList.remove('hidden');
+            modal.style.cssText = `
+                display: flex !important;
+                position: fixed !important;
+                top: 0 !important;
+                left: 0 !important;
+                right: 0 !important;
+                bottom: 0 !important;
+                width: 100vw !important;
+                height: 100vh !important;
+                z-index: 50 !important;
+                background-color: rgba(0, 0, 0, 0.5) !important;
+                align-items: center !important;
+                justify-content: center !important;
+            `;
+            if (document.body) {
+                document.body.style.overflow = 'hidden';
+            }
+            return true;
+        } catch (error) {
+            console.error('Error opening modal:', error);
+            return false;
+        }
+    }
+
+    function closeModal() {
+        if (!modal) return;
+        modal.classList.add('hidden');
+        modal.style.display = 'none';
+        if (document.body) {
+            document.body.style.overflow = '';
+        }
+    }
+    
+    // Expose closeModal globally for onclick handlers
+    window.closeModal = closeModal;
+
+    function renderUserStats(data) {
+        const channelType = data.channel_type || 'youtube';
+        const channelLink = data.channel_link || '#';
+        const isYouTube = channelType === 'youtube';
+        const rarity = data.editor_title_rarity || 'ordinary';
+        const hasBothPlatforms = data.has_both_platforms || false;
+        const youtubeLink = data.youtube_link || null;
+        const tiktokLink = data.tiktok_link || null;
+        
+        const rarityClasses = {
+            'ordinary': 'text-lg text-gray-700',
+            'rare': 'text-lg text-blue-600',
+            'epic': 'text-lg title-epic',
+            'legendary': 'text-lg font-bold title-legendary'
+        };
+        const titleClass = rarityClasses[rarity] || rarityClasses['ordinary'];
+        
+        return `
+            <div class="text-center">
+                <div class="relative mb-4 inline-block">
+                    ${data.profile_picture ? 
+                        `<img src="${data.profile_picture}" alt="${data.username}" class="w-20 h-20 rounded-full object-cover ring-4 ${isYouTube ? 'ring-red-200' : 'ring-purple-200'} shadow-lg">` :
+                        `<div class="w-20 h-20 rounded-full ${isYouTube ? 'bg-gradient-to-br from-red-400 to-orange-400' : 'bg-gradient-to-br from-purple-400 via-pink-400 to-blue-400'} flex items-center justify-center ring-4 ${isYouTube ? 'ring-red-200' : 'ring-purple-200'} shadow-lg">
+                            <span class="text-3xl font-bold text-white">${(data.username || 'U')[0].toUpperCase()}</span>
+                        </div>`
+                    }
+                </div>
+                <h3 class="text-2xl font-bold text-gray-900 mb-2">${data.username || 'Unknown'}</h3>
+                <p class="${titleClass} mb-6">${data.editor_title || 'Editor'}</p>
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div class="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-lg p-4 border border-yellow-200">
+                        <div class="flex items-center justify-center gap-2 mb-2">
+                            <i class="fas fa-star text-yellow-500 text-xl"></i>
+                            <span class="text-2xl font-bold text-gray-900">${parseFloat(data.best_points || 0).toFixed(1)}</span>
+                        </div>
+                        <p class="text-xs text-gray-600">Highest Points</p>
+                    </div>
+                    <div class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-4 border border-purple-200">
+                        <div class="text-2xl font-bold text-gray-900 mb-2">${data.total_edits || 0}</div>
+                        <p class="text-xs text-gray-600">Total Edits</p>
+                    </div>
+                    <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 border border-blue-200">
+                        <div class="flex items-center justify-center gap-2 mb-2">
+                            <span class="text-2xl">🏆</span>
+                            <span class="text-2xl font-bold text-gray-900">${data.edit_of_week_wins || 0}</span>
+                        </div>
+                        <p class="text-xs text-gray-600">Edit of the Week</p>
+                    </div>
+                    <div class="bg-gradient-to-br from-pink-50 to-pink-100 rounded-lg p-4 border border-pink-200">
+                        <div class="flex items-center justify-center gap-2 mb-2">
+                            <span class="text-2xl">⭐</span>
+                            <span class="text-2xl font-bold text-gray-900">${data.edit_of_month_wins || 0}</span>
+                        </div>
+                        <p class="text-xs text-gray-600">Edit of the Month</p>
+                    </div>
+                </div>
+                ${(hasBothPlatforms && youtubeLink && tiktokLink) ? `
+                <div class="mt-6 pt-6 border-t border-gray-200 space-y-3">
+                    <a href="${youtubeLink}" target="_blank" rel="noopener noreferrer" class="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg font-semibold hover:opacity-90 transition-all shadow-lg">
+                        <i class="fab fa-youtube text-xl"></i>
+                        <span>Visit YouTube Channel</span>
+                    </a>
+                    <a href="${tiktokLink}" target="_blank" rel="noopener noreferrer" class="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg font-semibold hover:opacity-90 transition-all shadow-lg">
+                        <i class="fab fa-tiktok text-xl"></i>
+                        <span>Visit TikTok Profile</span>
+                    </a>
+                </div>
+                ` : (channelLink && channelLink !== '#' ? `
+                <div class="mt-6 pt-6 border-t border-gray-200">
+                    <a href="${channelLink}" target="_blank" rel="noopener noreferrer" class="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r ${isYouTube ? 'from-red-500 to-red-600' : 'from-purple-500 to-pink-500'} text-white rounded-lg font-semibold hover:opacity-90 transition-all shadow-lg">
+                        ${isYouTube ? '<i class="fab fa-youtube text-xl"></i><span>Visit YouTube Channel</span>' : '<i class="fab fa-tiktok text-xl"></i><span>Visit TikTok Profile</span>'}
+                    </a>
+                </div>
+                ` : '')}
+            </div>
+        `;
+    }
+
+    function handleUserStatsClick(userId) {
+        if (!userId || userId === 'None' || userId === '' || userId === 'null') {
+            console.warn('User ID not found or invalid:', userId);
+            return;
+        }
+        
+        if (contentEl) {
+            contentEl.innerHTML = `
+                <div class="py-8">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
+                    <p class="mt-4 text-gray-600 text-center">Loading...</p>
+                </div>
+            `;
+        }
+        
+        const modalOpened = openModal();
+        if (!modalOpened) {
+            console.error('Failed to open modal!');
+            return;
+        }
+        
+        fetch(`{% url 'edithub:get_user_stats' %}?user_id=${userId}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    if (contentEl) {
+                        contentEl.innerHTML = renderUserStats(data);
+                    }
+                } else {
+                    if (contentEl) {
+                        contentEl.innerHTML = `
+                            <div class="py-8 text-center">
+                                <p class="text-red-600">Error: ${data.error || 'Failed to load user stats'}</p>
+                                <button onclick="closeModal()" class="mt-4 px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300">Close</button>
+                            </div>
+                        `;
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching user stats:', error);
+                if (contentEl) {
+                    contentEl.innerHTML = `
+                        <div class="py-8 text-center">
+                            <p class="text-red-600">Error loading user stats. Please try again.</p>
+                            <button onclick="closeModal()" class="mt-4 px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300">Close</button>
+                        </div>
+                    `;
+                }
+            });
+    }
+
+    // Close modal handlers
+    if (closeBtn) {
+        closeBtn.addEventListener('click', closeModal);
+    }
+    
+    if (modal) {
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) closeModal();
+        });
+    }
+    
+    // Close on Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            if (modal && !modal.classList.contains('hidden')) {
+                closeModal();
+            }
+        }
+    });
+
+    // Attach event listeners to user stats buttons
+    const userStatsButtons = document.querySelectorAll('.open-user-stats');
+    userStatsButtons.forEach((btn) => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const userId = this.getAttribute('data-user-id');
+            if (userId) {
+                handleUserStatsClick(userId);
+            }
+        });
+    });
 });
 </script>
 
