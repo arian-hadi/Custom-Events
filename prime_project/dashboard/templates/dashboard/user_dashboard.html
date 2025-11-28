@@ -256,12 +256,12 @@
                                         <div class="absolute -top-1 -left-1 w-6 h-6 rounded-full bg-indigo-500 flex items-center justify-center z-10">
                                             <span class="text-xs font-bold text-white">#{{ rank_above.rank }}</span>
                                         </div>
-                                        {% if rank_above.channel_thumbnail %}
-                                        <img src="{{ rank_above.channel_thumbnail }}" 
+                                        {% if rank_above.display_picture %}
+                                        <img src="{{ rank_above.display_picture }}" 
                                              alt="{{ rank_above.channel_name }}" 
                                              class="w-12 h-12 rounded-full object-cover border-2 border-gray-200">
-                                        {% elif rank_above.profile_picture %}
-                                        <img src="{{ rank_above.profile_picture }}" 
+                                        {% elif rank_above.channel_thumbnail %}
+                                        <img src="{{ rank_above.channel_thumbnail }}" 
                                              alt="{{ rank_above.channel_name }}" 
                                              class="w-12 h-12 rounded-full object-cover border-2 border-gray-200">
                                         {% else %}
@@ -341,12 +341,12 @@
                                         <div class="absolute -top-1 -left-1 w-6 h-6 rounded-full bg-indigo-500 flex items-center justify-center z-10">
                                             <span class="text-xs font-bold text-white">#{{ rank_below.rank }}</span>
                                         </div>
-                                        {% if rank_below.channel_thumbnail %}
-                                        <img src="{{ rank_below.channel_thumbnail }}" 
+                                        {% if rank_below.display_picture %}
+                                        <img src="{{ rank_below.display_picture }}" 
                                              alt="{{ rank_below.channel_name }}" 
                                              class="w-12 h-12 rounded-full object-cover border-2 border-gray-200">
-                                        {% elif rank_below.profile_picture %}
-                                        <img src="{{ rank_below.profile_picture }}" 
+                                        {% elif rank_below.channel_thumbnail %}
+                                        <img src="{{ rank_below.channel_thumbnail }}" 
                                              alt="{{ rank_below.channel_name }}" 
                                              class="w-12 h-12 rounded-full object-cover border-2 border-gray-200">
                                         {% else %}

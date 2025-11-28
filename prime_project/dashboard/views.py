@@ -230,15 +230,21 @@ def user_dashboard(request):
                     if tab_type == 'mix':
                         above_follower_count = get_user_total_followers(rank_above_app.user_id)
                         above_platforms = get_user_platforms(rank_above_app.user_id)
+                    # Prefer the user's display picture helper (local media) over raw profile_picture URL
+                    rank_above_user = rank_above_app.user
+                    if hasattr(rank_above_user, 'get_display_picture'):
+                        rank_above_display_picture = rank_above_user.get_display_picture()
+                    else:
+                        rank_above_display_picture = rank_above_user.profile_picture.url if rank_above_user.profile_picture else ''
                     rank_above = {
                         'app': rank_above_app,
                         'rank': index - 1,
-                        'user': rank_above_app.user,
-                        'channel_name': rank_above_app.channel_name or rank_above_app.user.username,
+                        'user': rank_above_user,
+                        'channel_name': rank_above_app.channel_name or rank_above_user.username,
                         'follower_count': above_follower_count,
                         'channel_type': rank_above_app.channel_type,
                         'channel_thumbnail': rank_above_app.channel_thumbnail or '',
-                        'profile_picture': rank_above_app.user.profile_picture.url if rank_above_app.user.profile_picture else '',
+                        'display_picture': rank_above_display_picture,
                         'platforms': above_platforms if tab_type == 'mix' else [rank_above_app.channel_type],
                     }
                 # Get user below (index + 1)
@@ -249,15 +255,20 @@ def user_dashboard(request):
                     if tab_type == 'mix':
                         below_follower_count = get_user_total_followers(rank_below_app.user_id)
                         below_platforms = get_user_platforms(rank_below_app.user_id)
+                    rank_below_user = rank_below_app.user
+                    if hasattr(rank_below_user, 'get_display_picture'):
+                        rank_below_display_picture = rank_below_user.get_display_picture()
+                    else:
+                        rank_below_display_picture = rank_below_user.profile_picture.url if rank_below_user.profile_picture else ''
                     rank_below = {
                         'app': rank_below_app,
                         'rank': index + 1,
-                        'user': rank_below_app.user,
-                        'channel_name': rank_below_app.channel_name or rank_below_app.user.username,
+                        'user': rank_below_user,
+                        'channel_name': rank_below_app.channel_name or rank_below_user.username,
                         'follower_count': below_follower_count,
                         'channel_type': rank_below_app.channel_type,
                         'channel_thumbnail': rank_below_app.channel_thumbnail or '',
-                        'profile_picture': rank_below_app.user.profile_picture.url if rank_below_app.user.profile_picture else '',
+                        'display_picture': rank_below_display_picture,
                         'platforms': below_platforms if tab_type == 'mix' else [rank_below_app.channel_type],
                     }
                 break
@@ -310,9 +321,13 @@ def user_dashboard(request):
     # Prepare current user's image data
     current_user_image = ''
     if user_rank_app:
-        current_user_image = user_rank_app.channel_thumbnail or ''
-        if not current_user_image and user_rank_app.user.profile_picture:
-            current_user_image = user_rank_app.user.profile_picture.url
+        # Prefer the user's display picture helper (local media) first
+        rank_user = user_rank_app.user
+        if hasattr(rank_user, 'get_display_picture'):
+            current_user_image = rank_user.get_display_picture() or ''
+        # Fallback to channel thumbnail if no display picture is available
+        if not current_user_image:
+            current_user_image = user_rank_app.channel_thumbnail or ''
     
     # Get display name and picture based on user's profile display mode
     display_name = request.user.get_display_name()
