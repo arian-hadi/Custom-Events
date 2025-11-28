@@ -385,16 +385,23 @@
                                     </div>
                                     {% else %}
                                     <!-- TikTok Video: Use official TikTok embed -->
-                                    <div class="flex items-center justify-center w-full max-w-[300px] md:max-w-[550px] mx-auto">
+                                    <div class="relative flex items-center justify-center w-full max-w-[300px] md:max-w-[550px] mx-auto tiktok-loading-container" style="min-height: 500px;">
+                                        <!-- Loading Placeholder -->
+                                        <div class="tiktok-loading-placeholder absolute inset-0 flex flex-col items-center justify-center bg-gray-900 z-10 rounded-xl">
+                                            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-white mb-4"></div>
+                                            <p class="text-white text-sm font-medium">Loading TikTok video...</p>
+                                        </div>
                                         {% if edit.tiktok_embed_html %}
-                                            <div style="max-width: 300px; width: 100%;">
+                                            <div id="tiktok-embed-view-all" class="relative z-0" style="max-width: 300px; width: 100%;">
                                                 {{ edit.tiktok_embed_html|safe }}
                                             </div>
                                         {% else %}
-                                            <blockquote class="tiktok-embed" cite="{{ edit.video_url }}" data-video-id="{{ edit.video_url|tiktok_video_id }}" style="max-width: 300px; min-width: 300px;">
-                                                <section></section>
-                                            </blockquote>
-                                            <script async src="https://www.tiktok.com/embed.js"></script>
+                                            <div id="tiktok-embed-view-all" class="relative z-0">
+                                                <blockquote class="tiktok-embed" cite="{{ edit.video_url }}" data-video-id="{{ edit.video_url|tiktok_video_id }}" style="max-width: 300px; min-width: 300px;">
+                                                    <section></section>
+                                                </blockquote>
+                                                <script async src="https://www.tiktok.com/embed.js"></script>
+                                            </div>
                                         {% endif %}
                                     </div>
                                     {% endif %}
@@ -816,7 +823,84 @@ function scrollToEdit(editId) {
 // Legacy navigation functions (kept for compatibility but not used in new paginated format)
 let currentEditIndex = 0;
 
+    // Initialize TikTok embed loading detection
+    function initTikTokLoadingDetection() {
+        const tiktokContainers = document.querySelectorAll('.tiktok-loading-container');
+        
+        tiktokContainers.forEach(container => {
+            const loadingPlaceholder = container.querySelector('.tiktok-loading-placeholder');
+            const embedDiv = container.querySelector('#tiktok-embed-view-all, blockquote.tiktok-embed');
+            
+            if (!loadingPlaceholder || !embedDiv) return;
+            
+            // Method 1: Check for iframe (TikTok embed creates an iframe)
+            const checkForIframe = setInterval(() => {
+                const iframe = embedDiv.querySelector('iframe');
+                if (iframe) {
+                    // Iframe found - check if it's loaded
+                    iframe.onload = () => {
+                        setTimeout(() => {
+                            loadingPlaceholder.style.opacity = '0';
+                            loadingPlaceholder.style.transition = 'opacity 0.3s ease-out';
+                            setTimeout(() => {
+                                loadingPlaceholder.style.display = 'none';
+                                container.style.minHeight = 'auto';
+                            }, 300);
+                        }, 500); // Small delay to ensure embed is fully rendered
+                    };
+                    clearInterval(checkForIframe);
+                }
+            }, 100);
+            
+            // Method 2: Use MutationObserver to detect when TikTok script transforms the blockquote
+            const observer = new MutationObserver((mutations) => {
+                mutations.forEach((mutation) => {
+                    if (mutation.addedNodes.length > 0) {
+                        // Check if TikTok has added content (iframe or other elements)
+                        const hasIframe = embedDiv.querySelector('iframe');
+                        const hasTikTokContent = embedDiv.querySelector('iframe, div[style*="position"]');
+                        
+                        if (hasIframe || hasTikTokContent) {
+                            setTimeout(() => {
+                                loadingPlaceholder.style.opacity = '0';
+                                loadingPlaceholder.style.transition = 'opacity 0.3s ease-out';
+                                setTimeout(() => {
+                                    loadingPlaceholder.style.display = 'none';
+                                    container.style.minHeight = 'auto';
+                                }, 300);
+                            }, 500);
+                            observer.disconnect();
+                            clearInterval(checkForIframe);
+                        }
+                    }
+                });
+            });
+            
+            observer.observe(embedDiv, {
+                childList: true,
+                subtree: true
+            });
+            
+            // Fallback: Hide loading after max 10 seconds even if embed doesn't load
+            setTimeout(() => {
+                if (loadingPlaceholder.style.display !== 'none') {
+                    loadingPlaceholder.style.opacity = '0';
+                    loadingPlaceholder.style.transition = 'opacity 0.3s ease-out';
+                    setTimeout(() => {
+                        loadingPlaceholder.style.display = 'none';
+                        container.style.minHeight = 'auto';
+                    }, 300);
+                }
+                clearInterval(checkForIframe);
+                observer.disconnect();
+            }, 10000);
+        });
+    }
+
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize TikTok loading detection
+    initTikTokLoadingDetection();
+    
     // Mobile menu toggle
     const menuToggle = document.getElementById('menuToggle');
     if (menuToggle) {
