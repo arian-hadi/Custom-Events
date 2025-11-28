@@ -4,7 +4,7 @@ from django.contrib import messages
 from events.models import Event, EventApplication,EventFieldResponse
 from django.contrib.auth import get_user_model
 from events.forms import EventApplicationForm
-from django.db.models import Case, When, Value, IntegerField
+from django.db.models import Case, When, Value, IntegerField, Max, Sum, Q
 from datetime import datetime, timedelta, timezone
 
 
@@ -299,15 +299,71 @@ def user_dashboard(request):
         user_platforms = ranking_data.get('user_platforms', [])
         ranking_tab = 'mix'  # Switch to mix if user not in selected tab
     
+    # Get edit submissions platform filter (similar to ranking_tab)
+    edit_platform_tab = request.GET.get('edit_platform_tab', 'mix')
+    if edit_platform_tab not in ['mix', 'youtube', 'tiktok']:
+        edit_platform_tab = 'mix'
+    
     # Get edit submissions count
     edit_submissions = EditSubmission.objects.filter(user=request.user)
+    
+    # Filter by platform if not 'mix'
+    if edit_platform_tab != 'mix':
+        edit_submissions = edit_submissions.filter(channel_type=edit_platform_tab)
+    
     total_edit_submissions = edit_submissions.count()
     verified_edit_submissions = edit_submissions.filter(status='verified').count()
     
-    # Get upcoming week submissions (submissions scheduled for next week)
+    # Get current week submissions with stats
     from edithub.utils import get_week_start_end
     from datetime import datetime, timezone
-    week_start_dt, _ = get_week_start_end()
+    week_start_dt, week_end_dt = get_week_start_end()
+    current_week_start = week_start_dt.date()
+    current_week_end = (week_start_dt + timedelta(days=6)).date()
+    
+    # Get current week submissions (filtered by platform)
+    current_week_submissions_qs = EditSubmission.objects.filter(
+        user=request.user,
+        status='verified'
+    ).filter(
+        Q(scheduled_week=current_week_start) |
+        (Q(scheduled_week__isnull=True) & Q(submitted_date__gte=week_start_dt) & Q(submitted_date__lte=week_end_dt))
+    )
+    
+    if edit_platform_tab != 'mix':
+        current_week_submissions_qs = current_week_submissions_qs.filter(channel_type=edit_platform_tab)
+    
+    current_week_submissions = current_week_submissions_qs.order_by('-calculated_points', '-submitted_date')
+    
+    # Calculate stats (filtered by platform)
+    best_points = edit_submissions.aggregate(Max('calculated_points'))['calculated_points__max'] or 0
+    total_upvotes = edit_submissions.aggregate(Sum('upvote_count'))['upvote_count__sum'] or 0
+    
+    # Get current week rank (best edit's rank in current week for selected platform)
+    current_week_rank = None
+    if current_week_submissions.exists():
+        # Get all verified edits for current week (same platform filter) to calculate rank
+        all_current_week_edits = EditSubmission.objects.filter(
+            status='verified'
+        ).filter(
+            Q(scheduled_week=current_week_start) |
+            (Q(scheduled_week__isnull=True) & Q(submitted_date__gte=week_start_dt) & Q(submitted_date__lte=week_end_dt))
+        )
+        
+        if edit_platform_tab != 'mix':
+            all_current_week_edits = all_current_week_edits.filter(channel_type=edit_platform_tab)
+        
+        all_current_week_edits = all_current_week_edits.order_by('-calculated_points', 'submitted_date')
+        
+        # Find user's best edit and its rank
+        user_best_edit = current_week_submissions.first()
+        if user_best_edit:
+            for index, edit in enumerate(all_current_week_edits, start=1):
+                if edit.id == user_best_edit.id:
+                    current_week_rank = index
+                    break
+    
+    # Get upcoming week submissions (submissions scheduled for next week)
     next_week_start = (week_start_dt + timedelta(days=7)).date()
     deadline = datetime.combine(next_week_start, datetime.min.time()).replace(tzinfo=timezone.utc)
     now = datetime.now(timezone.utc)
@@ -316,7 +372,12 @@ def user_dashboard(request):
     upcoming_submissions = EditSubmission.objects.filter(
         user=request.user,
         scheduled_week=next_week_start
-    ).order_by('channel_type')
+    )
+    
+    if edit_platform_tab != 'mix':
+        upcoming_submissions = upcoming_submissions.filter(channel_type=edit_platform_tab)
+    
+    upcoming_submissions = upcoming_submissions.order_by('channel_type')
 
     # Prepare current user's image data
     current_user_image = ''
@@ -382,6 +443,11 @@ def user_dashboard(request):
         'can_edit_delete': can_edit_delete,
         'deadline': deadline,
         'next_week_start': next_week_start,
+        'edit_platform_tab': edit_platform_tab,
+        'current_week_submissions': current_week_submissions,
+        'best_points': best_points,
+        'total_upvotes': total_upvotes,
+        'current_week_rank': current_week_rank,
         'display_name': display_name,
         'display_picture': display_picture,
         'current_title': current_title,
