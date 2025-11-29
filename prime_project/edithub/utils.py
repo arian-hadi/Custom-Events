@@ -2199,11 +2199,12 @@ def is_title_unlocked_for_user(user, title):
     """
     from .models import UserTitleUnlock
     
-    # Free titles are always unlocked
+    # Free titles are always unlocked (unless they're manual)
     if title.cost_coins == 0 and title.unlock_method == 'coins':
         return True
     
-    # Check if unlocked via achievement or coins
+    # Manual titles can only be unlocked via UserTitleUnlock (admin grant)
+    # Check if unlocked via achievement, coins, or manual
     return UserTitleUnlock.objects.filter(user=user, title=title).exists()
 
 

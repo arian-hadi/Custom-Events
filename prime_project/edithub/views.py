@@ -1244,6 +1244,8 @@ def select_editor_title(request):
                 error_msg = f"This title costs {title.cost_coins} coins. You don't have enough coins to unlock it."
             elif title.unlock_method == 'both':
                 error_msg = f"This title requires either {title.cost_coins} coins or completing: {title.unlock_requirement or 'the achievement requirements'}."
+            elif title.unlock_method == 'manual':
+                error_msg = f"This title is manually granted by administrators. {title.unlock_requirement or 'Contact an admin to unlock this title.'}"
             else:
                 error_msg = f"This title is locked. {title.unlock_requirement or 'Complete the requirements to unlock.'}"
             
