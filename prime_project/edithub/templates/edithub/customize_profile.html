@@ -325,7 +325,8 @@ function filterAndRenderTitles() {
                 // Build unlock requirement message for locked titles
                 let unlockMessage = '';
                 if (!isUnlocked && !isComment && title.unlock_requirement) {
-                    unlockMessage = `<p class="text-xs text-gray-500 mt-2 italic">${title.unlock_requirement}</p>`;
+                    const isManual = title.unlock_method === 'manual';
+                    unlockMessage = `<p class="text-xs ${isManual ? 'text-amber-600' : 'text-gray-500'} mt-2 italic">${title.unlock_requirement}</p>`;
                 }
                 
                 html += `
@@ -342,7 +343,7 @@ function filterAndRenderTitles() {
                             ${title.description ? `<p class="text-xs ${isUnlocked ? 'text-gray-600' : 'text-gray-400'} mb-2 line-clamp-2">${title.description}</p>` : ''}
                             <div class="flex items-center justify-between mt-2">
                                 ${rarityBadge}
-                                ${title.cost_coins > 0 ? `<span class="text-xs ${isUnlocked ? 'text-gray-500' : 'text-gray-400'}">${title.cost_coins} coins</span>` : '<span class="text-xs text-green-600">Free</span>'}
+                                ${title.unlock_method === 'manual' ? '' : title.cost_coins > 0 ? `<span class="text-xs ${isUnlocked ? 'text-gray-500' : 'text-gray-400'}">${title.cost_coins} coins</span>` : '<span class="text-xs text-green-600">Free</span>'}
                             </div>
                             ${progressBar}
                             ${unlockMessage}

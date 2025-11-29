@@ -40,6 +40,7 @@ class EditorTitle(models.Model):
         ('coins', 'Coins Only'),
         ('achievement', 'Achievement Only'),
         ('both', 'Coins or Achievement'),
+        ('manual', 'Manual (Admin Only)'),
     ]
     
     name = models.CharField(max_length=100, unique=True, help_text="Title name (e.g., 'Ultimate Editing Master')")
@@ -120,6 +121,7 @@ class UserTitleUnlock(models.Model):
     UNLOCK_METHOD_CHOICES = [
         ('coins', 'Coins'),
         ('achievement', 'Achievement'),
+        ('manual', 'Manual (Admin)'),
     ]
     
     user = models.ForeignKey(

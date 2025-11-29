@@ -229,7 +229,7 @@ class EditorTitleAdmin(admin.ModelAdmin):
         }),
         ('Unlock Method', {
             'fields': ('unlock_method', 'cost_coins', 'unlock_requirement'),
-            'description': 'Choose how users can unlock this title: Coins, Achievement, or Both'
+            'description': 'Choose how users can unlock this title: Coins, Achievement, Both, or Manual (Admin Only). For Manual titles, set unlock_requirement to explain how it can be received (e.g., "Won a one-time competition").'
         }),
         ('Achievement Settings', {
             'fields': ('achievement_type', 'achievement_threshold', 'tier_level', 'achievement_group'),
@@ -254,3 +254,13 @@ class UserTitleUnlockAdmin(admin.ModelAdmin):
     readonly_fields = ('unlocked_at',)
     date_hierarchy = 'unlocked_at'
     raw_id_fields = ('user', 'title')
+    fieldsets = (
+        ('Unlock Information', {
+            'fields': ('user', 'title', 'unlock_method'),
+            'description': 'To manually unlock a title for a user, select the user and title, then set unlock_method to "Manual (Admin)".'
+        }),
+        ('Timestamps', {
+            'fields': ('unlocked_at',),
+            'classes': ('collapse',)
+        }),
+    )
