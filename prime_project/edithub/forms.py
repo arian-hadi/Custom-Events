@@ -147,7 +147,7 @@ class EditSubmissionForm(forms.ModelForm):
     
     class Meta:
         model = EditSubmission
-        fields = ['video_url', 'title']
+        fields = ['video_url', 'title', 'description']
         widgets = {
             'video_url': forms.URLInput(attrs={
                 'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500',
@@ -166,8 +166,15 @@ class EditSubmissionForm(forms.ModelForm):
     
     def __init__(self, *args, **kwargs):
         self.approved_application = kwargs.pop('approved_application', None)
+        instance = kwargs.get('instance')
         super().__init__(*args, **kwargs)
         self.fields['video_url'].required = True
+        # If editing, don't require video URL validation against channel (it's already verified)
+        if instance:
+            # When editing, we need to allow the same video URL
+            self._editing_instance = instance
+        else:
+            self._editing_instance = None
     
     def clean_video_url(self):
         video_url = self.cleaned_data.get('video_url')
@@ -176,6 +183,19 @@ class EditSubmissionForm(forms.ModelForm):
         
         if not self.approved_application:
             raise forms.ValidationError('No approved application found. Please apply and get approved first.')
+        
+        # If editing and URL hasn't changed, skip validation
+        if self._editing_instance and self._editing_instance.video_url == video_url:
+            return video_url
+        
+        # Check if this video URL was already a winner (cannot resubmit winner videos)
+        from .models import WeekWinner
+        existing_winner = WeekWinner.objects.filter(video_url=video_url).first()
+        if existing_winner:
+            raise forms.ValidationError(
+                f'This video was already a winner (Rank #{existing_winner.week_rank} for week of {existing_winner.week_start.strftime("%B %d, %Y")}). '
+                'Winner videos cannot be resubmitted. Please submit a different video.'
+            )
         
         # Verify video belongs to the approved channel
         from .utils import verify_video_belongs_to_channel

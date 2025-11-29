@@ -1,0 +1,202 @@
+{% extends 'base.html' %}
+{% load video %}
+
+{% block title %}Edit Submitted Successfully - Edit of the Week - 2.0Transformers{% endblock %}
+
+{% block content %}
+<main class="pt-16 bg-gradient-to-b from-white via-gray-50 to-gray-100 min-h-screen py-8 sm:py-12">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-center min-h-[calc(100vh-8rem)]">
+            <div class="w-full">
+                <!-- Step Indicator -->
+                <div class="mb-8 pt-4">
+                    <div class="flex items-center justify-center flex-wrap gap-2 sm:gap-4 mb-4">
+                        <div class="flex items-center">
+                            <div class="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-green-500 text-white font-semibold shadow-md">
+                                <i class="fas fa-check text-sm sm:text-base"></i>
+                            </div>
+                            <span class="ml-2 sm:ml-3 text-xs sm:text-sm text-gray-600 font-medium">Submit</span>
+                        </div>
+                        <div class="w-8 sm:w-12 h-0.5 bg-green-500 flex-shrink-0"></div>
+                        <div class="flex items-center">
+                            <div class="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-green-500 text-white font-semibold shadow-md">
+                                <i class="fas fa-check text-sm sm:text-base"></i>
+                            </div>
+                            <span class="ml-2 sm:ml-3 text-xs sm:text-sm text-gray-600 font-medium">Preview</span>
+                        </div>
+                        <div class="w-8 sm:w-12 h-0.5 bg-green-500 flex-shrink-0"></div>
+                        <div class="flex items-center">
+                            <div class="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-green-500 text-white font-semibold shadow-md">
+                                <i class="fas fa-check text-sm sm:text-base"></i>
+                            </div>
+                            <span class="ml-2 sm:ml-3 text-xs sm:text-sm font-semibold text-green-600">Success</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="text-center mb-8">
+                    <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 mb-4">
+                        <i class="fas fa-check-circle text-4xl text-green-600"></i>
+                    </div>
+                    <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-2">Edit Submitted Successfully!</h1>
+                    <p class="text-sm sm:text-base text-gray-600">Your edit has been submitted for the week of <span class="font-semibold text-gray-800">{{ target_week_label }}</span></p>
+                </div>
+
+                {% if submission.channel_type == 'youtube' %}
+                <div class="bg-white rounded-xl shadow-lg border-2 border-red-100 overflow-hidden">
+                    <div class="bg-gradient-to-r from-red-600 to-red-700 px-6 py-4">
+                        <div class="flex items-center gap-3">
+                            <i class="fab fa-youtube text-2xl sm:text-3xl text-white"></i>
+                            <h2 class="text-xl sm:text-2xl font-bold text-white">YouTube</h2>
+                        </div>
+                    </div>
+                {% else %}
+                <div class="bg-white rounded-xl shadow-lg border-2 border-purple-100 overflow-hidden">
+                    <div class="bg-gradient-to-r from-gray-900 to-black px-6 py-4">
+                        <div class="flex items-center gap-3">
+                            <i class="fab fa-tiktok text-2xl sm:text-3xl text-white"></i>
+                            <h2 class="text-xl sm:text-2xl font-bold text-white">TikTok</h2>
+                        </div>
+                    </div>
+                {% endif %}
+                    
+                    <div class="p-6">
+                        <!-- Channel Info -->
+                        <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
+                            <div class="flex items-center gap-3 mb-3">
+                                {% if submission.channel_thumbnail %}
+                                <img src="{{ submission.channel_thumbnail }}" alt="{{ submission.channel_name }}" 
+                                     class="h-12 w-12 rounded-full object-cover flex-shrink-0">
+                                {% endif %}
+                                <div class="flex-1 min-w-0">
+                                    <p class="font-semibold text-gray-900 text-sm truncate">{{ submission.channel_name }}</p>
+                                    <a href="{{ submission.channel_link }}" target="_blank" rel="noopener noreferrer" 
+                                       class="text-xs text-blue-600 hover:underline">
+                                        View Channel
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Video Preview -->
+                        <div class="mb-6">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Your Submitted Edit</h3>
+                            {% if submission.channel_type == 'youtube' %}
+                            <div class="bg-gray-900 rounded-lg overflow-hidden" style="aspect-ratio: 9/16; max-width: 400px; margin: 0 auto;">
+                                <iframe 
+                                    src="{{ submission.video_url|youtube_embed_standard }}"
+                                    title="YouTube video player"
+                                    frameborder="0"
+                                    referrerpolicy="strict-origin-when-cross-origin"
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                                    allowfullscreen
+                                    playsinline
+                                    loading="lazy"
+                                    class="w-full h-full">
+                                </iframe>
+                            </div>
+                            {% else %}
+                            <!-- TikTok embed - let it size itself -->
+                            <div class="flex items-center justify-center bg-gray-900 rounded-lg py-4 px-2">
+                                <blockquote class="tiktok-embed" cite="{{ submission.video_url }}" data-video-id="{{ submission.video_url|tiktok_video_id }}" style="max-width: 100%; min-width: 300px;">
+                                    <section></section>
+                                </blockquote>
+                            </div>
+                            <script async src="https://www.tiktok.com/embed.js"></script>
+                            {% endif %}
+                        </div>
+
+                        <!-- Submission Details -->
+                        <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
+                            <h3 class="text-sm font-semibold text-gray-900 mb-3">Submission Details</h3>
+                            <div class="space-y-2 text-sm">
+                                <div>
+                                    <span class="font-semibold text-gray-700">Video URL:</span>
+                                    <a href="{{ submission.video_url }}" target="_blank" class="text-blue-600 hover:underline break-all ml-2">
+                                        {{ submission.video_url|truncatechars:60 }}
+                                    </a>
+                                </div>
+                                {% if submission.title %}
+                                <div>
+                                    <span class="font-semibold text-gray-700">Title:</span>
+                                    <span class="text-gray-600 ml-2">{{ submission.title }}</span>
+                                </div>
+                                {% endif %}
+                                {% if submission.description %}
+                                <div>
+                                    <span class="font-semibold text-gray-700">Description:</span>
+                                    <p class="text-gray-600 mt-1">{{ submission.description }}</p>
+                                </div>
+                                {% endif %}
+                                <div>
+                                    <span class="font-semibold text-gray-700">Week:</span>
+                                    <span class="text-gray-600 ml-2">{{ target_week_label }}</span>
+                                </div>
+                                <div>
+                                    <span class="font-semibold text-gray-700">Submitted:</span>
+                                    <span class="text-gray-600 ml-2">{{ submission.verified_date|date:"M d, Y H:i" }} UTC</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="space-y-3">
+                            {% if can_edit_delete %}
+                            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                                <p class="text-xs text-blue-800 mb-3">
+                                    <i class="fas fa-info-circle mr-1"></i>
+                                    You can edit or delete this submission until {{ deadline|date:"M d, Y H:i" }} UTC
+                                </p>
+                                <div class="flex flex-col sm:flex-row gap-3">
+                                    <a href="{% url 'edithub:edit_submission' submission.pk %}" 
+                                       class="flex-1 text-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors">
+                                        <i class="fas fa-edit mr-2"></i>
+                                        Edit Submission
+                                    </a>
+                                    <form method="POST" action="{% url 'edithub:delete_submission' submission.pk %}" 
+                                          onsubmit="return confirm('Are you sure you want to delete this submission?');" 
+                                          class="flex-1">
+                                        {% csrf_token %}
+                                        <button type="submit" 
+                                                class="w-full px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition-colors">
+                                            <i class="fas fa-trash mr-2"></i>
+                                            Delete Submission
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                            {% else %}
+                            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                                <p class="text-xs text-yellow-800">
+                                    <i class="fas fa-lock mr-1"></i>
+                                    The deadline has passed. This edit will participate in the competition.
+                                </p>
+                            </div>
+                            {% endif %}
+
+                            <div class="flex flex-col sm:flex-row gap-3">
+                                <a href="{% url 'edithub:submit_edit' %}" 
+                                   class="flex-1 text-center px-6 py-3 {% if submission.channel_type == 'youtube' %}bg-red-600 hover:bg-red-700{% else %}bg-gray-900 hover:bg-black{% endif %} text-white rounded-lg font-semibold transition-colors">
+                                    <i class="fas fa-plus mr-2"></i>
+                                    Submit Another Edit
+                                </a>
+                                <a href="{% url 'edithub:view_all_edits' %}" 
+                                   class="flex-1 text-center px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-semibold transition-colors">
+                                    <i class="fas fa-eye mr-2"></i>
+                                    View All Edits
+                                </a>
+                                <a href="{% url 'edithub:ranking_table' %}" 
+                                   class="flex-1 text-center px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-semibold transition-colors">
+                                    <i class="fas fa-trophy mr-2"></i>
+                                    View Rankings
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+{% endblock %}
+

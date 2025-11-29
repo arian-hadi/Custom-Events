@@ -4,8 +4,232 @@
 
 {% block title %}EditingHub Ranking Table - 2.0Transformers{% endblock %}
 
+{% block extra_css %}
+<style>
+    /* Editor Title Rarity Styling - Now centralized in base.html */
+
+    .tournament-card {
+        position: relative;
+        padding: 0.25rem 0;
+    }
+
+    .tournament-card__line {
+        display: none;
+    }
+
+    .tournament-card__line.left {
+        left: -42px;
+    }
+
+    .tournament-card__line.right {
+        right: -42px;
+        background: #ec4899;
+    }
+
+    .tournament-connector {
+        position: absolute;
+        background: #ec4899;
+        z-index: 1;
+    }
+
+    .tournament-connector.horizontal {
+        height: 4px;
+    }
+
+    .tournament-connector.vertical {
+        width: 4px;
+    }
+
+    .tournament-card__body {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+        min-height: 56px;
+        height: 56px;
+        width: 280px;
+        padding: 0.4rem 0.6rem;
+        background: rgba(255, 255, 255, 0.78);
+        border: 1px solid rgba(255, 255, 255, 0.35);
+        box-shadow: 0 15px 35px rgba(15, 23, 42, 0.35);
+        backdrop-filter: blur(16px);
+        position: relative;
+        z-index: 5;
+    }
+
+    .tournament-card.left .tournament-card__body {
+        clip-path: polygon(0 50%, 24px 0, calc(100% - 20px) 0, 100% 50%, calc(100% - 20px) 100%, 24px 100%);
+    }
+
+    .tournament-card.right .tournament-card__body {
+        flex-direction: row-reverse;
+        clip-path: polygon(100% 50%, calc(100% - 24px) 0, 20px 0, 0 50%, 20px 100%, calc(100% - 24px) 100%);
+    }
+
+    .tournament-card__info {
+        display: flex;
+        flex-direction: column;
+        text-transform: uppercase;
+        letter-spacing: 0.15em;
+        text-align: center;
+        align-items: center;
+        width: 100%;
+        justify-content: center;
+    }
+
+    .tournament-card.left .tournament-card__info {
+        text-align: center;
+    }
+
+    .tournament-card.right .tournament-card__info {
+        text-align: center;
+    }
+
+    .tournament-card__name {
+        font-weight: 800;
+        font-size: 1rem;
+        color: #1f2937;
+    }
+
+    .tournament-card__role {
+        font-size: 0.85rem;
+        color: #94a3b8;
+        margin-top: 0.25rem;
+    }
+
+    .tournament-card__avatar-group {
+        position: absolute;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        top: 50%;
+        transform: translateY(-50%);
+        z-index: 100;
+    }
+
+    .tournament-card.left .tournament-card__avatar-group {
+        right: -45px;
+    }
+
+    .tournament-card.right .tournament-card__avatar-group {
+        left: -45px;
+    }
+
+    .tournament-card__badge {
+        position: absolute;
+        bottom: -10px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(15, 23, 42, 0.95);
+        color: #fff;
+        font-size: 0.55rem;
+        letter-spacing: 0.12em;
+        padding: 0.15rem 0.6rem;
+        border-radius: 999px;
+        text-transform: uppercase;
+        white-space: nowrap;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.35);
+        z-index: 10;
+    }
+
+    .hexagon-avatar {
+        width: 82px;
+        height: 82px;
+        position: relative;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .hexagon-avatar img,
+    .hexagon-avatar__fallback {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        border: 4px solid white;
+        object-fit: cover;
+    }
+
+    .hexagon-avatar__fallback {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #6366f1, #8b5cf6);
+        font-weight: 700;
+        font-size: 1.1rem;
+        color: #fff;
+        letter-spacing: 0.1em;
+    }
+
+    .tournament-card.is-placeholder .tournament-card__body {
+        opacity: 0.65;
+    }
+
+    /* Mobile platform tabs - make them fit on one line */
+    @media (max-width: 640px) {
+        .platform-tabs-container {
+            flex-wrap: nowrap !important;
+        }
+        .platform-tab-link {
+            padding-left: 0.5rem !important;
+            padding-right: 0.5rem !important;
+            font-size: 0.7rem !important;
+        }
+        .platform-tab-link i {
+            font-size: 0.875rem !important;
+        }
+        .platform-tab-link span {
+            font-size: 0.7rem !important;
+        }
+    }
+    
+    @media (max-width: 640px) {
+        .tournament-card__body {
+            flex-direction: column;
+            height: auto;
+            clip-path: none !important;
+            border-radius: 1rem;
+        }
+
+        .tournament-card.right .tournament-card__body {
+            flex-direction: column;
+        }
+
+        .tournament-card__line {
+            display: none;
+        }
+
+        .tournament-card__badge {
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+    }
+    
+    /* Top Edits Slider Styles */
+    .scrollbar-hide {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+    .scrollbar-hide::-webkit-scrollbar {
+        display: none;
+    }
+    
+    .top-edits-slider {
+        scroll-snap-type: x mandatory;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .top-edits-slide {
+        scroll-snap-align: center;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<main class="pt-16 bg-gradient-to-b from-white via-gray-50 to-gray-100 min-h-screen">
+<main class="pt-16 pb-24 bg-gradient-to-b from-white via-gray-50 to-gray-100 min-h-screen">
     <!-- Header Section -->
     <section class="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-12">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -50,13 +274,388 @@
         </div>
     </section>
 
+    <!-- Tournament of Editors Section -->
+    {% if not show_all and tournament and tournament.is_active %}
+    <section class="py-12 bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 border-b-4 border-yellow-500 relative overflow-hidden">
+        <!-- Geometric Pattern Background -->
+        <div class="absolute inset-0 opacity-10" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.05) 10px, rgba(255,255,255,0.05) 20px);"></div>
+        
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <!-- Title -->
+            <div class="text-center mb-12">
+                <h2 class="text-5xl md:text-6xl font-bold mb-2">
+                    <span class="text-white">TOURNAMENT</span>
+                    <span class="text-yellow-500"> OF </span>
+                    <span class="text-orange-500">EDITORS</span>
+                </h2>
+            </div>
+            
+            <!-- Mobile Card Layout (visible on mobile only) -->
+            <div class="md:hidden space-y-6 mb-8">
+                {% if semi_finals_active %}
+                    <!-- Semi-Final 1 Card -->
+                    {% if tournament_participants.0 or tournament_participants.1 %}
+                    <div class="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                        <div class="text-center mb-3">
+                            <span class="text-white/90 text-xs font-semibold uppercase tracking-wider">Semi-Final 1</span>
+                        </div>
+                        <div class="flex items-center justify-between gap-3">
+                            <!-- Participant 1 -->
+                            <div class="flex-1 text-center">
+                                {% if tournament_participants.0 %}
+                                    <div class="mb-2">
+                                        {% if tournament_participants.0.profile_picture %}
+                                            <img src="{{ tournament_participants.0.profile_picture }}" 
+                                                 alt="{{ tournament_participants.0.channel_name }}" 
+                                                 class="w-16 h-16 rounded-full object-cover border-2 border-white/30 mx-auto">
+                                        {% elif tournament_participants.0.channel_thumbnail %}
+                                            <img src="{{ tournament_participants.0.channel_thumbnail }}" 
+                                                 alt="{{ tournament_participants.0.channel_name }}" 
+                                                 class="w-16 h-16 rounded-full object-cover border-2 border-white/30 mx-auto">
+                                        {% else %}
+                                            <div class="w-16 h-16 rounded-full bg-gradient-to-br from-purple-400 via-pink-400 to-blue-400 flex items-center justify-center border-2 border-white/30 mx-auto">
+                                                <span class="text-xl font-bold text-white">{{ tournament_participants.0.channel_name|first|upper }}</span>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    <p class="text-white text-sm font-semibold truncate">{{ tournament_participants.0.channel_name|upper }}</p>
+                                    <p class="text-xs truncate {% if tournament_participants.0.editor_title_rarity == 'legendary' %}title-legendary{% elif tournament_participants.0.editor_title_rarity == 'epic' %}title-epic text-white/90{% elif tournament_participants.0.editor_title_rarity == 'rare' %}text-blue-300{% else %}text-white/70{% endif %}">{{ tournament_participants.0.editor_title }}</p>
+                                {% else %}
+                                    <div class="w-16 h-16 rounded-full bg-white/10 border-2 border-white/20 flex items-center justify-center mx-auto mb-2">
+                                        <span class="text-white/50 text-xl">?</span>
+                                    </div>
+                                    <p class="text-white/50 text-sm">TBD</p>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- VS -->
+                            <div class="text-white font-bold text-lg">VS</div>
+                            
+                            <!-- Participant 2 -->
+                            <div class="flex-1 text-center">
+                                {% if tournament_participants.1 %}
+                                    <div class="mb-2">
+                                        {% if tournament_participants.1.profile_picture %}
+                                            <img src="{{ tournament_participants.1.profile_picture }}" 
+                                                 alt="{{ tournament_participants.1.channel_name }}" 
+                                                 class="w-16 h-16 rounded-full object-cover border-2 border-white/30 mx-auto">
+                                        {% elif tournament_participants.1.channel_thumbnail %}
+                                            <img src="{{ tournament_participants.1.channel_thumbnail }}" 
+                                                 alt="{{ tournament_participants.1.channel_name }}" 
+                                                 class="w-16 h-16 rounded-full object-cover border-2 border-white/30 mx-auto">
+                                        {% else %}
+                                            <div class="w-16 h-16 rounded-full bg-gradient-to-br from-pink-400 via-purple-400 to-blue-400 flex items-center justify-center border-2 border-white/30 mx-auto">
+                                                <span class="text-xl font-bold text-white">{{ tournament_participants.1.channel_name|first|upper }}</span>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    <p class="text-white text-sm font-semibold truncate">{{ tournament_participants.1.channel_name|upper }}</p>
+                                    <p class="text-xs truncate {% if tournament_participants.1.editor_title_rarity == 'legendary' %}title-legendary{% elif tournament_participants.1.editor_title_rarity == 'epic' %}title-epic text-white/90{% elif tournament_participants.1.editor_title_rarity == 'rare' %}text-blue-300{% else %}text-white/70{% endif %}">{{ tournament_participants.1.editor_title }}</p>
+                                {% else %}
+                                    <div class="w-16 h-16 rounded-full bg-white/10 border-2 border-white/20 flex items-center justify-center mx-auto mb-2">
+                                        <span class="text-white/50 text-xl">?</span>
+                                    </div>
+                                    <p class="text-white/50 text-sm">TBD</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Semi-Final 2 Card -->
+                    {% if tournament_participants.2 or tournament_participants.3 %}
+                    <div class="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                        <div class="text-center mb-3">
+                            <span class="text-white/90 text-xs font-semibold uppercase tracking-wider">Semi-Final 2</span>
+                        </div>
+                        <div class="flex items-center justify-between gap-3">
+                            <!-- Participant 3 -->
+                            <div class="flex-1 text-center">
+                                {% if tournament_participants.2 %}
+                                    <div class="mb-2">
+                                        {% if tournament_participants.2.profile_picture %}
+                                            <img src="{{ tournament_participants.2.profile_picture }}" 
+                                                 alt="{{ tournament_participants.2.channel_name }}" 
+                                                 class="w-16 h-16 rounded-full object-cover border-2 border-white/30 mx-auto">
+                                        {% elif tournament_participants.2.channel_thumbnail %}
+                                            <img src="{{ tournament_participants.2.channel_thumbnail }}" 
+                                                 alt="{{ tournament_participants.2.channel_name }}" 
+                                                 class="w-16 h-16 rounded-full object-cover border-2 border-white/30 mx-auto">
+                                        {% else %}
+                                            <div class="w-16 h-16 rounded-full bg-gradient-to-br from-purple-400 via-pink-400 to-blue-400 flex items-center justify-center border-2 border-white/30 mx-auto">
+                                                <span class="text-xl font-bold text-white">{{ tournament_participants.2.channel_name|first|upper }}</span>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    <p class="text-white text-sm font-semibold truncate">{{ tournament_participants.2.channel_name|upper }}</p>
+                                    <p class="text-xs truncate {% if tournament_participants.2.editor_title_rarity == 'legendary' %}title-legendary{% elif tournament_participants.2.editor_title_rarity == 'epic' %}title-epic text-white/90{% elif tournament_participants.2.editor_title_rarity == 'rare' %}text-blue-300{% else %}text-white/70{% endif %}">{{ tournament_participants.2.editor_title }}</p>
+                                {% else %}
+                                    <div class="w-16 h-16 rounded-full bg-white/10 border-2 border-white/20 flex items-center justify-center mx-auto mb-2">
+                                        <span class="text-white/50 text-xl">?</span>
+                                    </div>
+                                    <p class="text-white/50 text-sm">TBD</p>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- VS -->
+                            <div class="text-white font-bold text-lg">VS</div>
+                            
+                            <!-- Participant 4 -->
+                            <div class="flex-1 text-center">
+                                {% if tournament_participants.3 %}
+                                    <div class="mb-2">
+                                        {% if tournament_participants.3.profile_picture %}
+                                            <img src="{{ tournament_participants.3.profile_picture }}" 
+                                                 alt="{{ tournament_participants.3.channel_name }}" 
+                                                 class="w-16 h-16 rounded-full object-cover border-2 border-white/30 mx-auto">
+                                        {% elif tournament_participants.3.channel_thumbnail %}
+                                            <img src="{{ tournament_participants.3.channel_thumbnail }}" 
+                                                 alt="{{ tournament_participants.3.channel_name }}" 
+                                                 class="w-16 h-16 rounded-full object-cover border-2 border-white/30 mx-auto">
+                                        {% else %}
+                                            <div class="w-16 h-16 rounded-full bg-gradient-to-br from-pink-400 via-purple-400 to-blue-400 flex items-center justify-center border-2 border-white/30 mx-auto">
+                                                <span class="text-xl font-bold text-white">{{ tournament_participants.3.channel_name|first|upper }}</span>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    <p class="text-white text-sm font-semibold truncate">{{ tournament_participants.3.channel_name|upper }}</p>
+                                    <p class="text-xs truncate {% if tournament_participants.3.editor_title_rarity == 'legendary' %}title-legendary{% elif tournament_participants.3.editor_title_rarity == 'epic' %}title-epic text-white/90{% elif tournament_participants.3.editor_title_rarity == 'rare' %}text-blue-300{% else %}text-white/70{% endif %}">{{ tournament_participants.3.editor_title }}</p>
+                                {% else %}
+                                    <div class="w-16 h-16 rounded-full bg-white/10 border-2 border-white/20 flex items-center justify-center mx-auto mb-2">
+                                        <span class="text-white/50 text-xl">?</span>
+                                    </div>
+                                    <p class="text-white/50 text-sm">TBD</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                {% endif %}
+                
+                {% if finals_active %}
+                    <!-- Final Card -->
+                    {% if tournament_finalists.0 or tournament_finalists.1 %}
+                    <div class="bg-gradient-to-r from-yellow-500/20 to-orange-500/20 backdrop-blur-sm rounded-xl p-4 border-2 border-yellow-400/50">
+                        <div class="text-center mb-3">
+                            <span class="text-yellow-300 text-xs font-bold uppercase tracking-wider">Final</span>
+                        </div>
+                        <div class="flex items-center justify-between gap-3">
+                            <!-- Finalist 1 -->
+                            <div class="flex-1 text-center">
+                                {% if tournament_finalists.0 %}
+                                    <div class="mb-2">
+                                        {% if tournament_finalists.0.profile_picture %}
+                                            <img src="{{ tournament_finalists.0.profile_picture }}" 
+                                                 alt="{{ tournament_finalists.0.channel_name }}" 
+                                                 class="w-16 h-16 rounded-full object-cover border-2 border-yellow-400/50 mx-auto">
+                                        {% elif tournament_finalists.0.channel_thumbnail %}
+                                            <img src="{{ tournament_finalists.0.channel_thumbnail }}" 
+                                                 alt="{{ tournament_finalists.0.channel_name }}" 
+                                                 class="w-16 h-16 rounded-full object-cover border-2 border-yellow-400/50 mx-auto">
+                                        {% else %}
+                                            <div class="w-16 h-16 rounded-full bg-gradient-to-br from-yellow-400 via-orange-400 to-yellow-500 flex items-center justify-center border-2 border-yellow-400/50 mx-auto">
+                                                <span class="text-xl font-bold text-white">{{ tournament_finalists.0.channel_name|first|upper }}</span>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    <p class="text-white text-sm font-semibold truncate">{{ tournament_finalists.0.channel_name|upper }}</p>
+                                    <p class="text-xs truncate {% if tournament_finalists.0.editor_title_rarity == 'legendary' %}title-legendary{% elif tournament_finalists.0.editor_title_rarity == 'epic' %}title-epic text-white/90{% elif tournament_finalists.0.editor_title_rarity == 'rare' %}text-blue-300{% else %}text-white/70{% endif %}">{{ tournament_finalists.0.editor_title }}</p>
+                                {% else %}
+                                    <div class="w-16 h-16 rounded-full bg-white/10 border-2 border-white/20 flex items-center justify-center mx-auto mb-2">
+                                        <span class="text-white/50 text-xl">?</span>
+                                    </div>
+                                    <p class="text-white/50 text-sm">TBD</p>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- VS -->
+                            <div class="text-yellow-300 font-bold text-lg">VS</div>
+                            
+                            <!-- Finalist 2 -->
+                            <div class="flex-1 text-center">
+                                {% if tournament_finalists.1 %}
+                                    <div class="mb-2">
+                                        {% if tournament_finalists.1.profile_picture %}
+                                            <img src="{{ tournament_finalists.1.profile_picture }}" 
+                                                 alt="{{ tournament_finalists.1.channel_name }}" 
+                                                 class="w-16 h-16 rounded-full object-cover border-2 border-yellow-400/50 mx-auto">
+                                        {% elif tournament_finalists.1.channel_thumbnail %}
+                                            <img src="{{ tournament_finalists.1.channel_thumbnail }}" 
+                                                 alt="{{ tournament_finalists.1.channel_name }}" 
+                                                 class="w-16 h-16 rounded-full object-cover border-2 border-yellow-400/50 mx-auto">
+                                        {% else %}
+                                            <div class="w-16 h-16 rounded-full bg-gradient-to-br from-orange-400 via-yellow-400 to-orange-500 flex items-center justify-center border-2 border-yellow-400/50 mx-auto">
+                                                <span class="text-xl font-bold text-white">{{ tournament_finalists.1.channel_name|first|upper }}</span>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    <p class="text-white text-sm font-semibold truncate">{{ tournament_finalists.1.channel_name|upper }}</p>
+                                    <p class="text-xs truncate {% if tournament_finalists.1.editor_title_rarity == 'legendary' %}title-legendary{% elif tournament_finalists.1.editor_title_rarity == 'epic' %}title-epic text-white/90{% elif tournament_finalists.1.editor_title_rarity == 'rare' %}text-blue-300{% else %}text-white/70{% endif %}">{{ tournament_finalists.1.editor_title }}</p>
+                                {% else %}
+                                    <div class="w-16 h-16 rounded-full bg-white/10 border-2 border-white/20 flex items-center justify-center mx-auto mb-2">
+                                        <span class="text-white/50 text-xl">?</span>
+                                    </div>
+                                    <p class="text-white/50 text-sm">TBD</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                {% endif %}
+            </div>
+            
+            <!-- Tournament Bracket Structure (Desktop only) -->
+            <div class="hidden md:block max-w-7xl mx-auto">
+                <div class="relative flex flex-col md:flex-row items-center justify-center gap-8 md:gap-20">
+                    <!-- Far Left - Semi-Final 1 -->
+                    {% if semi_finals_active %}
+                    <div class="w-full md:w-auto flex justify-center md:justify-end md:-ml-8">
+                        <div class="space-y-6">
+                            <div class="text-center mb-2">
+                                <span class="text-white/80 text-sm font-semibold uppercase tracking-wider">SEMI-FINALS</span>
+                            </div>
+                            <!-- Match 1 - Editor 1 vs Editor 2 -->
+                            <div class="relative">
+                                {% with participant=tournament_participants.0 %}
+                                {% include 'edithub/tournament_card.html' with participant=participant side='left' role='Player' %}
+                                {% endwith %}
+                                
+                                <!-- Connecting line from Editor 1 avatar center (top card) -->
+                                <div class="hidden md:block tournament-connector horizontal" style="left: calc(100% + 1px); top: 18%; width: 80px; transform: translateY(-50%);"></div>
+                                
+                                <!-- Editor 2 Box -->
+                                {% with participant=tournament_participants.1 %}
+                                {% include 'edithub/tournament_card.html' with participant=participant side='left' role='Player' extra_classes='mt-10' %}
+                                {% endwith %}
+                                
+                                <!-- Connecting line from Editor 2 avatar center (bottom card) -->
+                                <div class="hidden md:block tournament-connector horizontal" style="left: calc(100% + 1px); top: calc(50% + 55px); width: 80px; transform: translateY(-50%);"></div>
+                                
+                                <!-- Vertical line connecting both semifinal lines -->
+                                <div class="hidden md:block tournament-connector vertical" style="left: calc(100% + 76px); top: 50%; height: 110px; transform: translateY(-50%);"></div>
+                                
+                                <!-- Horizontal line from vertical connector to finalist card point -->
+                                <div class="hidden md:block tournament-connector horizontal" style="left: calc(100% + 76px); top: 50%; width: 120px; transform: translateY(-50%);"></div>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <!-- Semi-finals not active - empty space -->
+                    <div class="w-full md:w-auto"></div>
+                    {% endif %}
+                    
+                    <!-- Left-Center - Finalist 1 (Winner of Left Semi-Finals) -->
+                    <div class="flex-shrink-0 flex flex-col items-center justify-center my-8 md:my-0 relative md:-mr-4">
+                        <div class="text-center mb-4 invisible">
+                            <span class="text-white/80 text-sm font-semibold uppercase tracking-wider">FINALS</span>
+                        </div>
+                        <div class="relative">
+                            {% with participant=tournament_finalists.0 %}
+                            {% include 'edithub/tournament_card.html' with participant=participant side='left' role='Finalist' %}
+                            {% endwith %}
+                        </div>
+                    </div>
+                    
+                    <!-- Center - Trophy/Champion -->
+                    <div class="flex-shrink-0 flex flex-col items-center justify-center my-8 md:my-0">
+                        <!-- Finals Label -->
+                        <div class="text-center mb-4">
+                            <span class="text-white text-lg md:text-xl font-bold uppercase tracking-wider">FINALS</span>
+                        </div>
+                        <!-- Trophy -->
+                        <div class="relative z-10 flex flex-col items-center">
+                            <div class="relative mb-4">
+                                <!-- Trophy Icon -->
+                                <div class="text-6xl md:text-7xl text-yellow-400 drop-shadow-lg">
+                                    <i class="fas fa-trophy"></i>
+                                </div>
+                                <!-- Laurel Wreaths -->
+                                <div class="absolute -left-8 top-1/2 transform -translate-y-1/2 text-3xl text-yellow-400/60">
+                                    <i class="fas fa-leaf"></i>
+                                </div>
+                                <div class="absolute -right-8 top-1/2 transform -translate-y-1/2 text-3xl text-yellow-400/60">
+                                    <i class="fas fa-leaf"></i>
+                                </div>
+                            </div>
+                            <!-- Champion Label -->
+                            <div class="bg-gradient-to-r from-orange-500 to-yellow-500 rounded-lg px-8 py-3 shadow-xl">
+                                <span class="font-bold text-gray-900 text-lg md:text-xl">CHAMPION</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Right-Center - Finalist 2 (Winner of Right Semi-Finals) -->
+                    <div class="flex-shrink-0 flex flex-col items-center justify-center my-8 md:my-0 relative md:-ml-4">
+                        <div class="text-center mb-4 invisible">
+                            <span class="text-white/80 text-sm font-semibold uppercase tracking-wider">FINALS</span>
+                        </div>
+                        <div class="relative">
+                            {% with participant=tournament_finalists.1 %}
+                            {% include 'edithub/tournament_card.html' with participant=participant side='right' role='Finalist' %}
+                            {% endwith %}
+                        </div>
+                    </div>
+                    
+                    <!-- Far Right - Semi-Final 2 -->
+                    {% if semi_finals_active %}
+                    <div class="w-full md:w-auto flex justify-center md:justify-start md:-mr-8">
+                        <div class="space-y-6">
+                            <div class="text-center mb-2">
+                                <span class="text-white/80 text-sm font-semibold uppercase tracking-wider">SEMI-FINALS</span>
+                            </div>
+                            <!-- Match 2 - Editor 3 vs Editor 4 -->
+                            <div class="relative">
+                                <!-- Editor 3 Box -->
+                                {% with participant=tournament_participants.2 %}
+                                {% include 'edithub/tournament_card.html' with participant=participant side='right' role='Player' %}
+                                {% endwith %}
+                                
+                                <!-- Connecting line from Editor 3 avatar center (top card) -->
+                                <div class="hidden md:block tournament-connector horizontal" style="right: calc(100% + 0.4px); top: 18%; width: 80px; transform: translateY(-50%);"></div>
+                                
+                                <!-- Editor 4 Box -->
+                                {% with participant=tournament_participants.3 %}
+                                {% include 'edithub/tournament_card.html' with participant=participant side='right' role='Player' extra_classes='mt-10' %}
+                                {% endwith %}
+                                
+                                <!-- Connecting line from Editor 4 avatar center (bottom card) -->
+                                <div class="hidden md:block tournament-connector horizontal" style="right: calc(100% + 0.4px); top: calc(50% + 55px); width: 80px; transform: translateY(-50%);"></div>
+                                
+                                <!-- Vertical line connecting both semifinal lines -->
+                                <div class="hidden md:block tournament-connector vertical" style="right: calc(100% + 76px); top: 50%; height: 110px; transform: translateY(-50%);"></div>
+                                
+                                <!-- Horizontal line from vertical connector to finalist card point -->
+                                <div class="hidden md:block tournament-connector horizontal" style="right: calc(100% + 76px); top: 50%; width: 120px; transform: translateY(-50%);"></div>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <!-- Semi-finals not active - empty space -->
+                    <div class="w-full md:w-auto"></div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- View All Edits Link -->
+        {% if tournament and tournament.is_active %}
+        <div class="text-center mt-8">
+            <a href="{% url 'edithub:tournament_matches' %}" 
+               class="inline-block px-8 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg font-semibold hover:from-purple-700 hover:to-pink-700 transform hover:scale-105 transition-all duration-300 shadow-lg">
+                <i class="fas fa-video mr-2"></i>View All Edits
+            </a>
+        </div>
+        {% endif %}
+    </section>
+    {% endif %}
+
     {% if not show_all %}
     <!-- Platform Tabs (visible in summary/highlight view) -->
     <section class="py-4 bg-white border-b">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="inline-flex flex-wrap rounded-lg border border-gray-200 overflow-hidden shadow-sm">
+            <div class="inline-flex flex-wrap rounded-lg border border-gray-200 overflow-hidden shadow-sm platform-tabs-container">
                 <a href="?channel_filter=mix{% if selected_area %}&editing_area={{ selected_area }}{% endif %}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}"
-                   class="flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors {% if channel_filter == 'mix' %}bg-blue-600 text-white{% else %}bg-white text-gray-700 hover:bg-gray-50{% endif %}">
+                   class="flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors platform-tab-link {% if channel_filter == 'mix' %}bg-blue-600 text-white{% else %}bg-white text-gray-700 hover:bg-gray-50{% endif %}">
                     <span class="flex items-center gap-2">
                         <i class="fab fa-youtube {% if channel_filter == 'mix' %}text-white{% else %}text-red-600{% endif %}"></i>
                         <i class="fab fa-tiktok {% if channel_filter == 'mix' %}text-white{% else %}text-gray-900{% endif %}"></i>
@@ -64,12 +663,12 @@
                     <span>Mix ({{ channel_counts.mix }})</span>
                 </a>
                 <a href="?channel_filter=youtube{% if selected_area %}&editing_area={{ selected_area }}{% endif %}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}"
-                   class="flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors {% if channel_filter == 'youtube' %}bg-red-600 text-white{% else %}bg-white text-gray-700 hover:bg-gray-50{% endif %}">
+                   class="flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors platform-tab-link {% if channel_filter == 'youtube' %}bg-red-600 text-white{% else %}bg-white text-gray-700 hover:bg-gray-50{% endif %}">
                     <i class="fab fa-youtube {% if channel_filter == 'youtube' %}text-white{% else %}text-red-600{% endif %}"></i>
                     <span>YouTube ({{ channel_counts.youtube }})</span>
                 </a>
                 <a href="?channel_filter=tiktok{% if selected_area %}&editing_area={{ selected_area }}{% endif %}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}"
-                   class="flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors {% if channel_filter == 'tiktok' %}bg-black text-white{% else %}bg-white text-gray-700 hover:bg-gray-50{% endif %}">
+                   class="flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors platform-tab-link {% if channel_filter == 'tiktok' %}bg-black text-white{% else %}bg-white text-gray-700 hover:bg-gray-50{% endif %}">
                     <i class="fab fa-tiktok {% if channel_filter == 'tiktok' %}text-white{% else %}text-gray-900{% endif %}"></i>
                     <span>TikTok ({{ channel_counts.tiktok }})</span>
                 </a>
@@ -104,9 +703,9 @@
 
             <div class="mt-6">
                 <span class="block text-gray-700 font-medium mb-3">Filter by Platform:</span>
-                <div class="inline-flex flex-wrap rounded-lg border border-gray-200 overflow-hidden shadow-sm">
+                <div class="inline-flex flex-wrap rounded-lg border border-gray-200 overflow-hidden shadow-sm platform-tabs-container">
                     <a href="?channel_filter=mix{% if selected_area %}&editing_area={{ selected_area }}{% endif %}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}"
-                       class="flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors {% if channel_filter == 'mix' %}bg-blue-600 text-white{% else %}bg-white text-gray-700 hover:bg-gray-50{% endif %}">
+                       class="flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors platform-tab-link {% if channel_filter == 'mix' %}bg-blue-600 text-white{% else %}bg-white text-gray-700 hover:bg-gray-50{% endif %}">
                         <span class="flex items-center gap-2">
                             <i class="fab fa-youtube {% if channel_filter == 'mix' %}text-white{% else %}text-red-600{% endif %}"></i>
                             <i class="fab fa-tiktok {% if channel_filter == 'mix' %}text-white{% else %}text-gray-900{% endif %}"></i>
@@ -114,12 +713,12 @@
                         <span>Mix ({{ channel_counts.mix }})</span>
                     </a>
                     <a href="?channel_filter=youtube{% if selected_area %}&editing_area={{ selected_area }}{% endif %}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}"
-                       class="flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors {% if channel_filter == 'youtube' %}bg-red-600 text-white{% else %}bg-white text-gray-700 hover:bg-gray-50{% endif %}">
+                       class="flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors platform-tab-link {% if channel_filter == 'youtube' %}bg-red-600 text-white{% else %}bg-white text-gray-700 hover:bg-gray-50{% endif %}">
                         <i class="fab fa-youtube {% if channel_filter == 'youtube' %}text-white{% else %}text-red-600{% endif %}"></i>
                         <span>YouTube ({{ channel_counts.youtube }})</span>
                     </a>
                     <a href="?channel_filter=tiktok{% if selected_area %}&editing_area={{ selected_area }}{% endif %}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}"
-                       class="flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors {% if channel_filter == 'tiktok' %}bg-black text-white{% else %}bg-white text-gray-700 hover:bg-gray-50{% endif %}">
+                       class="flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors platform-tab-link {% if channel_filter == 'tiktok' %}bg-black text-white{% else %}bg-white text-gray-700 hover:bg-gray-50{% endif %}">
                         <i class="fab fa-tiktok {% if channel_filter == 'tiktok' %}text-white{% else %}text-gray-900{% endif %}"></i>
                         <span>TikTok ({{ channel_counts.tiktok }})</span>
                     </a>
@@ -137,14 +736,15 @@
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
                             <tr>
-                                <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Rank</th>
-                                <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Channel</th>
-                                <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Editing Tool</th>
-                                <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Area</th>
-                                <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Platform</th>
-                                <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">
+                                <th class="px-4 py-4 text-left text-xs font-bold uppercase tracking-wider w-20">Rank</th>
+                                <th class="px-4 py-4 text-left text-xs font-bold uppercase tracking-wider">Channel</th>
+                                <th class="px-4 py-4 text-left text-xs font-bold uppercase tracking-wider">Editing Tool</th>
+                                <th class="px-4 py-4 text-left text-xs font-bold uppercase tracking-wider">Area</th>
+                                <th class="px-4 py-4 text-left text-xs font-bold uppercase tracking-wider w-32">Platform</th>
+                                <th class="px-4 py-4 text-left text-xs font-bold uppercase tracking-wider w-32">
                                     {% if channel_filter == 'mix' %}
-                                    Followers (YouTube + TikTok)
+                                    <span class="whitespace-nowrap">Followers</span>
+                                    <span class="block text-[10px] normal-case font-normal opacity-90 mt-0.5">(YT + TT)</span>
                                     {% else %}
                                     Followers
                                     {% endif %}
@@ -155,24 +755,41 @@
                             {% for ranking in rankings %}
                             <tr class="hover:bg-gray-50 transition-colors">
                                 {% if channel_filter == 'mix' %}
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="flex items-center">
+                                <td class="px-4 py-4 whitespace-nowrap w-20">
+                                    <div class="flex items-center gap-2">
                                         {% if ranking.rank <= 3 %}
                                         <span class="text-2xl font-bold {% if ranking.rank == 1 %}text-yellow-500{% elif ranking.rank == 2 %}text-gray-400{% else %}text-orange-600{% endif %}">
                                             {% if ranking.rank == 1 %}🥇{% elif ranking.rank == 2 %}🥈{% else %}🥉{% endif %}
                                         </span>
                                         {% endif %}
-                                        <span class="ml-2 text-lg font-semibold text-gray-900">#{{ ranking.rank }}</span>
+                                        <span class="text-lg font-semibold text-gray-900">#{{ ranking.rank }}</span>
+                                        {% if ranking.rank_trend_icon %}{{ ranking.rank_trend_icon|safe }}{% endif %}
                                     </div>
                                 </td>
-                                <td class="px-6 py-4">
+                                <td class="px-4 py-4">
                                     <div class="flex items-center gap-3">
-                                        {% if ranking.display_thumbnail %}
-                                        <img src="{{ ranking.display_thumbnail }}" alt="{{ ranking.display_user_name }}" class="h-12 w-12 rounded-full object-cover shadow-sm">
-                                        {% else %}
-                                        <div class="h-12 w-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-semibold shadow-sm">
+                                        {% if ranking.display_picture %}
+                                        <img src="{{ ranking.display_picture }}" 
+                                             alt="{{ ranking.display_user_name }}" 
+                                             class="h-12 w-12 rounded-full object-cover shadow-sm"
+                                             onerror="this.onerror=null; this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                        <div class="h-12 w-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-semibold shadow-sm" style="display: none;">
                                             {{ ranking.display_user_name|first|upper }}
                                         </div>
+                                        {% else %}
+                                            {% if ranking.display_thumbnail %}
+                                            <img src="{{ ranking.display_thumbnail }}" 
+                                                 alt="{{ ranking.display_user_name }}" 
+                                                 class="h-12 w-12 rounded-full object-cover shadow-sm"
+                                                 onerror="this.onerror=null; this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                            <div class="h-12 w-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-semibold shadow-sm" style="display: none;">
+                                                {{ ranking.display_user_name|first|upper }}
+                                            </div>
+                                            {% else %}
+                                            <div class="h-12 w-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-semibold shadow-sm">
+                                                {{ ranking.display_user_name|first|upper }}
+                                            </div>
+                                            {% endif %}
                                         {% endif %}
                                         <div>
                                             <button type="button"
@@ -186,40 +803,22 @@
                                                     {{ ranking.display_user_name }}
                                                 {% endif %}
                                             </button>
-                                            <div class="text-xs text-gray-500 mt-0.5">
-                                                {% if ranking.youtube and ranking.tiktok %}
-                                                    {% if ranking.youtube.editor_title %}
-                                                        {{ ranking.youtube.editor_title }}
-                                                    {% else %}
-                                                        YouTube Editor
-                                                    {% endif %}
-                                                {% elif ranking.youtube %}
-                                                    {% if ranking.youtube.editor_title %}
-                                                        {{ ranking.youtube.editor_title }}
-                                                    {% else %}
-                                                        YouTube Editor
-                                                    {% endif %}
-                                                {% elif ranking.tiktok %}
-                                                    {% if ranking.tiktok.editor_title %}
-                                                        {{ ranking.tiktok.editor_title }}
-                                                    {% else %}
-                                                        TikTok Editor
-                                                    {% endif %}
-                                                {% endif %}
+                                            <div class="text-xs mt-0.5 {% if ranking.editor_title_rarity == 'legendary' %}title-legendary{% elif ranking.editor_title_rarity == 'epic' %}title-epic{% elif ranking.editor_title_rarity == 'rare' %}text-blue-600{% else %}text-gray-500{% endif %}">
+                                                {{ ranking.editor_title|default:"Editor" }}
                                             </div>
                                         </div>
                                     </div>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
+                                <td class="px-4 py-4 whitespace-nowrap">
                                     <div class="flex items-center gap-3" title="Editing Tools">
-                                        {% for app in ranking.apps %}
+                                        {% for app in ranking.unique_tools %}
                                         <span class="inline-flex items-center justify-center" aria-hidden="true" title="{{ app.get_editing_tool_display }}">
                                             {{ app.editing_tool_icon|safe }}
                                         </span>
                                         {% endfor %}
                                     </div>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
+                                <td class="px-4 py-4 whitespace-nowrap">
                                     <div class="flex flex-wrap gap-2">
                                         {% for area in ranking.areas %}
                                         <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
@@ -237,99 +836,105 @@
                                         {% endfor %}
                                     </div>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="flex flex-wrap gap-2">
+                                <td class="px-4 py-4 whitespace-nowrap w-32">
+                                    <div class="flex flex-col gap-1.5">
                                         {% if ranking.youtube %}
                                         <a href="{{ ranking.youtube.channel_link }}" target="_blank" rel="noopener noreferrer"
-                                           class="px-3 py-1 inline-flex items-center gap-1 text-xs font-semibold rounded-full bg-red-100 text-red-800 hover:bg-red-200">
-                                            <i class="fab fa-youtube"></i> YouTube
+                                           class="px-2.5 py-0.5 inline-flex items-center justify-center gap-1 text-xs font-semibold rounded-full bg-red-100 text-red-800 hover:bg-red-200 w-full">
+                                            <i class="fab fa-youtube"></i> <span class="whitespace-nowrap">YouTube</span>
                                         </a>
                                         {% endif %}
                                         {% if ranking.tiktok %}
                                         <a href="{{ ranking.tiktok.channel_link }}" target="_blank" rel="noopener noreferrer"
-                                           class="px-3 py-1 inline-flex items-center gap-1 text-xs font-semibold rounded-full bg-black text-white hover:opacity-90">
-                                            <i class="fab fa-tiktok"></i> TikTok
+                                           class="px-2.5 py-0.5 inline-flex items-center justify-center gap-1 text-xs font-semibold rounded-full bg-black text-white hover:opacity-90 w-full">
+                                            <i class="fab fa-tiktok"></i> <span class="whitespace-nowrap">TikTok</span>
                                         </a>
                                         {% endif %}
                                     </div>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
+                                <td class="px-4 py-4 whitespace-nowrap w-32">
                                     <div class="text-sm font-semibold text-gray-900">
                                         {{ ranking.total_followers|floatformat:0|default:"0" }}
                                     </div>
                                 </td>
                                 {% else %}
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    {% if ranking.actual_rank %}
+                                <td class="px-4 py-4 whitespace-nowrap w-20">
+                                    {% if ranking.actual_rank is not None %}
                                         {% with position=ranking.actual_rank %}
-                                        <div class="flex items-center">
+                                        <div class="flex items-center gap-2">
                                             {% if position <= 3 %}
                                             <span class="text-2xl font-bold {% if position == 1 %}text-yellow-500{% elif position == 2 %}text-gray-400{% else %}text-orange-600{% endif %}">
                                                 {% if position == 1 %}🥇{% elif position == 2 %}🥈{% elif position == 3 %}🥉{% endif %}
                                             </span>
                                             {% endif %}
-                                            <span class="ml-2 text-lg font-semibold text-gray-900">#{{ position }}</span>
+                                            <span class="text-lg font-semibold text-gray-900">#{{ position }}</span>
                                             {% if ranking.rank_trend_icon %}{{ ranking.rank_trend_icon|safe }}{% endif %}
                                         </div>
                                         {% endwith %}
                                     {% elif is_paginated %}
                                         {% with position=forloop.counter0|add:page_obj.start_index %}
-                                        <div class="flex items-center">
+                                        <div class="flex items-center gap-2">
                                             {% if position <= 3 %}
                                             <span class="text-2xl font-bold {% if position == 1 %}text-yellow-500{% elif position == 2 %}text-gray-400{% else %}text-orange-600{% endif %}">
                                                 {% if position == 1 %}🥇{% elif position == 2 %}🥈{% elif position == 3 %}🥉{% endif %}
                                             </span>
                                             {% endif %}
-                                            <span class="ml-2 text-lg font-semibold text-gray-900">#{{ position }}</span>
+                                            <span class="text-lg font-semibold text-gray-900">#{{ position }}</span>
                                             {% if ranking.rank_trend_icon %}{{ ranking.rank_trend_icon|safe }}{% endif %}
                                         </div>
                                         {% endwith %}
                                     {% else %}
                                         {% with position=forloop.counter %}
-                                        <div class="flex items-center">
+                                        <div class="flex items-center gap-2">
                                             {% if position <= 3 %}
                                             <span class="text-2xl font-bold {% if position == 1 %}text-yellow-500{% elif position == 2 %}text-gray-400{% else %}text-orange-600{% endif %}">
                                                 {% if position == 1 %}🥇{% elif position == 2 %}🥈{% elif position == 3 %}🥉{% endif %}
                                             </span>
                                             {% endif %}
-                                            <span class="ml-2 text-lg font-semibold text-gray-900">#{{ position }}</span>
+                                            <span class="text-lg font-semibold text-gray-900">#{{ position }}</span>
                                             {% if ranking.rank_trend_icon %}{{ ranking.rank_trend_icon|safe }}{% endif %}
                                         </div>
                                         {% endwith %}
                                     {% endif %}
                                 </td>
-                                <td class="px-6 py-4">
-                                    <div class="flex items-center">
-                                        {% if ranking.channel_thumbnail %}
-                                        <img src="{{ ranking.channel_thumbnail }}" 
-                                             alt="{{ ranking.channel_name }}" 
-                                             class="h-10 w-10 rounded-full mr-3 object-cover">
-                                        {% else %}
-                                        <div class="h-10 w-10 rounded-full mr-3 bg-gradient-to-br {% if ranking.channel_type == 'youtube' %}from-red-400 to-orange-400{% else %}from-purple-400 via-pink-400 to-blue-400{% endif %} flex items-center justify-center">
-                                            <span class="text-white font-bold text-sm">{{ ranking.channel_name|first|upper|default:"U" }}</span>
-                                        </div>
-                                        {% endif %}
+                                <td class="px-4 py-4">
+                                    <div class="flex items-center gap-3">
+                                        {% with display_pic=ranking.user.get_display_picture %}
+                                            {% if display_pic %}
+                                            <img src="{{ display_pic }}"
+                                                 alt="{{ ranking.channel_name }}"
+                                                 class="h-12 w-12 rounded-full object-cover shadow-sm"
+                                                 onerror="this.onerror=null; this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                            <div class="h-12 w-12 rounded-full bg-gradient-to-br {% if ranking.channel_type == 'youtube' %}from-red-400 to-orange-400{% else %}from-purple-400 via-pink-400 to-blue-400{% endif %} flex items-center justify-center font-semibold shadow-sm" style="display: none;">
+                                                <span class="text-white font-bold">{{ ranking.channel_name|first|upper|default:"U" }}</span>
+                                            </div>
+                                            {% elif ranking.channel_thumbnail %}
+                                            <img src="{{ ranking.channel_thumbnail }}" 
+                                                 alt="{{ ranking.channel_name }}" 
+                                                 class="h-12 w-12 rounded-full object-cover shadow-sm"
+                                                 onerror="this.onerror=null; this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                            <div class="h-12 w-12 rounded-full bg-gradient-to-br {% if ranking.channel_type == 'youtube' %}from-red-400 to-orange-400{% else %}from-purple-400 via-pink-400 to-blue-400{% endif %} flex items-center justify-center font-semibold shadow-sm" style="display: none;">
+                                                <span class="text-white font-bold">{{ ranking.channel_name|first|upper|default:"U" }}</span>
+                                            </div>
+                                            {% else %}
+                                            <div class="h-12 w-12 rounded-full bg-gradient-to-br {% if ranking.channel_type == 'youtube' %}from-red-400 to-orange-400{% else %}from-purple-400 via-pink-400 to-blue-400{% endif %} flex items-center justify-center font-semibold shadow-sm">
+                                                <span class="text-white font-bold">{{ ranking.channel_name|first|upper|default:"U" }}</span>
+                                            </div>
+                                            {% endif %}
+                                        {% endwith %}
                                         <div>
                                             <button type="button"
-                                                    class="text-sm font-medium text-gray-900 hover:underline open-user-stats"
+                                                    class="text-sm font-semibold text-gray-900 hover:underline open-user-stats"
                                                     data-user-id="{{ ranking.user.id }}">
                                                 {{ ranking.channel_name|default:"Unknown" }}
                                             </button>
-                                            <div class="text-xs text-gray-500 mt-0.5">
-                                                {% if ranking.editor_title %}
-                                                    {{ ranking.editor_title }}
-                                                {% else %}
-                                                    {% if ranking.channel_type == 'youtube' %}
-                                                        YouTube Editor
-                                                    {% elif ranking.channel_type == 'tiktok' %}
-                                                        TikTok Editor
-                                                    {% endif %}
-                                                {% endif %}
+                                            <div class="text-xs mt-0.5 {% if ranking.editor_title_rarity == 'legendary' %}title-legendary{% elif ranking.editor_title_rarity == 'epic' %}title-epic{% elif ranking.editor_title_rarity == 'rare' %}text-blue-600{% else %}text-gray-500{% endif %}">
+                                                {{ ranking.editor_title }}
                                             </div>
                                         </div>
                                     </div>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
+                                <td class="px-4 py-4 whitespace-nowrap">
                                     <div class="flex items-center" title="{{ ranking.get_editing_tool_display }}">
                                         <span class="inline-flex items-center justify-center" aria-hidden="true">
                                             {{ ranking.editing_tool_icon|safe }}
@@ -337,7 +942,7 @@
                                         <span class="sr-only">{{ ranking.get_editing_tool_display }}</span>
                                     </div>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
+                                <td class="px-4 py-4 whitespace-nowrap">
                                     <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
                                         {% if ranking.editing_area == 'transformers' %}bg-blue-100 text-blue-800
                                         {% elif ranking.editing_area == 'dc' %}bg-red-100 text-red-800
@@ -351,21 +956,21 @@
                                         {% endif %}
                                     </span>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
+                                <td class="px-4 py-4 whitespace-nowrap w-32">
                                     <a href="{{ ranking.channel_link }}" target="_blank" rel="noopener noreferrer"
-                                       class="px-3 py-1 inline-flex items-center gap-2 text-xs leading-5 font-semibold rounded-full 
+                                       class="px-2.5 py-0.5 inline-flex items-center justify-center gap-1 text-xs font-semibold rounded-full w-full
                                         {% if ranking.channel_type == 'youtube' %}bg-red-100 text-red-800 hover:bg-red-200
                                         {% else %}bg-black text-white hover:opacity-90{% endif %}">
                                         {% if ranking.channel_type == 'youtube' %}
                                         <i class="fab fa-youtube"></i>
-                                        YouTube
+                                        <span class="whitespace-nowrap">YouTube</span>
                                         {% else %}
                                         <i class="fab fa-tiktok"></i>
-                                        TikTok
+                                        <span class="whitespace-nowrap">TikTok</span>
                                         {% endif %}
                                     </a>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
+                                <td class="px-4 py-4 whitespace-nowrap w-32">
                                     <div class="text-sm font-semibold text-gray-900">
                                         {{ ranking.follower_count|floatformat:0|default:"0" }}
                                     </div>
@@ -439,9 +1044,9 @@
                         Ends in {{ countdown }}
                     </p>
                     {% endif %}
-                {% elif competition_state and competition_state.state == 'winners' %}
-                    <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-2">🏆 Winners of the Week</h2>
-                    <p class="text-gray-600">Top 3 winners from last week's competition</p>
+                {% elif competition_state and competition_state.state == 'results' %}
+                    <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-2">🏆 Results of the Week</h2>
+                    <p class="text-gray-600">Top 3 results from this week's competition (rankings are frozen)</p>
                     <p class="text-sm text-gray-500 mt-2">New competition starts Monday at 00:00</p>
                 {% else %}
                     <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-2">Edit of the Week</h2>
@@ -468,114 +1073,238 @@
                     </a>
                 </div>
                 
+            </div>
+
+            {% if top_edits %}
+            <!-- Top Edits Container: Mobile Slider + Desktop Row -->
+            <div class="top-edits-container relative mb-8">
+                <!-- Mobile: Horizontal Slider -->
+                <div class="md:hidden overflow-x-auto top-edits-slider scrollbar-hide -mx-4 px-4 pb-4">
+                    <div class="flex gap-4" id="topEditsSlider">
+                        {% for edit in top_edits %}
+                        <div class="flex-shrink-0 top-edits-slide w-[calc(100vw-2rem)]" data-slide-index="{{ forloop.counter0 }}">
+                            <div class="bg-white rounded-lg shadow-xl overflow-hidden {% if edit.week_rank == 1 %}transform hover:scale-105 transition-transform{% endif %}">
+                                <!-- Video Embed -->
+                                {% if edit.channel_type == 'youtube' %}
+                                <div class="relative aspect-[4/5] bg-gray-900 overflow-hidden video-container" data-video-type="youtube">
+                                    <iframe 
+                                        id="youtube-iframe-{{ forloop.counter0 }}"
+                                        class="w-full h-full"
+                                        src="{{ edit.video_url|youtube_embed_standard }}&enablejsapi=1"
+                                        title="YouTube video player"
+                                        frameborder="0"
+                                        referrerpolicy="strict-origin-when-cross-origin"
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                        allowfullscreen
+                                        playsinline
+                                        loading="lazy">
+                                    </iframe>
+                                </div>
+                                {% else %}
+                                <!-- TikTok Video: Use official TikTok embed -->
+                                <div class="relative flex items-center justify-center bg-gray-900 py-4 px-2 video-container tiktok-loading-container" data-video-type="tiktok" data-video-url="{{ edit.video_url }}" style="min-height: 400px;">
+                                    <!-- Loading Placeholder -->
+                                    <div class="tiktok-loading-placeholder absolute inset-0 flex flex-col items-center justify-center bg-gray-900 z-10">
+                                        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-white mb-4"></div>
+                                        <p class="text-white text-sm font-medium">Loading TikTok video...</p>
+                                    </div>
+                                    {% if edit.tiktok_embed_html %}
+                                    <div id="tiktok-embed-{{ forloop.counter0 }}" class="relative z-0">{{ edit.tiktok_embed_html|safe }}</div>
+                                    {% else %}
+                                    <div id="tiktok-embed-{{ forloop.counter0 }}" class="relative z-0">
+                                        <blockquote class="tiktok-embed" cite="{{ edit.video_url }}" data-video-id="{{ edit.video_url|tiktok_video_id }}" style="max-width: 100%; min-width: 325px;">
+                                            <section></section>
+                                        </blockquote>
+                                        <script async src="https://www.tiktok.com/embed.js"></script>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+                                
+                                <!-- Bottom Container: Medal, Profile Picture, Points -->
+                                <div class="p-4 bg-gradient-to-br from-gray-50 to-white border-t border-gray-200">
+                                    <div class="flex items-center justify-between gap-3">
+                                        <!-- Left: Medal -->
+                                        <div class="flex-shrink-0">
+                                            {% if forloop.counter == 1 %}
+                                            <span class="text-4xl font-bold text-yellow-500">🥇</span>
+                                            {% elif forloop.counter == 2 %}
+                                            <span class="text-3xl font-bold text-gray-400">🥈</span>
+                                            {% else %}
+                                            <span class="text-3xl font-bold text-orange-600">🥉</span>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <!-- Center: Profile Picture -->
+                                        <div class="flex items-center gap-3 flex-1 min-w-0">
+                                            {% if edit.display_picture %}
+                                            <img src="{{ edit.display_picture }}" alt="{{ edit.channel_name }}" 
+                                                 class="h-12 w-12 rounded-full object-cover ring-2 ring-gray-200 shadow-sm flex-shrink-0"
+                                                 onerror="this.onerror=null; this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                            <div class="h-12 w-12 rounded-full bg-gradient-to-br {% if edit.channel_type == 'youtube' %}from-red-400 to-orange-400{% else %}from-purple-400 via-pink-400 to-blue-400{% endif %} flex items-center justify-center ring-2 ring-gray-200 shadow-sm flex-shrink-0" style="display: none;">
+                                                <span class="text-white font-bold text-sm">{{ edit.channel_name|first|upper|default:"E" }}</span>
+                                            </div>
+                                            {% elif edit.channel_thumbnail %}
+                                            <img src="{{ edit.channel_thumbnail }}" alt="{{ edit.channel_name }}" 
+                                                 class="h-12 w-12 rounded-full object-cover ring-2 ring-gray-200 shadow-sm flex-shrink-0"
+                                                 onerror="this.onerror=null; this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                            <div class="h-12 w-12 rounded-full bg-gradient-to-br {% if edit.channel_type == 'youtube' %}from-red-400 to-orange-400{% else %}from-purple-400 via-pink-400 to-blue-400{% endif %} flex items-center justify-center ring-2 ring-gray-200 shadow-sm flex-shrink-0" style="display: none;">
+                                                <span class="text-white font-bold text-sm">{{ edit.channel_name|first|upper|default:"E" }}</span>
+                                            </div>
+                                            {% else %}
+                                            <div class="h-12 w-12 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center ring-2 ring-gray-200 shadow-sm flex-shrink-0">
+                                                <span class="text-white font-bold text-lg">{{ edit.channel_name|first|upper }}</span>
+                                            </div>
+                                            {% endif %}
+                                            <div class="min-w-0 flex-1">
+                                                <p class="text-sm font-semibold text-gray-900 truncate">{{ edit.channel_name }}</p>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Right: Points -->
+                                        <div class="flex items-center gap-1.5 flex-shrink-0">
+                                            <i class="fas fa-star text-yellow-500"></i>
+                                            <span class="font-bold text-gray-900 text-lg">{{ edit.calculated_points|floatformat:1 }}</span>
+                                            <span class="text-gray-500 text-xs">pts</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <!-- Navigation Dots for Mobile -->
+                <div class="md:hidden flex justify-center gap-2 mt-4" id="topEditsDots">
+                    {% for edit in top_edits %}
+                    <div class="top-edit-dot w-2 h-2 rounded-full bg-gray-300 transition-all duration-300 {% if forloop.first %}bg-purple-500 w-6{% endif %}" data-slide="{{ forloop.counter0 }}"></div>
+                    {% endfor %}
+                </div>
+                
+                <!-- Desktop: Original Row Layout -->
+                <div class="hidden md:flex flex-row items-center justify-center gap-4">
+                    {% for edit in top_edits %}
+                    <div class="relative {% if forloop.counter == 1 %}w-[38%] order-2{% else %}w-[31%] {% if forloop.counter == 2 %}order-1{% else %}order-3{% endif %}{% endif %}">
+                        <div class="bg-white rounded-lg shadow-xl overflow-hidden {% if edit.week_rank == 1 %}transform hover:scale-105 transition-transform{% endif %}">
+                            <!-- Video Embed -->
+                            {% if edit.channel_type == 'youtube' %}
+                            <div class="relative aspect-[4/5] bg-gray-900 overflow-hidden">
+                                <iframe 
+                                    class="w-full h-full"
+                                    src="{{ edit.video_url|youtube_embed_standard }}"
+                                    title="YouTube video player"
+                                    frameborder="0"
+                                    referrerpolicy="strict-origin-when-cross-origin"
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                    allowfullscreen
+                                    playsinline
+                                    loading="lazy">
+                                </iframe>
+                            </div>
+                            {% else %}
+                            <!-- TikTok Video: Use official TikTok embed -->
+                            <div class="relative flex items-center justify-center bg-gray-900 py-4 px-2 tiktok-loading-container" style="min-height: 400px;">
+                                <!-- Loading Placeholder -->
+                                <div class="tiktok-loading-placeholder absolute inset-0 flex flex-col items-center justify-center bg-gray-900 z-10">
+                                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-white mb-4"></div>
+                                    <p class="text-white text-sm font-medium">Loading TikTok video...</p>
+                                </div>
+                                {% if edit.tiktok_embed_html %}
+                                <div class="relative z-0">{{ edit.tiktok_embed_html|safe }}</div>
+                                {% else %}
+                                <blockquote class="tiktok-embed relative z-0" cite="{{ edit.video_url }}" data-video-id="{{ edit.video_url|tiktok_video_id }}" style="max-width: 100%; min-width: 325px;">
+                                    <section></section>
+                                </blockquote>
+                                <script async src="https://www.tiktok.com/embed.js"></script>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                            
+                            <!-- Bottom Container: Medal, Profile Picture, Points -->
+                            <div class="p-4 bg-gradient-to-br from-gray-50 to-white border-t border-gray-200">
+                                <div class="flex items-center justify-between gap-3">
+                                    <!-- Left: Medal -->
+                                    <div class="flex-shrink-0">
+                                        {% if forloop.counter == 1 %}
+                                        <span class="text-4xl font-bold text-yellow-500">🥇</span>
+                                        {% elif forloop.counter == 2 %}
+                                        <span class="text-3xl font-bold text-gray-400">🥈</span>
+                                        {% else %}
+                                        <span class="text-3xl font-bold text-orange-600">🥉</span>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <!-- Center: Profile Picture -->
+                                    <div class="flex items-center gap-3 flex-1 min-w-0">
+                                        {% if edit.display_picture %}
+                                        <img src="{{ edit.display_picture }}" alt="{{ edit.channel_name }}" 
+                                             class="h-12 w-12 rounded-full object-cover ring-2 ring-gray-200 shadow-sm flex-shrink-0"
+                                             onerror="this.onerror=null; this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                        <div class="h-12 w-12 rounded-full bg-gradient-to-br {% if edit.channel_type == 'youtube' %}from-red-400 to-orange-400{% else %}from-purple-400 via-pink-400 to-blue-400{% endif %} flex items-center justify-center ring-2 ring-gray-200 shadow-sm flex-shrink-0" style="display: none;">
+                                            <span class="text-white font-bold text-sm">{{ edit.channel_name|first|upper|default:"E" }}</span>
+                                        </div>
+                                        {% elif edit.channel_thumbnail %}
+                                        <img src="{{ edit.channel_thumbnail }}" alt="{{ edit.channel_name }}" 
+                                             class="h-12 w-12 rounded-full object-cover ring-2 ring-gray-200 shadow-sm flex-shrink-0"
+                                             onerror="this.onerror=null; this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                        <div class="h-12 w-12 rounded-full bg-gradient-to-br {% if edit.channel_type == 'youtube' %}from-red-400 to-orange-400{% else %}from-purple-400 via-pink-400 to-blue-400{% endif %} flex items-center justify-center ring-2 ring-gray-200 shadow-sm flex-shrink-0" style="display: none;">
+                                            <span class="text-white font-bold text-sm">{{ edit.channel_name|first|upper|default:"E" }}</span>
+                                        </div>
+                                        {% else %}
+                                        <div class="h-12 w-12 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center ring-2 ring-gray-200 shadow-sm flex-shrink-0">
+                                            <span class="text-white font-bold text-lg">{{ edit.channel_name|first|upper }}</span>
+                                        </div>
+                                        {% endif %}
+                                        <div class="min-w-0 flex-1">
+                                            <p class="text-sm font-semibold text-gray-900 truncate">{{ edit.channel_name }}</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Right: Points -->
+                                    <div class="flex items-center gap-1.5 flex-shrink-0">
+                                        <i class="fas fa-star text-yellow-500"></i>
+                                        <span class="font-bold text-gray-900 text-lg">{{ edit.calculated_points|floatformat:1 }}</span>
+                                        <span class="text-gray-500 text-xs">pts</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Action Buttons Row: View All Edits (left) and Submit Edit (right) -->
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-2 mt-8">
+                <!-- View All Edits Button (Left) -->
+                <a href="{% url 'edithub:view_all_edits' %}?platform={{ edit_platform }}" 
+                   class="flex-1 sm:flex-none inline-block px-6 sm:px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-semibold hover:from-blue-700 hover:to-purple-700 transform hover:scale-105 transition-all duration-300 shadow-lg text-center">
+                    <i class="fas fa-video mr-2"></i>View All Edits
+                </a>
+                
+                <!-- Submit Edit Button (Right) -->
                 {% if not competition_state or competition_state.state == 'live' %}
-                <div class="mt-4">
                     {% if user.is_authenticated and user.role == 'user' %}
                         {% if user_has_submitted_this_week %}
                         <button type="button" disabled
-                                class="inline-block px-6 py-3 bg-gray-400 text-white rounded-lg font-semibold cursor-not-allowed opacity-75 shadow-lg">
+                                class="flex-1 sm:flex-none inline-block px-6 py-3 bg-gray-400 text-white rounded-lg font-semibold cursor-not-allowed opacity-75 shadow-lg text-center">
                             <i class="fas fa-check-circle mr-2"></i>
                             You Have Applied
                         </button>
                         {% else %}
                         <a href="{% url 'edithub:submit_edit' %}" 
-                           class="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transform hover:scale-105 transition-all duration-300 shadow-lg">
-                            Submit Your Edit
+                           class="flex-1 sm:flex-none inline-block px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg font-semibold hover:from-green-700 hover:to-emerald-700 transform hover:scale-105 transition-all duration-300 shadow-lg text-center">
+                            <i class="fas fa-upload mr-2"></i>Submit Your Edit
                         </a>
                         {% endif %}
                     {% elif not user.is_authenticated %}
                     <a href="{% url 'edithub:submit_edit' %}" 
-                       class="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transform hover:scale-105 transition-all duration-300 shadow-lg">
-                        Submit Your Edit (Login Required)
+                       class="flex-1 sm:flex-none inline-block px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg font-semibold hover:from-green-700 hover:to-emerald-700 transform hover:scale-105 transition-all duration-300 shadow-lg text-center">
+                        <i class="fas fa-upload mr-2"></i>Submit Your Edit
                     </a>
                     {% endif %}
-                </div>
                 {% endif %}
-            </div>
-
-            {% if top_edits %}
-            <div class="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-4 mb-8">
-                {% for edit in top_edits %}
-                <div class="relative {% if forloop.counter == 1 %}w-full md:w-[38%] order-1 md:order-2{% else %}w-full md:w-[31%] {% if forloop.counter == 2 %}order-2 md:order-1{% else %}order-3 md:order-3{% endif %}{% endif %}">
-                    <div class="bg-white rounded-lg shadow-xl overflow-hidden {% if edit.week_rank == 1 %}transform hover:scale-105 transition-transform{% endif %}">
-                        <!-- Video Embed -->
-                        {% if edit.channel_type == 'youtube' %}
-                        <div class="relative aspect-[4/5] bg-gray-900 overflow-hidden">
-                            <iframe 
-                                class="w-full h-full"
-                                src="{{ edit.video_url|youtube_embed_standard }}"
-                                title="YouTube video player"
-                                frameborder="0"
-                                referrerpolicy="strict-origin-when-cross-origin"
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                                allowfullscreen
-                                playsinline
-                                loading="lazy">
-                            </iframe>
-                        </div>
-                        {% else %}
-                        <!-- TikTok Video: Use official TikTok embed - let it size itself for full quality -->
-                        <div class="flex items-center justify-center bg-gray-900 py-4 px-2">
-                            {% if edit.tiktok_embed_html %}
-                            <!-- Use TikTok's official embed HTML directly - no constraints, full quality -->
-                            {{ edit.tiktok_embed_html|safe }}
-                            {% else %}
-                            <!-- Fallback: Manual embed if oEmbed HTML not available -->
-                            <blockquote class="tiktok-embed" cite="{{ edit.video_url }}" data-video-id="{{ edit.video_url|tiktok_video_id }}" style="max-width: 100%; min-width: 325px;">
-                                <section></section>
-                            </blockquote>
-                            <script async src="https://www.tiktok.com/embed.js"></script>
-                            {% endif %}
-                        </div>
-                        {% endif %}
-                        
-                        <!-- Bottom Container: Medal, Profile Picture, Points -->
-                        <div class="p-4 bg-gradient-to-br from-gray-50 to-white border-t border-gray-200">
-                            <div class="flex items-center justify-between gap-3">
-                                <!-- Left: Medal -->
-                                <div class="flex-shrink-0">
-                                    {% if forloop.counter == 1 %}
-                                    <span class="text-4xl font-bold text-yellow-500">🥇</span>
-                                    {% elif forloop.counter == 2 %}
-                                    <span class="text-3xl font-bold text-gray-400">🥈</span>
-                                    {% else %}
-                                    <span class="text-3xl font-bold text-orange-600">🥉</span>
-                                    {% endif %}
-                                </div>
-                                
-                                <!-- Center: Profile Picture -->
-                                <div class="flex items-center gap-3 flex-1 min-w-0">
-                                    {% if edit.channel_thumbnail %}
-                                    <img src="{{ edit.channel_thumbnail }}" alt="{{ edit.channel_name }}" 
-                                         class="h-12 w-12 rounded-full object-cover ring-2 ring-gray-200 shadow-sm flex-shrink-0">
-                                    {% else %}
-                                    <div class="h-12 w-12 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center ring-2 ring-gray-200 shadow-sm flex-shrink-0">
-                                        <span class="text-white font-bold text-lg">{{ edit.channel_name|first|upper }}</span>
-                                    </div>
-                                    {% endif %}
-                                    <div class="min-w-0 flex-1">
-                                        <p class="text-sm font-semibold text-gray-900 truncate">{{ edit.channel_name }}</p>
-                                    </div>
-                                </div>
-                                
-                                <!-- Right: Points -->
-                                <div class="flex items-center gap-1.5 flex-shrink-0">
-                                    <i class="fas fa-star text-yellow-500"></i>
-                                    <span class="font-bold text-gray-900 text-lg">{{ edit.calculated_points|floatformat:1 }}</span>
-                                    <span class="text-gray-500 text-xs">pts</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-
-            <div class="text-center mt-8">
-                <a href="{% url 'edithub:view_all_edits' %}?platform={{ edit_platform }}" 
-                   class="inline-block px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-semibold hover:from-blue-700 hover:to-purple-700 transform hover:scale-105 transition-all duration-300 shadow-lg">
-                    View All Edits
-                </a>
             </div>
             {% else %}
             <div class="text-center py-12 bg-white rounded-lg shadow-lg">
@@ -593,6 +1322,84 @@
         </div>
     </section>
     {% endif %}
+
+    <!-- Coming Soon Footer Section -->
+    <section class="py-14">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-950 via-purple-900 to-blue-950 text-white shadow-2xl border border-purple-700/40">
+                <!-- Subtle glow accents -->
+                <div class="pointer-events-none absolute inset-0 opacity-30 mix-blend-screen">
+                    <div class="absolute -top-20 -right-10 w-52 h-52 bg-purple-600 rounded-full blur-3xl"></div>
+                    <div class="absolute -bottom-24 -left-12 w-64 h-64 bg-blue-600 rounded-full blur-3xl"></div>
+                </div>
+
+                <div class="relative px-6 py-10 sm:px-10 sm:py-12">
+                    <div class="text-center mb-8">
+                        <p class="text-[0.7rem] sm:text-xs font-semibold tracking-[0.35em] text-purple-200/90 uppercase mb-3">
+                            EditingHub Roadmap
+                        </p>
+                        <h2 class="text-2xl sm:text-3xl md:text-4xl font-extrabold">
+                            More Coming Soon
+                        </h2>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+                        <!-- Different Edit Events -->
+                        <div class="bg-slate-900/70 border border-purple-500/50 rounded-2xl px-4 py-5 flex flex-col justify-between">
+                            <div>
+                                <p class="text-xs font-semibold tracking-[0.18em] text-purple-200 uppercase mb-2">
+                                    Different Edit Events
+                                </p>
+                                <p class="text-xs sm:text-sm text-purple-100/85">
+                                    Rotating formats and themes so you’re not only judged on one type of edit.
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Edit of the Month -->
+                        <div class="bg-slate-900/70 border border-indigo-500/60 rounded-2xl px-4 py-5 flex flex-col justify-between">
+                            <div>
+                                <p class="text-xs font-semibold tracking-[0.18em] text-indigo-200 uppercase mb-2">
+                                    Edit of the Month
+                                </p>
+                                <p class="text-xs sm:text-sm text-indigo-100/90">
+                                    A bigger, slower, high–stakes event focused on your very best project of the month.
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Friendly Matches -->
+                        <div class="bg-slate-900/70 border border-blue-500/60 rounded-2xl px-4 py-5 flex flex-col justify-between">
+                            <div>
+                                <p class="text-xs font-semibold tracking-[0.18em] text-blue-200 uppercase mb-2">
+                                    Friendly Matches
+                                </p>
+                                <p class="text-xs sm:text-sm text-blue-100/90">
+                                    1v1 and squad-style matchups so you can challenge friends and rivals directly.
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- More Features -->
+                        <div class="bg-slate-900/70 border border-fuchsia-500/60 rounded-2xl px-4 py-5 flex flex-col justify-between">
+                            <div>
+                                <p class="text-xs font-semibold tracking-[0.18em] text-fuchsia-200 uppercase mb-2">
+                                    More Features
+                                </p>
+                                <p class="text-xs sm:text-sm text-fuchsia-100/90">
+                                    Extra event types, creator tools and progression systems are under active development.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <p class="mt-6 text-[0.7rem] sm:text-xs text-purple-100/70 text-center">
+                        These features are in development and will be introduced gradually as EditingHub evolves.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
 
     <!-- How It Works Modal -->
     <div id="howItWorksModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-[100]" style="display: none;">
@@ -751,7 +1558,7 @@
     </div>
 
     <!-- User Stats Modal -->
-    <div id="userStatsModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50">
+    <div id="userStatsModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-[110]">
         <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative m-4 max-h-[90vh] overflow-y-auto">
             <button type="button" id="closeUserStatsModal" class="absolute top-3 right-3 text-gray-500 hover:text-gray-700">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -790,7 +1597,219 @@
     };
     
     // Close modal when clicking outside
+    // Top Edits Slider - Update dots based on scroll position
+    function initTopEditsSlider() {
+        const sliderContainer = document.querySelector('.top-edits-slider'); // The scrollable container
+        const slider = document.getElementById('topEditsSlider'); // The flex container
+        const dots = document.querySelectorAll('.top-edit-dot');
+        
+        if (sliderContainer && slider && dots.length > 0) {
+            // Listen to scroll on the scrollable container, not the flex container
+            sliderContainer.addEventListener('scroll', () => {
+                const scrollLeft = sliderContainer.scrollLeft;
+                const firstSlide = slider.querySelector('.top-edits-slide');
+                if (firstSlide) {
+                    const cardWidth = firstSlide.offsetWidth + 16; // card width + gap
+                    const activeIndex = Math.round(scrollLeft / cardWidth);
+                    
+                    dots.forEach((dot, index) => {
+                        if (index === activeIndex) {
+                            dot.classList.add('bg-purple-500', 'w-6');
+                            dot.classList.remove('bg-gray-300', 'w-2');
+                        } else {
+                            dot.classList.remove('bg-purple-500', 'w-6');
+                            dot.classList.add('bg-gray-300', 'w-2');
+                        }
+                    });
+                }
+            });
+            
+            // Click on dots to scroll to slide
+            dots.forEach((dot, index) => {
+                dot.addEventListener('click', () => {
+                    const firstSlide = slider.querySelector('.top-edits-slide');
+                    if (firstSlide) {
+                        const cardWidth = firstSlide.offsetWidth + 16; // card width + gap
+                        sliderContainer.scrollTo({ // Scroll the container, not the flex div
+                            left: index * cardWidth,
+                            behavior: 'smooth'
+                        });
+                    }
+                });
+            });
+        }
+    }
+    
+    // Pause videos when they go out of view
+    function initVideoPauseOnScroll() {
+        const sliderContainer = document.querySelector('.top-edits-slider');
+        if (!sliderContainer) return;
+        
+        const videoContainers = sliderContainer.querySelectorAll('.video-container');
+        
+        const observerOptions = {
+            root: sliderContainer,
+            rootMargin: '0px',
+            threshold: 0.5 // Pause when less than 50% visible
+        };
+        
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                const container = entry.target;
+                const videoType = container.dataset.videoType;
+                
+                if (!entry.isIntersecting) {
+                    // Video is out of view - pause it
+                    if (videoType === 'youtube') {
+                        pauseYouTubeVideo(container);
+                    } else if (videoType === 'tiktok') {
+                        pauseTikTokVideo(container);
+                    }
+                } else {
+                    // Video is back in view - restore TikTok if needed
+                    if (videoType === 'tiktok') {
+                        restoreTikTokVideo(container);
+                    }
+                }
+            });
+        }, observerOptions);
+        
+        videoContainers.forEach(container => {
+            observer.observe(container);
+        });
+    }
+    
+    // Pause YouTube video
+    function pauseYouTubeVideo(container) {
+        const iframe = container.querySelector('iframe');
+        if (iframe && iframe.contentWindow) {
+            try {
+                // Send pause command to YouTube iframe
+                iframe.contentWindow.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
+            } catch (e) {
+                console.log('Could not pause YouTube video:', e);
+            }
+        }
+    }
+    
+    // Pause TikTok video by removing iframe src (workaround for sandbox restrictions)
+    function pauseTikTokVideo(container) {
+        // TikTok embeds are heavily sandboxed, so direct pause control doesn't work
+        // Workaround: Store original HTML and clear the embed to stop playback
+        const embedDiv = container.querySelector('[id^="tiktok-embed-"]');
+        if (embedDiv) {
+            // Store original HTML if not already stored
+            if (!embedDiv.dataset.originalHtml) {
+                embedDiv.dataset.originalHtml = embedDiv.innerHTML;
+            }
+            // Clear the embed content to stop playback
+            embedDiv.innerHTML = '';
+        }
+    }
+    
+    // Restore TikTok video when it comes back into view
+    function restoreTikTokVideo(container) {
+        const embedDiv = container.querySelector('[id^="tiktok-embed-"]');
+        if (embedDiv && embedDiv.dataset.originalHtml) {
+            // Save only vertical page scroll position (not horizontal slider scroll)
+            const pageScrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            
+            // Restore the original HTML
+            embedDiv.innerHTML = embedDiv.dataset.originalHtml;
+            
+            // Restore only vertical page scroll to prevent layout shift scrolling
+            // Don't touch horizontal slider scroll - let user swipe freely
+            window.scrollTo(0, pageScrollTop);
+            
+            // Re-initialize TikTok embed script
+            const blockquote = embedDiv.querySelector('blockquote.tiktok-embed');
+            if (blockquote) {
+                setTimeout(() => {
+                    // Save vertical scroll again before script manipulation
+                    const currentPageScroll = window.pageYOffset || document.documentElement.scrollTop;
+                    
+                    let tiktokScript = document.querySelector('script[src*="tiktok.com/embed.js"]');
+                    
+                    if (tiktokScript) {
+                        const newScript = document.createElement('script');
+                        newScript.src = 'https://www.tiktok.com/embed.js';
+                        newScript.async = true;
+                        tiktokScript.remove();
+                        document.body.appendChild(newScript);
+                    } else {
+                        const script = document.createElement('script');
+                        script.src = 'https://www.tiktok.com/embed.js';
+                        script.async = true;
+                        document.body.appendChild(script);
+                    }
+                    
+                    // Restore only vertical scroll after script loads (with a delay to let embed render)
+                    setTimeout(() => {
+                        window.scrollTo(0, currentPageScroll);
+                    }, 200);
+                }, 100);
+            }
+        }
+    }
+
+    // Show a loading state for TikTok embeds until the iframe/content is ready
+    function initTikTokLoadingDetection() {
+        const containers = document.querySelectorAll('.tiktok-loading-container');
+        if (!containers.length) return;
+
+        containers.forEach(container => {
+            const placeholder = container.querySelector('.tiktok-loading-placeholder');
+            if (!placeholder) return;
+
+            const target = container.querySelector('[id^="tiktok-embed-"]') || container.querySelector('blockquote.tiktok-embed');
+            if (!target) return;
+
+            function hidePlaceholder() {
+                placeholder.style.transition = 'opacity 0.3s ease-out';
+                placeholder.style.opacity = '0';
+                setTimeout(() => {
+                    placeholder.style.display = 'none';
+                    container.style.minHeight = 'auto';
+                }, 300);
+            }
+
+            // Observe changes inside the embed container to detect when TikTok injects its iframe/content
+            const observer = new MutationObserver(mutations => {
+                for (const mutation of mutations) {
+                    if (mutation.addedNodes && mutation.addedNodes.length > 0) {
+                        const iframe = target.querySelector('iframe');
+                        if (iframe) {
+                            // When iframe is present and (eventually) loaded, hide placeholder
+                            iframe.addEventListener('load', () => {
+                                hidePlaceholder();
+                            }, { once: true });
+                            // Fallback: hide after short delay in case load doesn't fire
+                            setTimeout(hidePlaceholder, 1500);
+                            observer.disconnect();
+                            return;
+                        }
+                    }
+                }
+            });
+
+            observer.observe(target, { childList: true, subtree: true });
+
+            // Final fallback: ensure we don't show loader forever
+            setTimeout(() => {
+                observer.disconnect();
+                hidePlaceholder();
+            }, 10000);
+        });
+    }
+    
     document.addEventListener('DOMContentLoaded', function() {
+        // Initialize top edits slider
+        initTopEditsSlider();
+        // Initialize video pause on scroll
+        initVideoPauseOnScroll();
+        // Initialize TikTok loading states
+        initTikTokLoadingDetection();
+        
         const howItWorksModal = document.getElementById('howItWorksModal');
         if (howItWorksModal) {
             howItWorksModal.addEventListener('click', function(e) {
@@ -816,16 +1835,127 @@
         const closeBtn = document.getElementById('closeUserStatsModal');
         const contentEl = document.getElementById('userStatsContent');
 
+        // Add null checks
+        if (!modal || !contentEl) {
+            console.error('User stats modal elements not found');
+            return;
+        }
+        
+        // Verify modal is in DOM
+        if (!modal.parentNode) {
+            console.error('Modal is not in DOM!');
+            if (document.body) {
+                document.body.appendChild(modal);
+                console.log('Modal appended to body');
+            }
+        }
+
         function openModal() {
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
+            if (!modal) {
+                console.error('Modal element not found!');
+                return false; // Return false to indicate failure
+            }
+            try {
+                console.log('Opening modal, current classes:', modal.className); // Debug log
+                
+                // Remove hidden class first
+                modal.classList.remove('hidden');
+                
+                // Use cssText to completely override all styles and classes
+                // This ensures no Tailwind classes interfere
+                modal.style.cssText = `
+                    display: flex !important;
+                    position: fixed !important;
+                    top: 0 !important;
+                    left: 0 !important;
+                    right: 0 !important;
+                    bottom: 0 !important;
+                    width: 100vw !important;
+                    height: 100vh !important;
+                    min-width: 100vw !important;
+                    min-height: 100vh !important;
+                    max-width: 100vw !important;
+                    max-height: 100vh !important;
+                    z-index: 110 !important;
+                    background-color: rgba(0, 0, 0, 0.5) !important;
+                    align-items: center !important;
+                    justify-content: center !important;
+                    visibility: visible !important;
+                    opacity: 1 !important;
+                    margin: 0 !important;
+                    padding: 0 !important;
+                    border: none !important;
+                    box-sizing: border-box !important;
+                `;
+                
+                // Prevent background scrolling
+                if (document.body) {
+                    document.body.style.overflow = 'hidden';
+                }
+                
+                console.log('Modal opened, cssText applied');
+                
+                // Force a reflow to ensure styles are applied
+                void modal.offsetHeight;
+                
+                // Verify modal is actually visible after a brief delay
+                setTimeout(() => {
+                    const rect = modal.getBoundingClientRect();
+                    const computedStyle = window.getComputedStyle(modal);
+                    const innerContent = modal.querySelector('.bg-white');
+                    
+                    console.log('Modal position check:');
+                    console.log('  - Width:', rect.width, 'Height:', rect.height);
+                    console.log('  - Top:', rect.top, 'Left:', rect.left);
+                    console.log('  - Computed display:', computedStyle.display);
+                    console.log('  - Computed width:', computedStyle.width);
+                    console.log('  - Computed height:', computedStyle.height);
+                    console.log('  - Computed z-index:', computedStyle.zIndex);
+                    console.log('  - Computed position:', computedStyle.position);
+                    console.log('  - Computed visibility:', computedStyle.visibility);
+                    console.log('  - Computed opacity:', computedStyle.opacity);
+                    
+                    if (innerContent) {
+                        const contentRect = innerContent.getBoundingClientRect();
+                        const contentStyle = window.getComputedStyle(innerContent);
+                        console.log('  - Inner content width:', contentRect.width, 'height:', contentRect.height);
+                        console.log('  - Inner content display:', contentStyle.display);
+                    }
+                    
+                    if (rect.width === 0 || rect.height === 0 || computedStyle.display === 'none') {
+                        console.error('Modal is still not visible! Attempting DOM manipulation...');
+                        // Last resort: check if modal is in DOM and try moving it
+                        if (modal.parentNode) {
+                            console.log('Modal parent:', modal.parentNode);
+                            // Try appending to body directly if not already there
+                            if (document.body && modal.parentNode !== document.body) {
+                                document.body.appendChild(modal);
+                                console.log('Moved modal to body');
+                            }
+                        }
+                        // Force dimensions one more time
+                        modal.style.setProperty('width', window.innerWidth + 'px', 'important');
+                        modal.style.setProperty('height', window.innerHeight + 'px', 'important');
+                    } else {
+                        console.log('✓ Modal appears to be visible');
+                    }
+                }, 100);
+                
+                return true; // Return true to indicate success
+            } catch (error) {
+                console.error('Error opening modal:', error);
+                if (document.body) {
+                    document.body.style.overflow = ''; // Restore scrolling on error
+                }
+                return false;
+            }
         }
         
         function closeModal() {
-            if (modal) {
-                modal.classList.add('hidden');
-                modal.classList.remove('flex');
-            }
+            if (!modal) return; // Safety check
+            modal.classList.add('hidden');
+            modal.style.setProperty('display', 'none', 'important');
+            document.body.style.overflow = ''; // Restore scrolling
         }
         
         // Make closeModal globally accessible
@@ -839,11 +1969,46 @@
                 if (e.target === modal) closeModal(); 
             });
         }
+        
+        // Close on Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                if (modal && !modal.classList.contains('hidden')) {
+                    closeModal();
+                } else {
+                    // Emergency: if page is stuck, restore scrolling
+                    document.body.style.overflow = '';
+                }
+            }
+        });
+        
+        // Emergency restore scrolling function (can be called from console)
+        window.restoreScrolling = function() {
+            document.body.style.overflow = '';
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.style.setProperty('display', 'none', 'important');
+            }
+            console.log('Scrolling restored');
+        };
 
         function renderUserStats(data) {
             const channelType = data.channel_type || 'youtube';
             const channelLink = data.channel_link || '#';
             const isYouTube = channelType === 'youtube';
+            const rarity = data.editor_title_rarity || 'ordinary';
+            const hasBothPlatforms = data.has_both_platforms || false;
+            const youtubeLink = data.youtube_link || null;
+            const tiktokLink = data.tiktok_link || null;
+            
+            // Get CSS classes based on rarity
+            const rarityClasses = {
+                'ordinary': 'text-lg title-ordinary',
+                'rare': 'text-lg text-blue-600',
+                'epic': 'text-lg title-epic',
+                'legendary': 'text-lg font-bold title-legendary'
+            };
+            const titleClass = rarityClasses[rarity] || rarityClasses['ordinary'];
             
             return `
                 <div class="text-center">
@@ -857,11 +2022,11 @@
                         }
                     </div>
                     
-                    <!-- Editor Title (at the top) -->
-                    <h3 class="text-2xl font-bold text-gray-900 mb-2">${data.editor_title || 'Editor'}</h3>
+                    <!-- Username (at the top, bold) -->
+                    <h3 class="text-2xl font-bold text-gray-900 mb-2">${data.username || 'Unknown'}</h3>
                     
-                    <!-- Username -->
-                    <p class="text-lg text-gray-600 mb-6">${data.username || 'Unknown'}</p>
+                    <!-- Editor Title (below username, with rarity styling) -->
+                    <p class="${titleClass} mb-6">${data.editor_title || 'Editor'}</p>
                     
                     <!-- Statistics Grid -->
                     <div class="grid grid-cols-2 gap-4 mb-6">
@@ -899,8 +2064,25 @@
                         </div>
                     </div>
                     
-                    <!-- Redirect Link to Social Media -->
-                    ${channelLink !== '#' ? `
+                    <!-- Redirect Link(s) to Social Media -->
+                    ${(hasBothPlatforms && youtubeLink && tiktokLink) ? `
+                    <div class="mt-6 pt-6 border-t border-gray-200 space-y-3">
+                        <a href="${youtubeLink}" 
+                           target="_blank" 
+                           rel="noopener noreferrer"
+                           class="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg font-semibold hover:opacity-90 transition-all shadow-lg">
+                            <i class="fab fa-youtube text-xl"></i>
+                            <span>Visit YouTube Channel</span>
+                        </a>
+                        <a href="${tiktokLink}" 
+                           target="_blank" 
+                           rel="noopener noreferrer"
+                           class="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg font-semibold hover:opacity-90 transition-all shadow-lg">
+                            <i class="fab fa-tiktok text-xl"></i>
+                            <span>Visit TikTok Profile</span>
+                        </a>
+                    </div>
+                    ` : (channelLink && channelLink !== '#' ? `
                     <div class="mt-6 pt-6 border-t border-gray-200">
                         <a href="${channelLink}" 
                            target="_blank" 
@@ -912,7 +2094,7 @@
                             }
                         </a>
                     </div>
-                    ` : ''}
+                    ` : '')}
                     
                     <!-- Note about future customization -->
                     <p class="text-xs text-gray-500 italic mt-4">
@@ -922,30 +2104,51 @@
             `;
         }
 
-        document.querySelectorAll('.open-user-stats').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const userId = btn.getAttribute('data-user-id');
-                if (!userId) {
-                    alert('User ID not found');
-                    return;
-                }
-                
-                // Show loading state
+        // Function to handle user stats modal opening
+        function handleUserStatsClick(userId) {
+            // Better validation for userId
+            if (!userId || userId === 'None' || userId === '' || userId === 'null') {
+                console.warn('User ID not found or invalid:', userId);
+                alert('User ID not found');
+                return;
+            }
+            
+            console.log('Opening user stats modal for user ID:', userId); // Debug log
+            
+            // Show loading state first
+            if (contentEl) {
                 contentEl.innerHTML = `
                     <div class="py-8">
                         <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
                         <p class="mt-4 text-gray-600">Loading...</p>
                     </div>
                 `;
-                openModal();
-                
-                // Fetch user stats
-                fetch(`{% url 'edithub:get_user_stats' %}?user_id=${userId}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
+            }
+            
+            // Try to open modal - if it fails, restore scrolling
+            const modalOpened = openModal();
+            if (!modalOpened) {
+                console.error('Failed to open modal!');
+                alert('Failed to open user stats. Please try again.');
+                document.body.style.overflow = ''; // Restore scrolling
+                return;
+            }
+            
+            // Fetch user stats
+            fetch(`{% url 'edithub:get_user_stats' %}?user_id=${userId}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        if (contentEl) {
                             contentEl.innerHTML = renderUserStats(data);
-                        } else {
+                        }
+                    } else {
+                        if (contentEl) {
                             contentEl.innerHTML = `
                                 <div class="py-8 text-center">
                                     <p class="text-red-600">Error: ${data.error || 'Failed to load user stats'}</p>
@@ -953,16 +2156,48 @@
                                 </div>
                             `;
                         }
-                    })
-                    .catch(error => {
-                        console.error('Error fetching user stats:', error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching user stats:', error);
+                    if (contentEl) {
                         contentEl.innerHTML = `
                             <div class="py-8 text-center">
                                 <p class="text-red-600">Error loading user stats. Please try again.</p>
                                 <button onclick="closeModal()" class="mt-4 px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300">Close</button>
                             </div>
                         `;
-                    });
+                    }
+                    // Don't close modal on error - let user see the error message
+                });
+        }
+
+        // Attach event listeners directly to buttons (they exist on page load)
+        const userStatsButtons = document.querySelectorAll('.open-user-stats');
+        console.log('Found', userStatsButtons.length, 'user stats buttons'); // Debug log
+        
+        if (userStatsButtons.length === 0) {
+            console.warn('No user stats buttons found on page!');
+        }
+        
+        userStatsButtons.forEach((btn, index) => {
+            const userId = btn.getAttribute('data-user-id');
+            console.log(`Button ${index}: userId =`, userId); // Debug log
+            
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                const clickedUserId = this.getAttribute('data-user-id');
+                console.log('User stats button clicked, userId:', clickedUserId); // Debug log
+                
+                // Wrap in try-catch to prevent page freeze on error
+                try {
+                    handleUserStatsClick(clickedUserId);
+                } catch (error) {
+                    console.error('Error handling user stats click:', error);
+                    alert('An error occurred. Please try again.');
+                    document.body.style.overflow = ''; // Restore scrolling on error
+                }
             });
         });
     });
@@ -973,11 +2208,11 @@
         const countdownElement = document.getElementById('countdown-timer');
         if (!countdownElement) return;
 
-        const weekEnd = new Date('{{ week_end_iso }}');
+        const competitionEnd = new Date('{{ competition_end_iso }}');
         
         function updateCountdown() {
             const now = new Date();
-            const diff = weekEnd - now;
+            const diff = competitionEnd - now;
             
             if (diff <= 0) {
                 countdownElement.textContent = 'Competition Ended';
@@ -1027,7 +2262,7 @@
             }
         });
     })();
-    {% elif competition_state and competition_state.state == 'winners' %}
+    {% elif competition_state and competition_state.state == 'results' %}
     (function() {
         // Auto-refresh on Monday at 00:00 to start new competition
         const nextWeekStart = new Date('{{ next_week_start_iso }}');

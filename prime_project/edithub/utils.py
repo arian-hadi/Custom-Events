@@ -6,6 +6,10 @@ import logging
 import json
 import math
 from datetime import datetime, timedelta, timezone
+from django.core.files.base import ContentFile
+from django.core.files.images import ImageFile
+from io import BytesIO
+from PIL import Image
 
 logger = logging.getLogger(__name__)
 
@@ -371,18 +375,27 @@ def fetch_tiktok_channel_data(channel_url: str) -> Dict[str, any]:
                         continue
         
         if not result['channel_name']:
+            # Try to extract display name (nickname) - the styled name with custom fonts
+            # This is different from the unique username
             patterns = [
                 r'"nickname"\s*:\s*"([^"]+)"',
                 r'"nickname":"([^"]+)"',
                 r'"displayName"\s*:\s*"([^"]+)"',
+                r'"uniqueId"\s*:\s*"([^"]+)"',  # This is the unique username, we want to avoid this
                 r'nickname["\']?\s*:\s*"([^"]+)"',
+                r'<h1[^>]*data-e2e="user-title"[^>]*>([^<]+)</h1>',
+                r'<h1[^>]*>([^<]+)</h1>',  # Last resort - any h1
             ]
             for pattern in patterns:
                 match = re.search(pattern, html_content)
                 if match:
-                    result['channel_name'] = match.group(1)
-                    logger.info(f"Extracted channel name via regex: {result['channel_name']}")
-                    break
+                    extracted_name = match.group(1)
+                    # Make sure we're not getting the unique username instead of display name
+                    # Display names can have spaces, emojis, special chars - usernames usually don't
+                    if extracted_name and extracted_name != username:
+                        result['channel_name'] = extracted_name
+                        logger.info(f"Extracted display name via regex: {result['channel_name']}")
+                        break
         
         if not result['thumbnail']:
             patterns = [
@@ -539,11 +552,46 @@ def fetch_tiktok_channel_data(channel_url: str) -> Dict[str, any]:
                             }
                         }
                         
-                        // Try DOM elements
+                        // Try DOM elements - prioritize display name (the styled name with custom fonts)
                         try {
                             if (!data.nickname) {
-                                const h1 = document.querySelector('h1[data-e2e="user-title"], h1');
-                                if (h1) data.nickname = h1.textContent.trim();
+                                // Try multiple selectors for the display name (styled name)
+                                const selectors = [
+                                    'h1[data-e2e="user-title"]',
+                                    'h1[data-e2e="user-subtitle"]',
+                                    'h1.epjbyn1',
+                                    'h1[class*="user-title"]',
+                                    'h1[class*="user-subtitle"]',
+                                    'h1',
+                                    '[data-e2e="user-title"]',
+                                    '.user-title',
+                                    'h2[data-e2e="user-title"]',
+                                ];
+                                
+                                for (const selector of selectors) {
+                                    const el = document.querySelector(selector);
+                                    if (el) {
+                                        const text = el.textContent.trim();
+                                        // Make sure it's not the unique username (which usually doesn't have special characters)
+                                        // Display names can have emojis, special characters, etc.
+                                        if (text && text !== username) {
+                                            data.nickname = text;
+                                            break;
+                                        }
+                                    }
+                                }
+                                
+                                // If still not found, try to find the main heading that's not the username
+                                if (!data.nickname) {
+                                    const headings = document.querySelectorAll('h1, h2');
+                                    for (const h of headings) {
+                                        const text = h.textContent.trim();
+                                        if (text && text !== username && text.length > 0) {
+                                            data.nickname = text;
+                                            break;
+                                        }
+                                    }
+                                }
                             }
                             
                             if (!data.followerCount) {
@@ -622,6 +670,34 @@ def fetch_tiktok_channel_data(channel_url: str) -> Dict[str, any]:
                 except Exception:
                     pass
                 
+                # Try additional DOM extraction if we still don't have the display name
+                if not result['channel_name']:
+                    try:
+                        # Wait a bit for page to fully render
+                        page.wait_for_timeout(2000)
+                        
+                        # Try to get display name from various DOM selectors
+                        display_name_selectors = [
+                            'h1[data-e2e="user-title"]',
+                            'h1[data-e2e="user-subtitle"]',
+                            'h1',
+                            '[data-e2e="user-title"]',
+                        ]
+                        
+                        for selector in display_name_selectors:
+                            try:
+                                element = page.query_selector(selector)
+                                if element:
+                                    text = element.inner_text().strip()
+                                    if text and text != username:
+                                        result['channel_name'] = text
+                                        logger.info(f"Extracted display name from DOM selector '{selector}': {result['channel_name']}")
+                                        break
+                            except Exception:
+                                continue
+                    except Exception as e:
+                        logger.debug(f"Additional DOM extraction failed: {str(e)}")
+                
                 # Only set error if we got nothing
                 if not result['channel_name'] and not result['follower_count']:
                     result['error'] = f'Error loading TikTok profile: {error_msg}'
@@ -635,8 +711,10 @@ def fetch_tiktok_channel_data(channel_url: str) -> Dict[str, any]:
         logger.error(f"Playwright setup error: {str(e)}", exc_info=True)
         result['error'] = f'Playwright error: {str(e)}'
     
-    # Ensure we have at least username
+    # Only use username as last resort - prefer to leave empty if we can't get display name
+    # This way the user knows we couldn't fetch the display name
     if not result['channel_name']:
+        logger.warning(f"Could not extract display name for TikTok user {username}, using username as fallback")
         result['channel_name'] = username
     
     logger.info(f"TikTok extraction result for {username}: name={result['channel_name']}, followers={result['follower_count']}, thumbnail={'yes' if result['thumbnail'] else 'no'}")
@@ -1177,6 +1255,163 @@ def fetch_tiktok_oembed(video_url: str) -> Dict[str, Optional[str]]:
         logger.warning("TikTok oEmbed failed: %s", e)
         result['error'] = str(e)
         return result
+
+
+def is_valid_thumbnail_url(thumbnail_url: str) -> bool:
+    """
+    Check if a thumbnail URL is valid and not a placeholder/empty value.
+    
+    Args:
+        thumbnail_url: The thumbnail URL to validate
+        
+    Returns:
+        True if the URL is valid, False otherwise
+    """
+    if not thumbnail_url:
+        return False
+    
+    # Convert to string and strip whitespace
+    url = str(thumbnail_url).strip()
+    
+    # Check for empty strings
+    if not url:
+        return False
+    
+    # List of invalid/placeholder values to check for
+    invalid_patterns = [
+        'no-image',
+        'no-image.jpg',
+        'no-image.png',
+        'no-thumbnail',
+        'no-thumbnail.jpg',
+        'no-thumbnail.png',
+        'placeholder',
+        'placeholder.jpg',
+        'placeholder.png',
+        'default',
+        'default.jpg',
+        'default.png',
+        'none',
+        'null',
+        'undefined',
+        'missing',
+        'missing.jpg',
+        'missing.png',
+    ]
+    
+    # Check if URL contains any invalid patterns (case-insensitive)
+    url_lower = url.lower()
+    for pattern in invalid_patterns:
+        if pattern in url_lower:
+            return False
+    
+    # Check if it's a valid URL format (starts with http:// or https://)
+    if not (url.startswith('http://') or url.startswith('https://')):
+        return False
+    
+    # Additional check: if URL is too short, it's likely invalid
+    if len(url) < 10:
+        return False
+    
+    return True
+
+
+def get_fallback_thumbnail(existing_thumbnail: str, new_thumbnail: str, *additional_fallbacks: str) -> str:
+    """
+    Get the best available thumbnail from multiple options, preferring existing valid ones.
+    
+    Args:
+        existing_thumbnail: The current/existing thumbnail URL
+        new_thumbnail: The new thumbnail URL to potentially use
+        *additional_fallbacks: Additional thumbnail URLs to check as fallbacks
+        
+    Returns:
+        The best valid thumbnail URL, or empty string if none are valid
+    """
+    # First, prefer existing thumbnail if it's valid
+    if is_valid_thumbnail_url(existing_thumbnail):
+        return existing_thumbnail.strip()
+    
+    # Then check new thumbnail
+    if is_valid_thumbnail_url(new_thumbnail):
+        return new_thumbnail.strip()
+    
+    # Finally check additional fallbacks
+    for fallback in additional_fallbacks:
+        if is_valid_thumbnail_url(fallback):
+            return fallback.strip()
+    
+    # Return empty string if no valid thumbnail found
+    return ''
+
+
+def download_image_from_url(image_url: str) -> Optional[ContentFile]:
+    """
+    Download an image from a URL and return it as a Django ContentFile.
+    
+    Args:
+        image_url: URL of the image to download
+        
+    Returns:
+        ContentFile object with the image data, or None if download fails
+    """
+    if not image_url or not is_valid_thumbnail_url(image_url):
+        return None
+    
+    try:
+        # Download the image
+        response = requests.get(image_url, timeout=10, stream=True)
+        response.raise_for_status()
+        
+        # Check content type
+        content_type = response.headers.get('content-type', '')
+        if not content_type.startswith('image/'):
+            logger.warning(f"URL {image_url} does not return an image (content-type: {content_type})")
+            return None
+        
+        # Read image data
+        image_data = BytesIO(response.content)
+        
+        # Verify it's a valid image by opening with PIL
+        try:
+            img = Image.open(image_data)
+            img.verify()  # Verify it's a valid image
+        except Exception as e:
+            logger.warning(f"Invalid image data from {image_url}: {e}")
+            return None
+        
+        # Reset BytesIO position after verify
+        image_data.seek(0)
+        
+        # Get file extension from URL or content type
+        ext = 'jpg'  # default
+        if '.jpg' in image_url.lower() or '.jpeg' in image_url.lower():
+            ext = 'jpg'
+        elif '.png' in image_url.lower():
+            ext = 'png'
+        elif '.gif' in image_url.lower():
+            ext = 'gif'
+        elif '.webp' in image_url.lower():
+            ext = 'webp'
+        elif 'png' in content_type.lower():
+            ext = 'png'
+        elif 'gif' in content_type.lower():
+            ext = 'gif'
+        elif 'webp' in content_type.lower():
+            ext = 'webp'
+        
+        # Create filename
+        filename = f"profile_picture_{datetime.now().strftime('%Y%m%d_%H%M%S')}.{ext}"
+        
+        # Create ContentFile
+        return ContentFile(image_data.read(), name=filename)
+        
+    except requests.RequestException as e:
+        logger.error(f"Error downloading image from {image_url}: {e}")
+        return None
+    except Exception as e:
+        logger.error(f"Unexpected error downloading image from {image_url}: {e}")
+        return None
 
 
 def fetch_tiktok_video_title(video_url: str) -> Optional[str]:
@@ -1767,7 +2002,8 @@ def calculate_tiktok_points(views: int, likes: int, comments: int, follower_coun
 
 def get_week_start_end(now: datetime = None) -> Tuple[datetime, datetime]:
     """
-    Get the current competition week's start (Monday 00:00) and end (Friday 23:59).
+    Get the current competition week's start (Monday 00:00 UTC) and end (Sunday 23:59 UTC).
+    This is the full display week (Mon-Sun).
     
     Args:
         now: Optional datetime to use as reference. Defaults to current time.
@@ -1782,10 +2018,34 @@ def get_week_start_end(now: datetime = None) -> Tuple[datetime, datetime]:
     days_since_monday = (now.weekday()) % 7
     week_start = (now - timedelta(days=days_since_monday)).replace(hour=0, minute=0, second=0, microsecond=0)
     
-    # Get Friday 23:59:59 of the same week
-    week_end = week_start + timedelta(days=4, hours=23, minutes=59, seconds=59)
+    # Get Sunday 23:59:59 of the same week (full week display)
+    week_end = week_start + timedelta(days=6, hours=23, minutes=59, seconds=59)
     
     return week_start, week_end
+
+
+def get_competition_end(now: datetime = None) -> datetime:
+    """
+    Get the competition end time (Friday 23:59 UTC).
+    Points are only calculated/updated Monday-Friday.
+    
+    Args:
+        now: Optional datetime to use as reference. Defaults to current time.
+    
+    Returns:
+        Competition end datetime (Friday 23:59:59)
+    """
+    if now is None:
+        now = datetime.now(timezone.utc)
+    
+    # Get Monday of current week
+    days_since_monday = (now.weekday()) % 7
+    week_start = (now - timedelta(days=days_since_monday)).replace(hour=0, minute=0, second=0, microsecond=0)
+    
+    # Get Friday 23:59:59 of the same week
+    competition_end = week_start + timedelta(days=4, hours=23, minutes=59, seconds=59)
+    
+    return competition_end
 
 
 def get_competition_state(now: datetime = None) -> Dict[str, any]:
@@ -1794,64 +2054,230 @@ def get_competition_state(now: datetime = None) -> Dict[str, any]:
     
     Returns:
         Dict with:
-        - 'state': 'live' (Mon-Fri) or 'winners' (Sat-Sun)
-        - 'week_start': datetime of Monday 00:00
-        - 'week_end': datetime of Friday 23:59
-        - 'time_remaining': timedelta until end (if live)
-        - 'next_week_start': datetime of next Monday 00:00 (if winners)
+        - 'state': 'live' (Mon-Fri, points updating) or 'results' (Sat-Sun, frozen rankings)
+        - 'week_start': datetime of Monday 00:00 UTC
+        - 'week_end': datetime of Sunday 23:59 UTC (full display week)
+        - 'competition_end': datetime of Friday 23:59 UTC (when points stop updating)
+        - 'time_remaining': timedelta until competition end (if live)
+        - 'next_week_start': datetime of next Monday 00:00 UTC
     """
     if now is None:
         now = datetime.now(timezone.utc)
     
-    week_start, week_end = get_week_start_end(now)
+    week_start, week_end = get_week_start_end(now)  # Full week (Mon-Sun)
+    competition_end = get_competition_end(now)  # Competition end (Fri)
     next_week_start = week_start + timedelta(days=7)
     
-    if now < week_end:
-        # Competition is live (Monday to Friday)
-        time_remaining = week_end - now
+    # Check if we're in the competition period (Mon-Fri) or results period (Sat-Sun)
+    if now <= competition_end:
+        # Competition is live (Monday to Friday) - points are updating
+        time_remaining = competition_end - now
         return {
             'state': 'live',
             'week_start': week_start,
-            'week_end': week_end,
+            'week_end': week_end,  # Full week end (Sunday)
+            'competition_end': competition_end,  # Competition end (Friday)
             'time_remaining': time_remaining,
             'next_week_start': next_week_start,
         }
     else:
-        # Showing winners (Saturday to Sunday)
+        # Showing results (Saturday to Sunday) - rankings are frozen
         return {
-            'state': 'winners',
+            'state': 'results',
             'week_start': week_start,
-            'week_end': week_end,
+            'week_end': week_end,  # Full week end (Sunday)
+            'competition_end': competition_end,  # Competition end (Friday)
             'next_week_start': next_week_start,
             'time_until_next': next_week_start - now,
         }
 
 
 def format_countdown(timedelta_obj: timedelta) -> str:
-    """
-    Format a timedelta as a countdown string (e.g., "2d 4h 30m").
+    """Format a timedelta object as a countdown string"""
+    if timedelta_obj.total_seconds() < 0:
+        return "00:00:00"
     
-    Args:
-        timedelta_obj: timedelta object to format
-    
-    Returns:
-        Formatted string like "2d 4h 30m" or "4h 30m" or "30m"
-    """
     total_seconds = int(timedelta_obj.total_seconds())
-    
-    if total_seconds <= 0:
-        return "Ended"
-    
-    days = total_seconds // 86400
-    hours = (total_seconds % 86400) // 3600
+    hours = total_seconds // 3600
     minutes = (total_seconds % 3600) // 60
+    seconds = total_seconds % 60
     
-    parts = []
-    if days > 0:
-        parts.append(f"{days}d")
-    if hours > 0:
-        parts.append(f"{hours}h")
-    if minutes > 0 or not parts:
-        parts.append(f"{minutes}m")
+    return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+
+
+def check_user_achievements(user):
+    """
+    Check all achievement-based titles and unlock them if user qualifies.
+    Returns list of newly unlocked titles.
+    """
+    from .models import EditorTitle, UserTitleUnlock, WeekWinner, EditSubmission
+    from django.db.models import Sum, Avg, Max
     
-    return " ".join(parts)
+    achievement_titles = EditorTitle.objects.filter(
+        unlock_method__in=['achievement', 'both'],
+        achievement_type__isnull=False,
+        is_active=True
+    )
+    
+    unlocked_titles = []
+    
+    for title in achievement_titles:
+        # Skip if already unlocked
+        if UserTitleUnlock.objects.filter(user=user, title=title).exists():
+            continue
+        
+        qualifies = False
+        
+        try:
+            if title.achievement_type == 'rank_1_wins':
+                # Count only rank #1 (first place) wins - becoming Edit of the Week
+                win_count = WeekWinner.objects.filter(user=user, week_rank=1).count()
+                qualifies = win_count >= title.achievement_threshold
+                
+            elif title.achievement_type == 'rank_2_wins':
+                # Count only rank #2 (second place) wins
+                win_count = WeekWinner.objects.filter(user=user, week_rank=2).count()
+                qualifies = win_count >= title.achievement_threshold
+                
+            elif title.achievement_type == 'rank_3_wins':
+                # Count only rank #3 (third place) wins
+                win_count = WeekWinner.objects.filter(user=user, week_rank=3).count()
+                qualifies = win_count >= title.achievement_threshold
+                
+            elif title.achievement_type == 'total_points':
+                # Sum of all calculated_points from verified submissions (overall total)
+                total_points = EditSubmission.objects.filter(
+                    user=user,
+                    status='verified'
+                ).aggregate(Sum('calculated_points'))['calculated_points__sum'] or 0
+                qualifies = float(total_points) >= title.achievement_threshold
+                
+            elif title.achievement_type == 'points_per_edit':
+                # Points for a single edit - check if user has at least one edit with this many points
+                max_points = EditSubmission.objects.filter(
+                    user=user,
+                    status='verified'
+                ).aggregate(Max('calculated_points'))['calculated_points__max'] or 0
+                qualifies = float(max_points) >= title.achievement_threshold
+                
+            elif title.achievement_type == 'total_submissions':
+                # Count total number of verified submissions
+                submission_count = EditSubmission.objects.filter(
+                    user=user,
+                    status='verified'
+                ).count()
+                qualifies = submission_count >= title.achievement_threshold
+                
+            elif title.achievement_type == 'consecutive_weeks':
+                # Get maximum consecutive weeks from all verified submissions
+                max_consecutive_weeks = EditSubmission.objects.filter(
+                    user=user,
+                    status='verified'
+                ).aggregate(Max('weeks_participated'))['weeks_participated__max'] or 0
+                qualifies = max_consecutive_weeks >= title.achievement_threshold
+            
+            if qualifies:
+                UserTitleUnlock.objects.get_or_create(
+                    user=user,
+                    title=title,
+                    defaults={'unlock_method': 'achievement'}
+                )
+                unlocked_titles.append(title)
+                logger.info(f"User {user.username} unlocked title '{title.name}' via achievement")
+                
+        except Exception as e:
+            logger.error(f"Error checking achievement for title {title.name} and user {user.username}: {str(e)}")
+            continue
+    
+    return unlocked_titles
+
+
+def is_title_unlocked_for_user(user, title):
+    """
+    Check if a title is unlocked for a user.
+    Returns True if unlocked, False otherwise.
+    """
+    from .models import UserTitleUnlock
+    
+    # Free titles are always unlocked (unless they're manual)
+    if title.cost_coins == 0 and title.unlock_method == 'coins':
+        return True
+    
+    # Manual titles can only be unlocked via UserTitleUnlock (admin grant)
+    # Check if unlocked via achievement, coins, or manual
+    return UserTitleUnlock.objects.filter(user=user, title=title).exists()
+
+
+def get_user_achievement_progress(user, title):
+    """
+    Get the user's current progress towards unlocking an achievement-based title.
+    Returns a dict with current_value, threshold, and progress_percentage.
+    """
+    from .models import WeekWinner, EditSubmission
+    from django.db.models import Sum, Avg, Max
+    
+    if not title.achievement_type or title.unlock_method not in ['achievement', 'both']:
+        return None
+    
+    current_value = 0
+    threshold = title.achievement_threshold
+    
+    try:
+        if title.achievement_type == 'rank_1_wins':
+            # Count only rank #1 (first place) wins - becoming Edit of the Week
+            current_value = WeekWinner.objects.filter(user=user, week_rank=1).count()
+            
+        elif title.achievement_type == 'rank_2_wins':
+            # Count only rank #2 (second place) wins
+            current_value = WeekWinner.objects.filter(user=user, week_rank=2).count()
+            
+        elif title.achievement_type == 'rank_3_wins':
+            # Count only rank #3 (third place) wins
+            current_value = WeekWinner.objects.filter(user=user, week_rank=3).count()
+            
+        elif title.achievement_type == 'total_points':
+            # Sum of all calculated_points from verified submissions (overall total)
+            total_points = EditSubmission.objects.filter(
+                user=user,
+                status='verified'
+            ).aggregate(Sum('calculated_points'))['calculated_points__sum'] or 0
+            current_value = float(total_points)
+            
+        elif title.achievement_type == 'points_per_edit':
+            # Points for a single edit - get the maximum points from any single edit
+            max_points = EditSubmission.objects.filter(
+                user=user,
+                status='verified'
+            ).aggregate(Max('calculated_points'))['calculated_points__max'] or 0
+            current_value = float(max_points)
+            
+        elif title.achievement_type == 'total_submissions':
+            # Count total number of verified submissions
+            current_value = EditSubmission.objects.filter(
+                user=user,
+                status='verified'
+            ).count()
+            
+        elif title.achievement_type == 'consecutive_weeks':
+            # Get maximum consecutive weeks from all verified submissions
+            current_value = EditSubmission.objects.filter(
+                user=user,
+                status='verified'
+            ).aggregate(Max('weeks_participated'))['weeks_participated__max'] or 0
+        
+        # Calculate progress percentage
+        if threshold > 0:
+            progress_percentage = min(100, (current_value / threshold) * 100)
+        else:
+            progress_percentage = 0
+        
+        return {
+            'current_value': current_value,
+            'threshold': threshold,
+            'progress_percentage': round(progress_percentage, 1),
+            'is_complete': current_value >= threshold
+        }
+        
+    except Exception as e:
+        logger.error(f"Error calculating progress for title {title.name} and user {user.username}: {str(e)}")
+        return None

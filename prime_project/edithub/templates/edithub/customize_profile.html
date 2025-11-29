@@ -1,0 +1,554 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Customize Profile - 2.0Transformers{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Editor Title Rarity Styling - Now centralized in base.html */
+
+    .sticky-header {
+        position: sticky;
+        top: 0;
+        z-index: 40;
+        backdrop-filter: blur(10px);
+        background: linear-gradient(to bottom, #111827, #1f2937);
+    }
+    
+    /* Title Card Styling */
+    .title-card {
+        position: relative;
+        transition: all 0.3s ease;
+    }
+    
+    .title-card:not(:disabled):hover {
+        transform: translateY(-2px);
+    }
+    
+    /* Locked Title Styling */
+    .title-card:disabled {
+        position: relative;
+        cursor: not-allowed;
+    }
+    
+    .title-card:disabled::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: repeating-linear-gradient(
+            45deg,
+            transparent,
+            transparent 10px,
+            rgba(0, 0, 0, 0.03) 10px,
+            rgba(0, 0, 0, 0.03) 20px
+        );
+        border-radius: 0.5rem;
+        pointer-events: none;
+    }
+    
+    /* Unlocked Title - Enhanced styling */
+    .title-card:not(:disabled) {
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    
+    .title-card:not(:disabled):hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+    
+    /* Progress Bar Styling */
+    .progress-bar-container {
+        margin-top: 0.5rem;
+    }
+    
+    .progress-bar {
+        width: 100%;
+        height: 0.375rem;
+        background-color: #e5e7eb;
+        border-radius: 9999px;
+        overflow: hidden;
+    }
+    
+    .progress-bar-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #3b82f6, #60a5fa);
+        border-radius: 9999px;
+        transition: width 0.3s ease;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="pt-16 bg-gradient-to-b from-gray-50 via-white to-gray-50 min-h-screen">
+    <!-- Sticky Header with Profile Info -->
+    <div class="sticky-header border-b border-gray-700 shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- Back Button (Top Left) -->
+            <div class="mb-6">
+                <a href="{% url 'dashboard:user_dashboard' %}" class="inline-flex items-center gap-2 text-gray-300 hover:text-white transition-colors">
+                    <i class="fas fa-arrow-left text-lg"></i>
+                    <span>Back to Dashboard</span>
+                </a>
+            </div>
+            
+            <!-- Centered Profile Section -->
+            <div class="flex flex-col items-center text-center">
+                <!-- Profile Picture (Centered) -->
+                <div class="relative mb-4">
+                    {% if display_picture %}
+                        <img src="{{ display_picture }}" alt="{{ display_name }}" 
+                             class="w-24 h-24 sm:w-28 sm:h-28 rounded-full object-cover ring-4 ring-white/20 shadow-2xl" 
+                             id="profile-display-picture" />
+                    {% else %}
+                        <div class="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-gradient-to-br from-indigo-400 via-purple-400 to-pink-400 flex items-center justify-center ring-4 ring-white/20 shadow-2xl" id="profile-display-picture-fallback">
+                            <span class="text-3xl sm:text-4xl font-bold text-white" id="profile-display-initial">{{ display_name|first|upper }}</span>
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Username (Below Profile Picture) -->
+                <h1 class="text-3xl sm:text-4xl font-bold text-white mb-2" id="profile-display-name">{{ display_name }}</h1>
+                
+                <!-- Profile Display Mode Switcher -->
+                <div class="mt-4 mb-2">
+                    <div class="inline-flex items-center gap-2 bg-gray-800/50 rounded-lg p-1 border border-gray-700">
+                        <button type="button" 
+                                onclick="switchProfileMode('account')"
+                                class="px-4 py-2 rounded-md text-sm font-medium transition-all {% if user.profile_display_mode == 'account' %}bg-indigo-600 text-white{% else %}text-gray-300 hover:text-white hover:bg-gray-700/50{% endif %}"
+                                id="profile-mode-account">
+                            <i class="fas fa-user mr-2"></i>Account
+                        </button>
+                        <button type="button" 
+                                onclick="switchProfileMode('channel')"
+                                class="px-4 py-2 rounded-md text-sm font-medium transition-all {% if user.profile_display_mode == 'channel' %}bg-indigo-600 text-white{% else %}text-gray-300 hover:text-white hover:bg-gray-700/50{% endif %}"
+                                id="profile-mode-channel">
+                            <i class="fas fa-video mr-2"></i>Channel
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Title (Below Username) -->
+                <p id="current-title-display" class="text-xl sm:text-2xl font-semibold {% if current_title.rarity == 'legendary' %}title-legendary{% elif current_title.rarity == 'epic' %}title-epic text-purple-300{% elif current_title.rarity == 'rare' %}text-blue-300{% else %}text-gray-300{% endif %}">
+                    {{ current_title.name }}
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter and Sort Section -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-6">
+            <div class="flex flex-wrap items-center gap-4">
+                <!-- Rarity Filter -->
+                <div class="flex-1 min-w-[200px]">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Rarity</label>
+                    <select id="rarity-filter" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                        <option value="all">All Rarities</option>
+                        <option value="legendary">Legendary</option>
+                        <option value="epic">Epic</option>
+                        <option value="ordinary">Ordinary</option>
+                    </select>
+                </div>
+                
+                <!-- Sort Option -->
+                <div class="flex-1 min-w-[200px]">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Sort By</label>
+                    <select id="sort-filter" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                        <option value="rarity">Rarity</option>
+                        <option value="name">Name (A-Z)</option>
+                        <option value="cost">Cost (Low to High)</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Titles Container -->
+        <div id="title-selection-container" class="space-y-6">
+            <div class="flex items-center justify-center py-12">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                <span class="ml-3 text-gray-600">Loading titles...</span>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script>
+let allTitles = null;
+let currentTitleId = null;
+
+function getRarityClass(rarity) {
+    const classes = {
+        'ordinary': 'border-gray-300 bg-gray-50 hover:bg-gray-100 text-gray-700',
+        'rare': 'border-blue-300 bg-blue-50 hover:bg-blue-100 text-blue-700',
+        'epic': 'border-purple-300 bg-purple-50 hover:bg-purple-100 text-purple-700',
+        'legendary': 'border-yellow-400 bg-gradient-to-r from-yellow-50 via-orange-50 to-yellow-50 hover:from-yellow-100 hover:via-orange-100 hover:to-yellow-100 text-yellow-800 shadow-md'
+    };
+    return classes[rarity] || classes['ordinary'];
+}
+
+function getRarityBadge(rarity) {
+    const badges = {
+        'ordinary': '<span class="px-2 py-1 text-xs font-medium rounded bg-gray-200 text-gray-700">Ordinary</span>',
+        'rare': '<span class="px-2 py-1 text-xs font-medium rounded bg-blue-200 text-blue-700">Rare</span>',
+        'epic': '<span class="px-2 py-1 text-xs font-medium rounded bg-purple-200 text-purple-700">Epic</span>',
+        'legendary': '<span class="px-2 py-1 text-xs font-medium rounded bg-gradient-to-r from-yellow-300 to-orange-300 text-yellow-900 font-bold">Legendary</span>'
+    };
+    return badges[rarity] || badges['ordinary'];
+}
+
+function getCategoryLabel(category) {
+    const labels = {
+        'reel': 'Reel Titles',
+        'comment': 'Comment Titles',
+        'general': 'General Titles'
+    };
+    return labels[category] || category;
+}
+
+function filterAndRenderTitles() {
+    const rarityFilter = document.getElementById('rarity-filter').value;
+    const sortFilter = document.getElementById('sort-filter').value;
+    const container = document.getElementById('title-selection-container');
+    
+    if (!allTitles) {
+        container.innerHTML = '<p class="text-gray-500 text-center py-4">No titles available</p>';
+        return;
+    }
+    
+    // Flatten all titles from categories (show all categories)
+    let filteredTitles = [];
+    Object.keys(allTitles).forEach(category => {
+        allTitles[category].forEach(title => {
+            if (rarityFilter === 'all' || rarityFilter === title.rarity) {
+                filteredTitles.push({...title, category});
+            }
+        });
+    });
+    
+    // Sort titles
+    filteredTitles.sort((a, b) => {
+        if (sortFilter === 'rarity') {
+            const rarityOrder = { 'legendary': 0, 'epic': 1, 'rare': 2, 'ordinary': 3 };
+            if (rarityOrder[a.rarity] !== rarityOrder[b.rarity]) {
+                return rarityOrder[a.rarity] - rarityOrder[b.rarity];
+            }
+            return a.name.localeCompare(b.name);
+        } else if (sortFilter === 'name') {
+            return a.name.localeCompare(b.name);
+        } else if (sortFilter === 'cost') {
+            return a.cost_coins - b.cost_coins;
+        }
+        return 0;
+    });
+    
+    // Group by category for display
+    const groupedByCategory = {};
+    filteredTitles.forEach(title => {
+        if (!groupedByCategory[title.category]) {
+            groupedByCategory[title.category] = [];
+        }
+        groupedByCategory[title.category].push(title);
+    });
+    
+    let html = '';
+    
+    // Render each category
+    ['reel', 'general', 'comment'].forEach(category => {
+        const titles = groupedByCategory[category] || [];
+        if (titles.length === 0) return;
+        
+        html += `<div class="mb-8">
+            <h3 class="text-xl font-semibold text-gray-800 mb-4 pb-2 border-b-2 border-gray-200">${getCategoryLabel(category)}</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">`;
+        
+        // Group titles by rarity within category
+        const byRarity = {
+            'legendary': [],
+            'epic': [],
+            'rare': [],
+            'ordinary': []
+        };
+        
+        titles.forEach(title => {
+            if (byRarity[title.rarity]) {
+                byRarity[title.rarity].push(title);
+            }
+        });
+        
+        // Render each rarity group
+        ['legendary', 'epic', 'rare', 'ordinary'].forEach(rarity => {
+            byRarity[rarity].forEach(title => {
+                const isSelected = title.is_selected;
+                const isUnlocked = title.is_unlocked !== false; // Default to true if not specified
+                const isComment = category === 'comment';
+                
+                // Get rarity classes - adjust for locked state
+                let rarityClass = getRarityClass(title.rarity);
+                if (!isUnlocked && !isComment) {
+                    // Locked titles get muted/grayed styling
+                    rarityClass = 'border-gray-300 bg-gray-100 hover:bg-gray-150 text-gray-500 opacity-60';
+                }
+                
+                const rarityBadge = getRarityBadge(title.rarity);
+                
+                // Build unlock status indicator
+                let unlockIndicator = '';
+                let progressBar = '';
+                
+                if (!isComment) {
+                    if (isUnlocked) {
+                        unlockIndicator = '<div class="absolute top-2 right-2 bg-green-500 rounded-full p-1"><svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg></div>';
+                    } else {
+                        unlockIndicator = '<div class="absolute top-2 right-2 bg-gray-400 rounded-full p-1"><svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg></div>';
+                        
+                        // Show progress if available
+                        if (title.achievement_progress) {
+                            const progress = title.achievement_progress;
+                            const progressPercent = Math.min(100, progress.progress_percentage || 0);
+                            progressBar = `
+                                <div class="mt-2">
+                                    <div class="flex items-center justify-between text-xs mb-1">
+                                        <span class="text-gray-500">Progress</span>
+                                        <span class="text-gray-600 font-medium">${progress.current_value}/${progress.threshold}</span>
+                                    </div>
+                                    <div class="w-full bg-gray-200 rounded-full h-1.5">
+                                        <div class="bg-blue-500 h-1.5 rounded-full transition-all duration-300" style="width: ${progressPercent}%"></div>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                    }
+                }
+                
+                // Build unlock requirement message for locked titles
+                let unlockMessage = '';
+                if (!isUnlocked && !isComment && title.unlock_requirement) {
+                    const isManual = title.unlock_method === 'manual';
+                    unlockMessage = `<p class="text-xs ${isManual ? 'text-amber-600' : 'text-gray-500'} mt-2 italic">${title.unlock_requirement}</p>`;
+                }
+                
+                html += `
+                    <div class="relative">
+                        <button type="button" 
+                                class="title-card p-4 rounded-lg border-2 transition-all text-left w-full ${rarityClass} ${isSelected ? 'ring-2 ring-indigo-500 ring-offset-2' : ''} ${isComment ? 'opacity-75 cursor-not-allowed' : isUnlocked ? 'hover:scale-105 hover:shadow-md cursor-pointer' : 'cursor-not-allowed'}"
+                                data-title-id="${title.id}"
+                                ${isComment ? 'disabled title="Comment titles are automatically set based on your channel type"' : !isUnlocked ? `disabled title="This title is locked. ${title.unlock_requirement || 'Complete the requirements to unlock.'}"` : `onclick="selectTitle(${title.id})"`}>
+                            ${unlockIndicator}
+                            <div class="flex items-start justify-between mb-2 pr-8">
+                                <span class="font-semibold text-sm ${!isUnlocked && !isComment ? 'line-through' : ''}">${title.name}</span>
+                                ${isSelected ? '<span class="text-indigo-600 text-xs font-bold">✓ Selected</span>' : ''}
+                            </div>
+                            ${title.description ? `<p class="text-xs ${isUnlocked ? 'text-gray-600' : 'text-gray-400'} mb-2 line-clamp-2">${title.description}</p>` : ''}
+                            <div class="flex items-center justify-between mt-2">
+                                ${rarityBadge}
+                                ${title.unlock_method === 'manual' ? '' : title.cost_coins > 0 ? `<span class="text-xs ${isUnlocked ? 'text-gray-500' : 'text-gray-400'}">${title.cost_coins} coins</span>` : '<span class="text-xs text-green-600">Free</span>'}
+                            </div>
+                            ${progressBar}
+                            ${unlockMessage}
+                            ${isComment ? '<p class="text-xs text-gray-500 mt-2 italic">Auto-assigned</p>' : ''}
+                        </button>
+                    </div>
+                `;
+            });
+        });
+        
+        html += `</div></div>`;
+    });
+    
+    if (html === '') {
+        html = '<p class="text-gray-500 text-center py-8">No titles match your filters</p>';
+    }
+    
+    container.innerHTML = html;
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function selectTitle(titleId) {
+    const csrftoken = getCookie('csrftoken');
+    fetch('{% url "edithub:select_editor_title" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrftoken
+        },
+        body: JSON.stringify({ title_id: titleId })
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(err => {
+                throw new Error(err.error || 'Failed to update title');
+            });
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            // Update current title display
+            const currentTitleDisplay = document.getElementById('current-title-display');
+            currentTitleDisplay.textContent = data.title_name;
+            let rarityClass;
+            if (data.title_rarity === 'legendary') {
+                rarityClass = 'title-legendary';
+            } else if (data.title_rarity === 'epic') {
+                rarityClass = 'title-epic text-purple-300';
+            } else if (data.title_rarity === 'rare') {
+                rarityClass = 'text-blue-300';
+            } else {
+                rarityClass = 'text-gray-300';
+            }
+            currentTitleDisplay.className = `text-xl sm:text-2xl font-semibold ${rarityClass}`;
+            
+            // Reload titles to update selection state
+            loadTitles();
+            
+            // Show success message
+            const message = document.createElement('div');
+            message.className = 'fixed top-20 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+            message.textContent = 'Title updated successfully!';
+            document.body.appendChild(message);
+            setTimeout(() => message.remove(), 3000);
+        } else {
+            alert('Error: ' + (data.error || 'Failed to update title'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error: ' + (error.message || 'An error occurred. Please try again.'));
+    });
+}
+
+function loadTitles() {
+    const container = document.getElementById('title-selection-container');
+    container.innerHTML = '<div class="flex items-center justify-center py-12"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div><span class="ml-3 text-gray-600">Loading titles...</span></div>';
+    
+    fetch('{% url "edithub:get_available_titles" %}')
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(err => {
+                    throw new Error(err.error || 'Failed to load titles');
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                allTitles = data.titles_by_category;
+                currentTitleId = data.current_title_id;
+                filterAndRenderTitles();
+            } else if (data.error) {
+                container.innerHTML = `<p class="text-red-500 text-center py-8">${data.error}</p>`;
+            } else {
+                container.innerHTML = '<p class="text-red-500 text-center py-8">Error loading titles</p>';
+            }
+        })
+        .catch(error => {
+            console.error('Error loading titles:', error);
+            container.innerHTML = `<p class="text-red-500 text-center py-8">${error.message || 'Error loading titles. Please make sure you have an accepted application.'}</p>`;
+        });
+}
+
+// Profile switching functions
+function switchProfileMode(mode) {
+    const csrftoken = getCookie('csrftoken');
+    fetch('{% url "edithub:switch_profile_mode" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrftoken
+        },
+        body: JSON.stringify({ mode: mode })
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(err => {
+                throw new Error(err.error || 'Failed to switch profile mode');
+            });
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            // Update UI
+            updateProfileDisplay(data.display_name, data.display_picture);
+            
+            // Update button states
+            document.getElementById('profile-mode-account').className = 
+                `px-4 py-2 rounded-md text-sm font-medium transition-all ${mode === 'account' ? 'bg-indigo-600 text-white' : 'text-gray-300 hover:text-white hover:bg-gray-700/50'}`;
+            document.getElementById('profile-mode-channel').className = 
+                `px-4 py-2 rounded-md text-sm font-medium transition-all ${mode === 'channel' ? 'bg-indigo-600 text-white' : 'text-gray-300 hover:text-white hover:bg-gray-700/50'}`;
+            
+            // Show success message
+            const message = document.createElement('div');
+            message.className = 'fixed top-20 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+            message.textContent = 'Profile display updated!';
+            document.body.appendChild(message);
+            setTimeout(() => message.remove(), 3000);
+        } else {
+            alert('Error: ' + (data.error || 'Failed to switch profile mode'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error: ' + (error.message || 'An error occurred. Please try again.'));
+    });
+}
+
+function updateProfileDisplay(name, picture) {
+    // Update name
+    const nameElement = document.getElementById('profile-display-name');
+    if (nameElement) {
+        nameElement.textContent = name;
+    }
+    
+    // Update picture
+    const pictureElement = document.getElementById('profile-display-picture');
+    const fallbackElement = document.getElementById('profile-display-picture-fallback');
+    const initialElement = document.getElementById('profile-display-initial');
+    
+    if (picture) {
+        if (pictureElement) {
+            pictureElement.src = picture;
+            pictureElement.style.display = 'block';
+        }
+        if (fallbackElement) {
+            fallbackElement.style.display = 'none';
+        }
+    } else {
+        if (pictureElement) {
+            pictureElement.style.display = 'none';
+        }
+        if (fallbackElement) {
+            fallbackElement.style.display = 'flex';
+        }
+        if (initialElement) {
+            initialElement.textContent = name ? name.charAt(0).toUpperCase() : '?';
+        }
+    }
+}
+
+// Add event listeners for filters
+document.addEventListener('DOMContentLoaded', function() {
+    loadTitles();
+    
+    document.getElementById('rarity-filter').addEventListener('change', filterAndRenderTitles);
+    document.getElementById('sort-filter').addEventListener('change', filterAndRenderTitles);
+});
+</script>
+{% endblock %}
+
