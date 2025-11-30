@@ -980,7 +980,10 @@ def get_user_stats_ajax(request):
 def get_available_titles(request):
     """Get available editor titles for the current user, grouped by category"""
     from .models import EditorTitle, EditorApplication
-    from .utils import is_title_unlocked_for_user
+    from .utils import is_title_unlocked_for_user, check_user_achievements
+    
+    # Check achievements first to ensure newly qualified titles are unlocked
+    check_user_achievements(request.user)
     
     # Get user's primary application
     primary_app = EditorApplication.objects.filter(
