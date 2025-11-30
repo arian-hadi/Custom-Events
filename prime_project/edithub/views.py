@@ -1019,9 +1019,9 @@ def get_available_titles(request):
         # Check if title is unlocked
         is_unlocked = is_title_unlocked_for_user(request.user, title)
         
-        # Get achievement progress if applicable
+        # Get achievement progress if applicable (show for both locked and unlocked titles)
         achievement_progress = None
-        if not is_unlocked and getattr(title, 'achievement_type', None) and getattr(title, 'unlock_method', 'coins') in ['achievement', 'both']:
+        if getattr(title, 'achievement_type', None) and getattr(title, 'unlock_method', 'coins') in ['achievement', 'both']:
             from .utils import get_user_achievement_progress
             achievement_progress = get_user_achievement_progress(request.user, title)
         

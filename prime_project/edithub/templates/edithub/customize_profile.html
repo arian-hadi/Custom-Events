@@ -302,31 +302,31 @@ function filterAndRenderTitles() {
                         unlockIndicator = '<div class="absolute top-2 right-2 bg-green-500 rounded-full p-1"><svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"></path></svg></div>';
                     } else {
                         unlockIndicator = '<div class="absolute top-2 right-2 bg-gray-400 rounded-full p-1"><svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg></div>';
-                        
-                        // Show progress if available
-                        if (title.achievement_progress) {
-                            const progress = title.achievement_progress;
-                            const progressPercent = Math.min(100, progress.progress_percentage || 0);
-                            progressBar = `
-                                <div class="mt-2">
-                                    <div class="flex items-center justify-between text-xs mb-1">
-                                        <span class="text-gray-500">Progress</span>
-                                        <span class="text-gray-600 font-medium">${progress.current_value}/${progress.threshold}</span>
-                                    </div>
-                                    <div class="w-full bg-gray-200 rounded-full h-1.5">
-                                        <div class="bg-blue-500 h-1.5 rounded-full transition-all duration-300" style="width: ${progressPercent}%"></div>
-                                    </div>
+                    }
+                    
+                    // Show progress if available (for both locked and unlocked titles)
+                    if (title.achievement_progress) {
+                        const progress = title.achievement_progress;
+                        const progressPercent = Math.min(100, progress.progress_percentage || 0);
+                        progressBar = `
+                            <div class="mt-2">
+                                <div class="flex items-center justify-between text-xs mb-1">
+                                    <span class="text-gray-500">Progress</span>
+                                    <span class="text-gray-600 font-medium">${progress.current_value}/${progress.threshold}</span>
                                 </div>
-                            `;
-                        }
+                                <div class="w-full bg-gray-200 rounded-full h-1.5">
+                                    <div class="bg-blue-500 h-1.5 rounded-full transition-all duration-300" style="width: ${progressPercent}%"></div>
+                                </div>
+                            </div>
+                        `;
                     }
                 }
                 
-                // Build unlock requirement message for locked titles
+                // Build unlock requirement message (show for both locked and unlocked)
                 let unlockMessage = '';
-                if (!isUnlocked && !isComment && title.unlock_requirement) {
+                if (!isComment && title.unlock_requirement) {
                     const isManual = title.unlock_method === 'manual';
-                    unlockMessage = `<p class="text-xs ${isManual ? 'text-amber-600' : 'text-gray-500'} mt-2 italic">${title.unlock_requirement}</p>`;
+                    unlockMessage = `<p class="text-xs ${isManual ? 'text-amber-600' : isUnlocked ? 'text-green-600' : 'text-gray-500'} mt-2 italic">${title.unlock_requirement}</p>`;
                 }
                 
                 html += `
@@ -343,7 +343,7 @@ function filterAndRenderTitles() {
                             ${title.description ? `<p class="text-xs ${isUnlocked ? 'text-gray-600' : 'text-gray-400'} mb-2 line-clamp-2">${title.description}</p>` : ''}
                             <div class="flex items-center justify-between mt-2">
                                 ${rarityBadge}
-                                ${title.unlock_method === 'manual' ? '' : title.cost_coins > 0 ? `<span class="text-xs ${isUnlocked ? 'text-gray-500' : 'text-gray-400'}">${title.cost_coins} coins</span>` : '<span class="text-xs text-green-600">Free</span>'}
+                                ${title.unlock_method === 'manual' ? '' : title.unlock_method === 'achievement' || title.unlock_method === 'both' ? '' : title.cost_coins > 0 ? `<span class="text-xs ${isUnlocked ? 'text-gray-500' : 'text-gray-400'}">${title.cost_coins} coins</span>` : '<span class="text-xs text-green-600">Free</span>'}
                             </div>
                             ${progressBar}
                             ${unlockMessage}
