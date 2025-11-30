@@ -106,13 +106,47 @@ def fetch_youtube_channel_data(channel_url: str) -> Dict[str, any]:
                 result['thumbnail'] = channel['snippet']['thumbnails'].get('high', {}).get('url', '')
                 return result
         
-        # For handles/usernames (including @2.0Transformers format), use search API
-        # This is more reliable for handles with special characters
-        search_url = 'https://www.googleapis.com/youtube/v3/search'
+        # For handles/usernames, try direct lookup first (most efficient - 1 API call, 1 quota unit)
         handle_name = channel_id.lstrip('@')
         
-        # Search for the exact handle/channel name
-        # Use the handle as the query, but also try to match exact channel handle
+        # Try direct handle lookup using forHandle parameter (standard YouTube API method)
+        # This is the most efficient method: 1 API call vs 2 API calls with search API
+        try:
+            direct_params = {
+                'part': 'snippet,statistics',
+                'forHandle': handle_name,
+                'key': api_key
+            }
+            direct_response = requests.get(api_url, params=direct_params, timeout=10)
+            
+            # If successful (200), we got the channel directly
+            if direct_response.status_code == 200:
+                direct_data = direct_response.json()
+                if direct_data.get('items'):
+                    channel = direct_data['items'][0]
+                    # Verify the customUrl matches exactly (safety check)
+                    full_custom_url = channel.get('snippet', {}).get('customUrl', '')
+                    expected_handle = f'@{handle_name}'.lower()
+                    actual_handle = full_custom_url.lower() if full_custom_url else ''
+                    
+                    # Exact match check - if forHandle worked, this should match
+                    if actual_handle == expected_handle or actual_handle == handle_name.lower():
+                        result['channel_name'] = channel['snippet']['title']
+                        result['subscriber_count'] = int(channel['statistics'].get('subscriberCount', 0))
+                        result['thumbnail'] = channel['snippet']['thumbnails'].get('high', {}).get('url', '')
+                        logger.info(f"Successfully fetched channel via forHandle: {handle_name} (1 API call)")
+                        return result
+                    else:
+                        # forHandle returned a channel but customUrl doesn't match - fall through to search
+                        logger.warning(f"forHandle returned channel but customUrl mismatch: expected '{expected_handle}' or '{handle_name.lower()}', got '{actual_handle}'")
+        except Exception as e:
+            # If forHandle fails (API error, not supported, etc.), fall back to search
+            logger.debug(f"forHandle lookup failed, using search API fallback: {str(e)}")
+        
+        # Fall back to search API method (only if forHandle didn't work)
+        # This costs 100 quota units, so we only use it when necessary
+        search_url = 'https://www.googleapis.com/youtube/v3/search'
+        
         search_params = {
             'part': 'snippet',
             'q': handle_name,
@@ -174,10 +208,19 @@ def fetch_youtube_channel_data(channel_url: str) -> Dict[str, any]:
                 # Check for title match (case-insensitive)
                 title_match = channel_title.lower() == handle_name.lower()
                 
-                # Check if handle is in customUrl
-                handle_in_url = (
-                    custom_url and handle_name.lower() in custom_url.lower()
-                )
+                # Check if handle is in customUrl (stricter: require handle at start/end, not just anywhere)
+                handle_in_url = False
+                if custom_url:
+                    custom_url_lower = custom_url.lower().lstrip('@')
+                    handle_lower = handle_name.lower()
+                    # Check if handle is at the start or exact match (more strict than just "in")
+                    handle_in_url = (
+                        custom_url_lower == handle_lower or
+                        custom_url_lower == f'@{handle_lower}' or
+                        custom_url_lower.startswith(handle_lower + '/') or
+                        custom_url_lower.startswith(handle_lower + '_') or
+                        custom_url_lower.startswith(handle_lower + '-')
+                    )
                 
                 if exact_handle_match or (title_match and handle_in_url):
                     exact_match = item
@@ -207,45 +250,62 @@ def fetch_youtube_channel_data(channel_url: str) -> Dict[str, any]:
                     # Double-check the customUrl from the full channel data
                     full_custom_url = channel.get('snippet', {}).get('customUrl', '')
                     
-                    # Verify this is the correct channel
+                    # Stricter verification - require exact match or handle at boundary
                     if full_custom_url:
                         expected_handle = f'@{handle_name}'.lower()
                         actual_handle = full_custom_url.lower()
-                        if expected_handle == actual_handle or handle_name.lower() in actual_handle:
+                        handle_lower = handle_name.lower()
+                        
+                        # Exact match or handle at start (more strict than "in")
+                        is_valid_match = (
+                            actual_handle == expected_handle or
+                            actual_handle == handle_lower or
+                            actual_handle.startswith(handle_lower + '/') or
+                            actual_handle.startswith(handle_lower + '_') or
+                            actual_handle.startswith(handle_lower + '-') or
+                            actual_handle == f'@{handle_lower}'
+                        )
+                        
+                        if is_valid_match:
                             result['channel_name'] = channel['snippet']['title']
                             result['subscriber_count'] = int(channel['statistics'].get('subscriberCount', 0))
                             result['thumbnail'] = channel['snippet']['thumbnails'].get('high', {}).get('url', '')
+                            logger.info(f"Successfully matched channel via search API: {handle_name} -> {full_custom_url}")
                             return result
                         else:
-                            logger.warning(f"Handle mismatch: expected '{expected_handle}', got '{actual_handle}'")
+                            logger.warning(f"Handle mismatch after verification: expected '{expected_handle}' or '{handle_lower}', got '{actual_handle}'")
+                            # Don't return here - continue to check other matches or fallback
                     else:
-                        # No customUrl, but we matched by title, so use it
-                        result['channel_name'] = channel['snippet']['title']
-                        result['subscriber_count'] = int(channel['statistics'].get('subscriberCount', 0))
-                        result['thumbnail'] = channel['snippet']['thumbnails'].get('high', {}).get('url', '')
-                        return result
+                        # No customUrl - only use if we had exact title match
+                        if exact_match and title_match:
+                            result['channel_name'] = channel['snippet']['title']
+                            result['subscriber_count'] = int(channel['statistics'].get('subscriberCount', 0))
+                            result['thumbnail'] = channel['snippet']['thumbnails'].get('high', {}).get('url', '')
+                            logger.info(f"Matched channel by title (no customUrl): {handle_name}")
+                            return result
             
-            # If no good match found, try first non-Topic result
-            for item in search_data['items']:
-                channel_title = item.get('snippet', {}).get('title', '')
-                if 'Topic' not in channel_title:
-                    channel_id_from_search = item['id']['channelId']
-                    params = {
-                        'part': 'snippet,statistics',
-                        'id': channel_id_from_search,
-                        'key': api_key
-                    }
-                    response = requests.get(api_url, params=params, timeout=10)
-                    response.raise_for_status()
-                    data = response.json()
-                    
-                    if data.get('items'):
-                        channel = data['items'][0]
-                        result['channel_name'] = channel['snippet']['title']
-                        result['subscriber_count'] = int(channel['statistics'].get('subscriberCount', 0))
-                        result['thumbnail'] = channel['snippet']['thumbnails'].get('high', {}).get('url', '')
-                        logger.warning(f"Using fallback result for handle '{handle_name}': {channel['snippet']['title']}")
-                        return result
+            # Fallback: try first non-Topic result only if no matches found above
+            if not exact_match and not best_match:
+                for item in search_data['items']:
+                    channel_title = item.get('snippet', {}).get('title', '')
+                    if 'Topic' not in channel_title:
+                        channel_id_from_search = item['id']['channelId']
+                        params = {
+                            'part': 'snippet,statistics',
+                            'id': channel_id_from_search,
+                            'key': api_key
+                        }
+                        response = requests.get(api_url, params=params, timeout=10)
+                        response.raise_for_status()
+                        data = response.json()
+                        
+                        if data.get('items'):
+                            channel = data['items'][0]
+                            result['channel_name'] = channel['snippet']['title']
+                            result['subscriber_count'] = int(channel['statistics'].get('subscriberCount', 0))
+                            result['thumbnail'] = channel['snippet']['thumbnails'].get('high', {}).get('url', '')
+                            logger.warning(f"Using fallback result for handle '{handle_name}': {channel['snippet']['title']}")
+                            return result
         
         result['error'] = f'Channel "{handle_name}" not found. Please verify the channel URL is correct.'
         
