@@ -2146,11 +2146,18 @@ def check_user_achievements(user):
                 
             elif title.achievement_type == 'total_points':
                 # Sum of all calculated_points from verified submissions (overall total)
-                total_points = EditSubmission.objects.filter(
+                total_points_result = EditSubmission.objects.filter(
                     user=user,
                     status='verified'
-                ).aggregate(Sum('calculated_points'))['calculated_points__sum'] or 0
-                qualifies = float(total_points) >= title.achievement_threshold
+                ).aggregate(Sum('calculated_points'))['calculated_points__sum']
+                
+                # Handle None case and convert to float for comparison
+                if total_points_result is None:
+                    total_points = 0.0
+                else:
+                    total_points = float(total_points_result)
+                
+                qualifies = total_points >= float(title.achievement_threshold)
                 
             elif title.achievement_type == 'points_per_edit':
                 # Points for a single edit - check if user has at least one edit with this many points
@@ -2237,11 +2244,16 @@ def get_user_achievement_progress(user, title):
             
         elif title.achievement_type == 'total_points':
             # Sum of all calculated_points from verified submissions (overall total)
-            total_points = EditSubmission.objects.filter(
+            total_points_result = EditSubmission.objects.filter(
                 user=user,
                 status='verified'
-            ).aggregate(Sum('calculated_points'))['calculated_points__sum'] or 0
-            current_value = float(total_points)
+            ).aggregate(Sum('calculated_points'))['calculated_points__sum']
+            
+            # Handle None case and convert to float
+            if total_points_result is None:
+                current_value = 0.0
+            else:
+                current_value = float(total_points_result)
             
         elif title.achievement_type == 'points_per_edit':
             # Points for a single edit - get the maximum points from any single edit
