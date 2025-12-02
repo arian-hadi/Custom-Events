@@ -824,10 +824,38 @@ def get_youtube_channel_id_from_link(channel_link: str) -> Optional[str]:
     if not api_key:
         return None
     
+    handle_name = channel_id_or_handle.lstrip('@')
+    
     try:
-        # Use search API to find channel
+        # Try direct handle lookup using forHandle parameter first (most efficient)
+        api_url = 'https://www.googleapis.com/youtube/v3/channels'
+        try:
+            direct_params = {
+                'part': 'snippet',
+                'forHandle': handle_name,
+                'key': api_key
+            }
+            direct_response = requests.get(api_url, params=direct_params, timeout=10)
+            
+            if direct_response.status_code == 200:
+                direct_data = direct_response.json()
+                if direct_data.get('items'):
+                    channel = direct_data['items'][0]
+                    # Verify the customUrl matches exactly
+                    full_custom_url = channel.get('snippet', {}).get('customUrl', '')
+                    expected_handle = f'@{handle_name}'.lower()
+                    actual_handle = full_custom_url.lower() if full_custom_url else ''
+                    
+                    # Exact match check
+                    if actual_handle == expected_handle or actual_handle == handle_name.lower():
+                        return channel['id']
+                    else:
+                        logger.warning(f"forHandle returned channel but customUrl mismatch: expected '{expected_handle}', got '{actual_handle}'")
+        except Exception as e:
+            logger.debug(f"forHandle lookup failed, using search API fallback: {str(e)}")
+        
+        # Fall back to search API method (only if forHandle didn't work)
         search_url = 'https://www.googleapis.com/youtube/v3/search'
-        handle_name = channel_id_or_handle.lstrip('@')
         search_params = {
             'part': 'snippet',
             'q': handle_name,
@@ -840,13 +868,31 @@ def get_youtube_channel_id_from_link(channel_link: str) -> Optional[str]:
         search_data = search_response.json()
         
         if search_data.get('items'):
-            # Find exact match by customUrl
+            # Find exact match by customUrl (stricter matching)
             for item in search_data['items']:
                 channel_id = item['id']['channelId']
                 custom_url = item['snippet'].get('customUrl', '')
-                if custom_url and handle_name.lower() in custom_url.lower().lstrip('@'):
-                    return channel_id
-            # If no exact match, return first non-topic channel
+                channel_title = item['snippet'].get('title', '')
+                
+                # Skip Topic channels
+                if 'Topic' in channel_title:
+                    continue
+                
+                if custom_url:
+                    custom_url_lower = custom_url.lower().lstrip('@')
+                    handle_lower = handle_name.lower()
+                    # Stricter: exact match or handle at start (not just "in")
+                    exact_match = (
+                        custom_url_lower == handle_lower or
+                        custom_url_lower == f'@{handle_lower}' or
+                        custom_url_lower.startswith(handle_lower + '/') or
+                        custom_url_lower.startswith(handle_lower + '_') or
+                        custom_url_lower.startswith(handle_lower + '-')
+                    )
+                    if exact_match:
+                        return channel_id
+            
+            # If no exact match, return first non-topic channel (fallback)
             for item in search_data['items']:
                 if 'Topic' not in item['snippet'].get('title', ''):
                     return item['id']['channelId']
