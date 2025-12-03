@@ -12,6 +12,16 @@
     <meta property="og:url" content="https://20transformers.com">
     <meta property="og:type" content="website">
 
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-D5129E7XFE"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-D5129E7XFE');
+    </script>
+
     <title>{% block title %}2.0Transformers{% endblock %}</title>
     {% if site_logo and site_logo.favicon %}
     <link rel="shortcut icon" href="{{ site_logo.favicon.url }}" type="image/x-icon">
