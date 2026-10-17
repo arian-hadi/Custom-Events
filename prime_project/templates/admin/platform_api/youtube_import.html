@@ -1,0 +1,10 @@
+{% extends "admin/base_site.html" %}
+{% block breadcrumbs %}<div class="breadcrumbs"><a href="{% url 'admin:index' %}">Home</a> › <a href="{% url 'admin:platform_api_youtubeblogvideo_changelist' %}">YouTube → Blog</a> › <a href="{% url 'admin:platform_api_youtubeblogvideo_change' original.pk %}">{{ original.title }}</a> › Import Markdown</div>{% endblock %}
+{% block content %}
+<div class="module aligned editorial-actions"><h2>Review your AI-written article</h2><p>Upload the returned .md file or paste its text. The preview shows sanitized article content. Importing creates or updates a draft; it never publishes or replaces a published post.</p>
+<form method="post" enctype="multipart/form-data">{% csrf_token %}{{ form.as_p }}
+<button type="submit" name="action" value="preview">Preview article</button>
+{% if preview %}<button type="submit" name="action" value="import">Import as draft</button>{% endif %}
+</form></div>
+{% if preview %}<section class="module editorial-actions"><h2>Article preview</h2><h3>{{ preview.title }}</h3><p>{{ preview.category }}</p><p>{{ preview.excerpt }}</p><div class="editorial-preview">{{ preview.html|safe }}</div></section>{% endif %}
+{% endblock %}

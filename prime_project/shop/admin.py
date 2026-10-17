@@ -4,8 +4,25 @@ from django import forms
 from django_summernote.admin import SummernoteModelAdmin  # Uncomment after rebuilding container
 from django_ckeditor_5.widgets import CKEditor5Widget
 from django.db import models
-from .models import Product, SiteLogo
+from .models import Product, SiteLogo, FeaturedShopRequest
 from core.validators import MAX_IMAGE_FILE_SIZE_MB, validate_file_size, MAX_CHANNEL_SCREENSHOT_SIZE_MB
+
+
+@admin.register(FeaturedShopRequest)
+class FeaturedShopRequestAdmin(admin.ModelAdmin):
+    list_display = ('title', 'sort_order', 'is_active', 'is_placeholder', 'updated_at')
+    list_editable = ('sort_order', 'is_active')
+    list_filter = ('is_active', 'is_placeholder')
+    search_fields = ('title', 'description')
+    readonly_fields = ('updated_at',)
+    fieldsets = (
+        ('Card content', {'fields': ('title', 'description', 'details', 'image', 'icon', 'badge', 'price_label', 'turnaround')}),
+        ('Buy Me a Coffee', {
+            'fields': ('purchase_url', 'button_label', 'is_placeholder', 'placeholder_label'),
+            'description': 'Start with placeholder mode enabled. Add your listing URL, review the card copy, then disable placeholder mode to enable purchases.',
+        }),
+        ('Display', {'fields': ('is_active', 'sort_order', 'updated_at')}),
+    )
 
 
 class ProductAdminForm(forms.ModelForm):
@@ -35,6 +52,17 @@ class ProductAdminForm(forms.ModelForm):
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):  # Temporarily use ModelAdmin until container is rebuilt
     form = ProductAdminForm
+
+    def has_change_permission(self, request, obj=None):
+        if obj is not None and hasattr(obj, "amazon_source"):
+            return False
+        return super().has_change_permission(request, obj)
+
+    def has_delete_permission(self, request, obj=None):
+        if obj is not None and hasattr(obj, "amazon_source"):
+            return False
+        return super().has_delete_permission(request, obj)
+
     list_display = (
         'name', 
         'category', 
@@ -245,3 +273,9 @@ class SiteLogoAdmin(admin.ModelAdmin):
     def get_queryset(self, request):
         """Highlight the active logo in the list."""
         return super().get_queryset(request)
+
+
+from . import payment_admin  # noqa: E402,F401
+
+
+from . import amazon_admin  # noqa: E402,F401

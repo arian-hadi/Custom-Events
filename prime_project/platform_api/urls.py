@@ -1,0 +1,43 @@
+from django.urls import include, path
+
+from . import views, league_views, member_views, editor_views, activity_views, league_preview_views
+
+app_name = "platform_api"
+urlpatterns = [
+    path('member/', include('platform_api.profile_urls')),
+    path('applications/<int:application_id>/', activity_views.event_application, name='event-application-detail'),
+    path('member/edits/', activity_views.earlier_edits, name='earlier-edits'),
+    path('member/edits/<int:edit_id>/', activity_views.earlier_edit, name='earlier-edit'),
+    path('editor-applications/', editor_views.applications, name='editor-applications'),
+    path('editor-applications/<int:application_id>/', editor_views.detail, name='editor-application-detail'),
+    path('editor-applications/<int:application_id>/<str:operation>/', editor_views.action, name='editor-application-action'),
+    path('member/dashboard/', member_views.dashboard, name='member-dashboard'),
+    path('league/status/', league_views.status, name='league-status'),
+    path('league/preview/', league_preview_views.preview, name='league-preview'),
+    path('league/rounds/', league_views.rounds, name='league-rounds'),
+    path('league/standings/', league_views.standings, name='league-standings'),
+    path('league/winners/', league_views.winners, name='league-winners'),
+    path('league/entries/me/', league_views.own_entries, name='league-own-entries'),
+    path('league/entries/', league_views.submit_entry, name='league-submit'),
+    path('league/entries/<int:entry_id>/replace/', league_views.replace_entry, name='league-replace'),
+    path('league/entries/<int:entry_id>/withdraw/', league_views.withdraw_entry, name='league-withdraw'),
+    path("site/", views.site, name="site"),
+    path("products/", views.products, name="products"),
+    path("shop/featured-requests/", views.featured_shop_requests, name="featured-shop-requests"),
+    path("products/<int:product_id>/", views.product_detail, name="product-detail"),
+    path("products/<int:product_id>/favorite/", views.product_favorite, name="product-favorite"),
+    path("favorites/", views.favorites, name="favorites"),
+    path("blog/", views.blog, name="blog"),
+    path("blog/<slug:slug>/", views.blog_detail, name="blog-detail"),
+    path("announcements/", views.announcements, name="announcements"),
+    path("events/", views.events, name="events"),
+    path("events/<int:event_id>/", views.event_detail, name="event-detail"),
+    path("events/<int:event_id>/apply/", views.event_apply, name="event-apply"),
+    path("applications/", views.applications, name="applications"),
+    path("applications/<int:application_id>/withdraw/", views.application_withdraw, name="application-withdraw"),
+    path("notifications/", views.notifications, name="notifications"),
+    path("notifications/read-all/", views.notifications_read_all, name="notifications-read-all"),
+    path("notifications/<int:notification_id>/read/", views.notification_read, name="notification-read"),
+    path("notification-preferences/", views.notification_preferences, name="notification-preferences"),
+    path("contact/", views.contact, name="contact"),
+]

@@ -1,0 +1,303 @@
+# Standalone V2 staging: NEVER combine with the local development overlay.
+# Migration, audit and workers require explicit service/profile selection.
+# No existing V1 volume, network, container name or public port is reused.
+name: platform-v2-staging
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${STAGING_DB_NAME:-platform_v2_staging}
+      POSTGRES_USER: ${STAGING_DB_USER:-platform_v2_staging}
+      POSTGRES_PASSWORD: ${STAGING_DB_PASSWORD:?Set STAGING_DB_PASSWORD}
+    volumes:
+    - staging_postgres:/var/lib/postgresql/data
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+  mailpit:
+    image: axllent/mailpit:v1.27
+    ports:
+    - 127.0.0.1:${STAGING_MAILPIT_PORT:-8027}:8025
+    restart: unless-stopped
+  migrate:
+    image: platform-v2-staging-backend:${STAGING_IMAGE_TAG:-candidate}
+    build: &id001
+      context: ./prime_project
+      dockerfile: Dockerfile.v2
+    environment: &id002
+      DJANGO_SETTINGS_MODULE: prime_project.settings_v2_staging
+      DJANGO_READ_ENV_FILE: 'False'
+      STAGING_SECRET_KEY: ${STAGING_SECRET_KEY:?Set a fresh STAGING_SECRET_KEY}
+      STAGING_PUBLIC_URL: ${STAGING_PUBLIC_URL:?Set STAGING_PUBLIC_URL}
+      STAGING_ALLOW_HTTP: ${STAGING_ALLOW_HTTP:-False}
+      DEBUG: 'False'
+      DATABASE_URL: postgres://${STAGING_DB_USER:-platform_v2_staging}:${STAGING_DB_PASSWORD:?Set
+        STAGING_DB_PASSWORD}@db:5432/${STAGING_DB_NAME:-platform_v2_staging}
+      ENABLE_EDITHUB_SCHEDULER: 'False'
+      V2_TRUST_GATEWAY_ADDRESS: 'True'
+      EMAIL_BACKEND: django.core.mail.backends.smtp.EmailBackend
+      EMAIL_HOST: mailpit
+      EMAIL_PORT: '1025'
+      ADMIN_EMAIL_SEND_IMMEDIATELY: 'True'
+      STRIPE_ALLOW_LIVE_PAYMENTS: 'False'
+      LEAGUE_ENABLED: ${LEAGUE_ENABLED:-False}
+      MEMBER_EMAIL_ENABLED: ${MEMBER_EMAIL_ENABLED:-False}
+      MEMBER_ACTIVITY_EMAIL_ENABLED: ${MEMBER_ACTIVITY_EMAIL_ENABLED:-False}
+      STRIPE_CHECKOUT_ENABLED: ${STRIPE_CHECKOUT_ENABLED:-False}
+      AMAZON_AUTOMATION_ENABLED: ${AMAZON_AUTOMATION_ENABLED:-False}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      GOOGLE_OAUTH_CLIENT_ID: ${GOOGLE_OAUTH_CLIENT_ID:-}
+      GOOGLE_OAUTH_CLIENT_SECRET: ${GOOGLE_OAUTH_CLIENT_SECRET:-}
+      GOOGLE_OAUTH_REDIRECT_URI: ${GOOGLE_OAUTH_REDIRECT_URI:-}
+      YOUTUBE_API_KEY: ${YOUTUBE_API_KEY:-}
+      LEAGUE_YOUTUBE_API_KEY: ${LEAGUE_YOUTUBE_API_KEY:-}
+      LEAGUE_PROVIDER_CREDENTIALS_FILE: ${LEAGUE_PROVIDER_CREDENTIALS_FILE:-}
+      YOUTUBE_BLOG_CREDENTIALS_FILE: ${YOUTUBE_BLOG_CREDENTIALS_FILE:-}
+      RECAPTCHA_SITE_KEY: ${RECAPTCHA_SITE_KEY:-}
+      RECAPTCHA_SECRET_KEY: ${RECAPTCHA_SECRET_KEY:-}
+      AMAZON_CREATORS_CLIENT_ID: ${AMAZON_CREATORS_CLIENT_ID:-}
+      AMAZON_CREATORS_CLIENT_SECRET: ${AMAZON_CREATORS_CLIENT_SECRET:-}
+      AMAZON_PARTNER_TAG: ${AMAZON_PARTNER_TAG:-}
+      AMAZON_CREATORS_CREDENTIAL_VERSION: ${AMAZON_CREATORS_CREDENTIAL_VERSION:-3.1}
+      AMAZON_MARKETPLACE: ${AMAZON_MARKETPLACE:-www.amazon.com}
+    volumes: &id003
+    - staging_static:/app/staticfiles
+    - staging_media:/app/mediafiles
+    - ${STAGING_SECRETS_DIR:-./.staging-v2/secrets}:/run/v2-secrets:ro
+    profiles:
+    - migration
+    command:
+    - python
+    - v2_initialize.py
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: 'no'
+  backend:
+    image: platform-v2-staging-backend:${STAGING_IMAGE_TAG:-candidate}
+    build: *id001
+    environment: *id002
+    volumes: *id003
+    command:
+    - gunicorn
+    - prime_project.wsgi:application
+    - --bind
+    - 0.0.0.0:8000
+    - --workers
+    - '1'
+    - --threads
+    - '4'
+    - --timeout
+    - '60'
+    - --access-logfile
+    - '-'
+    depends_on:
+      db:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import os,urllib.request; from urllib.parse import urlsplit; urllib.request.urlopen(urllib.request.Request('http://127.0.0.1:8000/api/v2/site/',
+        headers={'Host':'localhost','X-Forwarded-Proto':urlsplit(os.environ['STAGING_PUBLIC_URL']).scheme}),timeout=5)
+      interval: 10s
+      timeout: 6s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+  frontend:
+    image: platform-v2-staging-frontend:${STAGING_IMAGE_TAG:-candidate}
+    build:
+      context: ./New_Frontend
+      args:
+        BACKEND_INTERNAL_URL: http://backend:8000
+    environment:
+      NODE_ENV: production
+      NEXT_TELEMETRY_DISABLED: '1'
+      HOSTNAME: 0.0.0.0
+      PORT: '3000'
+      BACKEND_INTERNAL_URL: http://backend:8000
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test:
+      - CMD
+      - node
+      - -e
+      - fetch('http://127.0.0.1:3000').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+  jobs-email:
+    image: platform-v2-staging-backend:${STAGING_IMAGE_TAG:-candidate}
+    build: *id001
+    environment: *id002
+    volumes: *id003
+    profiles:
+    - jobs
+    init: true
+    command:
+    - python
+    - v2_worker.py
+    - member-email
+    - --interval
+    - ${V2_EMAIL_INTERVAL_SECONDS:-60}
+    - --timeout
+    - ${V2_JOB_TIMEOUT_SECONDS:-600}
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    stop_grace_period: 30s
+    healthcheck: &id004
+      test:
+      - CMD
+      - python
+      - v2_worker.py
+      - healthcheck
+      - --heartbeat-file
+      - /tmp/v2-worker.json
+      - --max-age
+      - '45'
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+  jobs-admin-email:
+    image: platform-v2-staging-backend:${STAGING_IMAGE_TAG:-candidate}
+    build: *id001
+    environment: *id002
+    volumes: *id003
+    profiles:
+    - jobs
+    init: true
+    command:
+    - python
+    - v2_worker.py
+    - admin-email
+    - --interval
+    - ${V2_ADMIN_EMAIL_INTERVAL_SECONDS:-60}
+    - --timeout
+    - ${V2_JOB_TIMEOUT_SECONDS:-600}
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    stop_grace_period: 30s
+    healthcheck: *id004
+  jobs-amazon:
+    image: platform-v2-staging-backend:${STAGING_IMAGE_TAG:-candidate}
+    build: *id001
+    environment: *id002
+    volumes: *id003
+    profiles:
+    - jobs
+    init: true
+    command:
+    - python
+    - v2_worker.py
+    - amazon
+    - --interval
+    - ${V2_AMAZON_INTERVAL_SECONDS:-900}
+    - --timeout
+    - ${V2_JOB_TIMEOUT_SECONDS:-600}
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    stop_grace_period: 30s
+    healthcheck: *id004
+  jobs-league:
+    image: platform-v2-staging-backend:${STAGING_IMAGE_TAG:-candidate}
+    build: *id001
+    environment: *id002
+    volumes: *id003
+    profiles:
+    - jobs
+    init: true
+    command:
+    - python
+    - v2_worker.py
+    - league
+    - --interval
+    - ${V2_LEAGUE_INTERVAL_SECONDS:-60}
+    - --timeout
+    - ${V2_JOB_TIMEOUT_SECONDS:-600}
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    stop_grace_period: 30s
+    healthcheck: *id004
+  jobs-youtube-blog:
+    image: platform-v2-staging-backend:${STAGING_IMAGE_TAG:-candidate}
+    build: *id001
+    environment: *id002
+    volumes: *id003
+    profiles:
+    - jobs
+    init: true
+    command:
+    - python
+    - v2_worker.py
+    - youtube-blog
+    - --interval
+    - ${V2_YOUTUBE_BLOG_INTERVAL_SECONDS:-300}
+    - --timeout
+    - ${V2_JOB_TIMEOUT_SECONDS:-600}
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    stop_grace_period: 30s
+    healthcheck: *id004
+  gateway:
+    image: nginx:1.28-alpine
+    environment:
+      STAGING_PUBLIC_URL: ${STAGING_PUBLIC_URL:?Set STAGING_PUBLIC_URL}
+    ports:
+    - ${STAGING_BIND_ADDRESS:-127.0.0.1}:${STAGING_PORT:-8083}:80
+    volumes:
+    - ./deploy/staging/nginx.conf.template:/etc/nginx/templates/default.conf.template:ro
+    - staging_static:/app/staticfiles:ro
+    - staging_media:/app/mediafiles:ro
+    depends_on:
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
+    restart: unless-stopped
+  audit:
+    image: platform-v2-staging-backend:${STAGING_IMAGE_TAG:-candidate}
+    build: *id001
+    environment: *id002
+    volumes:
+    - staging_media:/app/mediafiles:ro
+    - ./scripts:/tools:ro
+    - ${STAGING_AUDIT_DIR:-./.staging-v2/audit}:/audit
+    profiles:
+    - tools
+    command:
+    - python
+    - /tools/staging_data_manifest.py
+    - --help
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: 'no'
+volumes:
+  staging_postgres: null
+  staging_static: null
+  staging_media: null

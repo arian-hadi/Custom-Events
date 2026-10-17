@@ -1259,3 +1259,5 @@ def check_achievements_on_submission_update(sender, instance, created, **kwargs)
                     logger.info(f"User {instance.user.username} unlocked {len(unlocked)} title(s) after submission update")
         except Exception as e:
             logger.error(f"Error checking achievements for user {instance.user.username} after submission update: {str(e)}")
+# Additive V2 league models; legacy signals above remain bound to legacy classes.
+from .league_models import (LeagueSettings, LeagueSeason, ScoringVersion, CompetitionWeek, CompetitionEntry, MetricSnapshot, LeagueHistorySync, EntryBaseline, WeeklyRevision, WeeklyResult, LeaguePointsAward, MonthlyAward, SeasonAward)

@@ -1,0 +1,26 @@
+FROM python:3.12-slim-bookworm AS builder
+ENV PIP_DISABLE_PIP_VERSION_CHECK=1
+RUN apt-get update && apt-get install -y --no-install-recommends gcc libc6-dev libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+WORKDIR /build
+COPY requirements.txt .
+RUN pip wheel --no-cache-dir --wheel-dir /wheels -r requirements.txt
+
+FROM python:3.12-slim-bookworm AS runtime
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PIP_DISABLE_PIP_VERSION_CHECK=1 PLAYWRIGHT_BROWSERS_PATH=/opt/playwright
+RUN apt-get update && apt-get install -y --no-install-recommends libpq5 \
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd --gid 10001 app && useradd --uid 10001 --gid app --create-home app
+WORKDIR /app
+COPY --from=builder /wheels /wheels
+RUN pip install --no-cache-dir /wheels/* && rm -rf /wheels
+# Existing editor-application tools use Chromium; install it where the non-root
+# runtime user can read it, outside the development source mount.
+RUN python -m playwright install --with-deps chromium \
+    && chmod -R a+rX /opt/playwright \
+    && rm -rf /var/lib/apt/lists/*
+COPY --chown=app:app . .
+RUN mkdir -p /app/staticfiles /app/mediafiles && chown -R app:app /app/staticfiles /app/mediafiles
+USER app
+EXPOSE 8000
+CMD ["gunicorn", "prime_project.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "1", "--threads", "4"]

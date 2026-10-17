@@ -3,6 +3,21 @@ from django.core.exceptions import ValidationError
 from .models import EditorApplication, EditSubmission, EditReport
 from .utils import validate_channel_url
 from core.validators import validate_file_size, MAX_CHANNEL_SCREENSHOT_SIZE_MB
+from .application_policy import active_application, activates_application, SINGLE_CHANNEL_MESSAGE
+
+
+class EditorApplicationAdminForm(forms.ModelForm):
+    class Meta:
+        model = EditorApplication
+        fields = '__all__'
+
+    def clean(self):
+        data = super().clean()
+        user = data.get('user')
+        if (user and activates_application(self.instance, user, data.get('status'), data.get('removal_requested'))
+                and active_application(user, exclude_id=self.instance.pk)):
+            raise forms.ValidationError(SINGLE_CHANNEL_MESSAGE)
+        return data
 
 
 class EditorApplicationForm(forms.ModelForm):

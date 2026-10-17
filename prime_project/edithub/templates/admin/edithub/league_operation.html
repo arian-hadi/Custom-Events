@@ -1,0 +1,41 @@
+{% extends "admin/base_site.html" %}
+{% block breadcrumbs %}
+<div class="breadcrumbs"><a href="{% url 'admin:index' %}">Home</a> &rsaquo; <a href="{% url 'admin:edithub_competitionweek_changelist' %}">League rounds</a> &rsaquo; {{ title }}</div>
+{% endblock %}
+{% block content %}
+<p>All round dates and deadlines use UTC. Scheduling does not enable the public league or run provider requests.</p>
+{% if not league_enabled %}<p class="warning">The public league and automatic worker are disabled by LEAGUE_ENABLED. Staff operations are available for preparation; activation still requires confirmed rules and calibration.</p>{% endif %}
+{% if week %}
+<div class="module"><h2>Round readiness</h2>
+<table><tbody>
+<tr><th>Scoring version</th><td><a href="{% url 'admin:edithub_scoringversion_change' week.scoring_version_id %}">{{ week.scoring_version }}</a></td></tr>
+<tr><th>Readiness</th><td>{{ readiness }}</td></tr>
+<tr><th>Window (UTC)</th><td>{{ week.start_at|date:"c" }} &ndash; {{ week.cutoff_at|date:"c" }} (cutoff excluded)</td></tr>
+<tr><th>Friday / season attribution</th><td>{{ week.scoring_date }} / {{ week.season.year }}</td></tr>
+<tr><th>State / metric data</th><td>{{ week.state }} / {{ week.data_status }}</td></tr>
+<tr><th>Current result revision</th><td>{{ week.current_revision }}</td></tr>
+</tbody></table>
+<p><a href="{{ entries_url }}">Review entries and IDs</a> &middot; <a href="{{ snapshots_url }}">Inspect collected snapshots and IDs</a></p></div>
+{% endif %}
+{% if form %}
+<form method="post">{% csrf_token %}
+<fieldset class="module aligned"><h2>{% if week %}Explicit round operation{% else %}Round schedule{% endif %}</h2>
+{{ form.as_p }}
+</fieldset><div class="submit-row"><input type="submit" class="default" value="{{ submit_label }}"></div>
+</form>
+{% else %}<p>You can inspect this round. A league administrator with round change permission can run operations.</p>{% endif %}
+{% if week %}
+<div class="module"><h2>Current results</h2><table>
+<thead><tr><th>Entry</th><th>Editor</th><th>Position</th><th>Score</th><th>League points</th><th>Snapshot</th></tr></thead>
+<tbody>{% for result in results %}<tr>
+<td><a href="{% url 'admin:edithub_competitionentry_change' result.entry_id %}">#{{ result.entry_id }} {{ result.entry.title }}</a></td>
+<td>{{ result.entry.editor.username }}</td><td>{{ result.placement|default_if_none:"—" }}</td>
+<td>{{ result.weekly_score }}</td><td>{{ result.league_points }}</td>
+<td>{% if result.snapshot_id %}<a href="{% url 'admin:edithub_metricsnapshot_change' result.snapshot_id %}">#{{ result.snapshot_id }}</a>{% else %}—{% endif %}</td>
+</tr>{% empty %}<tr><td colspan="6">No frozen results yet. Missing closing data remains pending until a valid audited decision is possible.</td></tr>{% endfor %}</tbody></table></div>
+<div class="module"><h2>Revision history</h2><table>
+<thead><tr><th>Revision</th><th>State</th><th>Administrator</th><th>Reason</th><th>Created</th></tr></thead>
+<tbody>{% for revision in revisions %}<tr><td><a href="{% url 'admin:edithub_weeklyrevision_change' revision.pk %}">{{ revision.number }}</a></td><td>{{ revision.state }}</td><td>{{ revision.actor|default_if_none:"Scheduled service" }}</td><td>{{ revision.reason|default:"Initial result" }}</td><td>{{ revision.created_at|date:"c" }}</td></tr>
+{% empty %}<tr><td colspan="5">No result revisions recorded.</td></tr>{% endfor %}</tbody></table></div>
+{% endif %}
+{% endblock %}

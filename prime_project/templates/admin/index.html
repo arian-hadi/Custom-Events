@@ -1,0 +1,81 @@
+{% extends "admin/base_site.html" %}
+{% load i18n log platform_admin %}
+
+{% block coltype %}colM{% endblock %}
+{% block bodyclass %}{{ block.super }} control-dashboard{% endblock %}
+{% block nav-breadcrumbs %}{% endblock %}
+{% block nav-sidebar %}{% endblock %}
+{% block content_title %}{% endblock %}
+{% block sidebar %}{% endblock %}
+
+{% block content %}
+{% admin_workspace app_list as workspace %}
+<div class="control-overview">
+  <header class="control-intro">
+    <div>
+      <p class="control-eyebrow">YOUR COMMUNITY, IN FOCUS</p>
+      <h1>{% if app_label %}Manage {{ app_list.0.name }}{% else %}Control center{% endif %}</h1>
+      <p>Content, competitions and your community. Everything you manage, in one place.</p>
+    </div>
+    <div class="control-workspace-label"><span aria-hidden="true"></span> Staff workspace</div>
+  </header>
+
+  {% if workspace.actions %}
+  <section class="control-quick-section" aria-labelledby="control-quick-title">
+    <h2 id="control-quick-title">Quick actions</h2>
+    <div class="control-quick-actions">
+      {% for action in workspace.actions %}
+      <a class="control-quick-action" href="{{ action.url }}"><span><strong>{{ action.title }}</strong><small>{{ action.description }}</small></span><span aria-hidden="true">↗</span></a>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  <div class="control-workspace-layout">
+    <section class="control-sections" aria-labelledby="control-sections-title">
+      <div class="control-section-toolbar">
+        <div><h2 id="control-sections-title">Your workspace</h2><p>{{ workspace.module_count }} available module{{ workspace.module_count|pluralize }}</p></div>
+        <div class="control-search" hidden data-control-search>
+          <label for="control-module-search">Find a module</label>
+          <input type="search" id="control-module-search" placeholder="Search products, emails, results…" autocomplete="off">
+        </div>
+      </div>
+      <div class="control-section-grid">
+        {% for section in workspace.groups %}
+        <section class="control-section-card" data-control-section>
+          <header><span class="control-section-number" aria-hidden="true">{{ section.number }}</span><div><h3>{{ section.title }}</h3><p>{{ section.description }}</p></div></header>
+          <ul>
+            {% for model in section.models %}
+            <li data-control-module data-search-label="{{ model.name }} {{ model.app_name }} {{ section.title }}">
+              {% if model.admin_url %}<a class="control-module-link" href="{{ model.admin_url }}">{{ model.name }}<span aria-hidden="true">›</span></a>{% else %}<span class="control-module-name">{{ model.name }}</span>{% endif %}
+              {% if model.add_url %}<a class="control-module-add" href="{{ model.add_url }}" aria-label="Add {{ model.name }}">+</a>{% endif %}
+            </li>
+            {% endfor %}
+          </ul>
+        </section>
+        {% empty %}<p class="control-empty">You do not have access to any modules yet. Ask an administrator to grant the permissions you need.</p>{% endfor %}
+      </div>
+      <p class="control-empty" data-control-no-results hidden role="status">No matching modules. Try another name.</p>
+    </section>
+    {% if not app_label %}
+    <aside class="control-activity" aria-labelledby="control-activity-title">
+      <p class="control-eyebrow">ACTIVITY LOG</p>
+      <h2 id="control-activity-title">Your recent actions</h2>
+      <p class="control-activity-intro">Changes made with your account.</p>
+      {% get_admin_log 8 as admin_log for_user user %}
+      {% if admin_log %}
+      <ol>
+      {% for entry in admin_log %}
+        <li>
+          <span class="control-action-type">{% if entry.is_addition %}Created{% elif entry.is_deletion %}Deleted{% else %}Updated{% endif %}</span>
+          {% if entry.is_deletion or not entry.get_admin_url %}<strong>{{ entry.object_repr }}</strong>{% else %}<a href="{{ entry.get_admin_url }}">{{ entry.object_repr }}</a>{% endif %}
+          <small>{{ entry.content_type.name|capfirst }} · {{ entry.action_time|date:"M j, H:i" }}</small>
+        </li>
+      {% endfor %}
+      </ol>
+      {% else %}<div class="control-activity-empty"><span aria-hidden="true">↗</span><p>Your changes will appear here as you work.</p></div>{% endif %}
+    </aside>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

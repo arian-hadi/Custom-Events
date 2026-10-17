@@ -1,0 +1,55 @@
+# Use the configured public origin, not client-supplied forwarded headers.
+# When configured for HTTPS this gateway must remain behind its trusted TLS proxy.
+map "${STAGING_PUBLIC_URL}" $staging_public_scheme {
+    ~^https:// https;
+    default http;
+}
+
+server {
+    listen 80;
+    server_name _;
+    client_max_body_size 10m;
+    add_header X-Robots-Tag "noindex, nofollow, noarchive" always;
+
+    # $http_host preserves the public staging port for Django's CSRF checks.
+    proxy_set_header Host $http_host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $remote_addr;
+    proxy_set_header X-Forwarded-Proto $staging_public_scheme;
+    proxy_http_version 1.1;
+
+    location /static/ {
+        alias /app/staticfiles/;
+        add_header X-Content-Type-Options nosniff always;
+        add_header X-Robots-Tag "noindex, nofollow, noarchive" always;
+    }
+
+    location /media/ {
+        alias /app/mediafiles/;
+        add_header X-Content-Type-Options nosniff always;
+        add_header X-Robots-Tag "noindex, nofollow, noarchive" always;
+        # User-supplied HTML/SVG documents must not execute in our origin.
+        add_header Content-Security-Policy "default-src 'none'; sandbox" always;
+    }
+
+    # Preserve legacy administration/account tools alongside the new website.
+    location ~ ^/(api|admin|accounts|dashboard|summernote|ckeditor5|editinghub|announcements|shop|terms|privacy|about|disclaimers|legacy)(/|$) {
+        proxy_pass http://backend:8000;
+        proxy_read_timeout 60s;
+    }
+
+    # The new /notifications and /events pages belong to Next.js, while legacy
+    # dashboard actions keep their existing Django URLs.
+    location ~ ^/notifications/(api|unread-count|mark-all-read|[0-9]+/(read|delete))(/|$) {
+        proxy_pass http://backend:8000;
+    }
+
+    location ~ ^/events/(events|create|add-fields|finish)(/|$) {
+        proxy_pass http://backend:8000;
+    }
+
+    location / {
+        proxy_pass http://frontend:3000;
+        proxy_read_timeout 60s;
+    }
+}

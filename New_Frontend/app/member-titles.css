@@ -1,0 +1,22 @@
+/* Sweep/gradient text inspired by React Bits' Shiny Text and Gradient Text.
+   Native CSS implementation; no animation package or runtime dependency. */
+.v2-editor-title { display: inline-block; width: fit-content; max-width: 100%; font-size: .82em; font-weight: 600; line-height: 1.6; overflow-wrap: anywhere; color: #b9bac6; }
+.v2-editor-title--rare { color: #8dc8f8; }
+.v2-editor-title--epic { color: #dcadff; }
+.v2-editor-title--legendary { color: #f5cf70; font-weight: 700; }
+@supports (background-clip: text) or (-webkit-background-clip: text) {
+  .v2-editor-title--legendary { background: linear-gradient(110deg, #dba83b 0%, #f6d982 35%, #fff9d6 46%, #fff 50%, #fff9d6 54%, #edc45c 65%, #dba83b 100%); background-size: 250% 100%; background-clip: text; -webkit-background-clip: text; color: transparent; animation: v2-title-shine 4.5s ease-in-out infinite; }
+  .v2-editor-title--epic { background: linear-gradient(100deg, #bb85f5, #efd5ff, #b587f6, #dbabff); background-size: 200% 100%; background-clip: text; -webkit-background-clip: text; color: transparent; animation: v2-title-gradient 7s ease-in-out infinite alternate; }
+}
+.v2-title-preview { border: 1px solid var(--line); background: var(--surface, #101013); border-radius: 8px; padding: 12px 16px; }
+.v2-title-preview .v2-editor-title { font-size: 16px; }
+.v2-league-editor-identity .v2-editor-title { display: block; margin-top: 3px; font-size: 12px; }
+.v2-league-winner > .v2-editor-title { margin-bottom: 10px; font-size: 15px; }
+@keyframes v2-title-shine { 0%, 15% { background-position: 100% 50%; } 70%, 100% { background-position: 0% 50%; } }
+@keyframes v2-title-gradient { from { background-position: 0% 50%; } to { background-position: 100% 50%; } }
+@media (prefers-reduced-motion: reduce) {
+  .v2-editor-title--legendary, .v2-editor-title--epic { animation: none !important; background-position: 50% 50%; }
+}
+@media (forced-colors: active) {
+  .v2-editor-title { color: CanvasText; background: none; animation: none !important; }
+}

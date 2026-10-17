@@ -34,6 +34,9 @@ class UserManager(BaseUserManager):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
         extra_fields.setdefault('is_active', True)
+        # A trusted administrator provisions superusers through the CLI; there
+        # is no public OTP registration step for this administrative workflow.
+        extra_fields.setdefault('is_verified', True)
 
         if extra_fields.get('is_staff') is not True:
             raise ValueError('Superuser must have is_staff=True.')

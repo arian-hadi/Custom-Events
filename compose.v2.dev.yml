@@ -1,0 +1,63 @@
+# Live development overlay. Always combine with compose.v2.yml.
+# Same project/data as the built preview; run one mode at a time.
+x-source: &source
+  type: bind
+  source: ./prime_project
+  target: /app
+
+services:
+  migrate:
+    environment:
+      V2_COLLECT_STATIC: "False"
+    volumes:
+      - *source
+
+  backend:
+    init: true
+    command: [python, manage.py, runserver, "0.0.0.0:8000"]
+    volumes:
+      - *source
+
+  frontend:
+    image: platform-v2-frontend:dev
+    build:
+      target: development
+    init: true
+    environment:
+      NODE_ENV: development
+      WATCHPACK_POLLING: "true"
+    volumes:
+      - ./New_Frontend:/app
+      - v2_frontend_dependencies:/app/node_modules
+      - v2_frontend_build:/app/.next
+    healthcheck:
+      start_period: 120s
+      timeout: 15s
+
+  jobs-email:
+    volumes:
+      - *source
+
+  jobs-admin-email:
+    volumes:
+      - *source
+
+  jobs-amazon:
+    volumes:
+      - *source
+
+  jobs-league:
+    volumes:
+      - *source
+
+  jobs-youtube-blog:
+    volumes:
+      - *source
+
+  gateway:
+    volumes:
+      - ./deploy/v2/nginx.dev.conf:/etc/nginx/conf.d/default.conf:ro
+
+volumes:
+  v2_frontend_dependencies:
+  v2_frontend_build:

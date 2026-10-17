@@ -3,9 +3,15 @@ from django.contrib import admin
 from django.urls import path,include
 from django.conf import settings
 from django.conf.urls.static import static
+from core.views import HomeView
 
 
 urlpatterns = [
+    path('legacy/', HomeView.as_view()),
+    path('api/v2/auth/', include('accounts.api_urls')),
+    path('api/v2/email/', include('notifications.campaign_urls')),
+    path('api/v2/payments/', include('shop.payment_urls')),
+    path('api/v2/', include('platform_api.urls')),
     path('admin/', admin.site.urls),
     path('summernote/', include('django_summernote.urls')),  # Uncomment after rebuilding container
     path("ckeditor5/", include('django_ckeditor_5.urls')),

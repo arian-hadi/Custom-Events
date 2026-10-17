@@ -1,0 +1,12 @@
+{% extends "admin/actions.html" %}
+{% load i18n %}
+{% block actions-submit %}
+{{ block.super }}
+{% for value, label in action_form.fields.action.choices %}{% if value == "delete_selected" %}
+<button type="button" class="button control-bulk-delete" data-bulk-delete hidden>{% translate "Delete selected" %}</button>
+{% endif %}{% endfor %}
+{% endblock %}
+{% block actions-counter %}
+{{ block.super }}
+<p class="control-selection-help">Select rows using the checkboxes. The header checkbox selects this page; “Select all” includes every matching result across pages. Deletion asks for confirmation.</p>
+{% endblock %}

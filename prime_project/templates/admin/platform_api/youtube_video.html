@@ -1,0 +1,12 @@
+{% extends "admin/change_form.html" %}
+{% block object-tools-items %}{{ block.super }}
+{% if original %}<li><a href="{% url 'admin:youtube_video_brief' original.pk %}">Download AI brief (.md)</a></li>
+{% if has_change_permission and perms.platform_api.add_blogpost and perms.platform_api.change_blogpost %}<li><a href="{% url 'admin:youtube_video_import' original.pk %}">Import Markdown</a></li>{% endif %}{% endif %}
+{% endblock %}
+{% block after_related_objects %}{{ block.super }}
+{% if original and has_change_permission %}<section class="module aligned editorial-actions"><h2>Retrieve your video script</h2>
+<p>Use your existing script above, upload subtitles, or retrieve captions using owner-authorized YouTube credentials. Save changes before using these tools.</p>
+<button type="submit" form="fetch-captions">Fetch captions from YouTube</button></section>{% endif %}
+{% endblock %}
+{% block content %}{{ block.super }}{% if original and has_change_permission %}
+<form id="fetch-captions" method="post" action="{% url 'admin:youtube_video_captions' original.pk %}">{% csrf_token %}</form>{% endif %}{% endblock %}

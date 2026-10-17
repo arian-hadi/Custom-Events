@@ -11,8 +11,14 @@ from datetime import datetime, timedelta, timezone
 
 User = get_user_model()
 
+@login_required(login_url='login')
 def home(request):
-    return render(request, 'dashboard/home.html')
+    # Dashboard access follows the existing role checks, not Django staff status.
+    destinations = {
+        'admin': 'dashboard:admin_dashboard',
+        'user': 'dashboard:user_dashboard',
+    }
+    return redirect(destinations.get(request.user.role, 'home'))
 
 @login_required
 def admin_dashboard(request):

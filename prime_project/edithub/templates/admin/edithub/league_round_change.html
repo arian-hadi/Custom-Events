@@ -1,0 +1,5 @@
+{% extends "admin/change_form.html" %}
+{% block object-tools-items %}
+{% if original %}<li><a href="{% url 'admin:edithub_competitionweek_operations' original.pk %}">Readiness and operations</a></li>{% endif %}
+{{ block.super }}
+{% endblock %}

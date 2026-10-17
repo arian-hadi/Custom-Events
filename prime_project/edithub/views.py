@@ -8,9 +8,11 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.views.generic import ListView, DetailView
 from django.db.models import Q
+from django.db import transaction
 from django.core.paginator import Paginator
 from .models import EditorApplication, EditSubmission, EditUpvote, EditReport, Tournament, TournamentMatchVote
 from .forms import EditorApplicationForm, EditSubmissionForm, EditReportForm
+from .application_policy import active_application, activates_application, SINGLE_CHANNEL_MESSAGE
 from .utils import (
     fetch_youtube_channel_data,
     fetch_tiktok_channel_data,
@@ -721,17 +723,16 @@ def apply_view(request):
                 logger.warning("TikTok form validation failed: %s", tiktok_form.errors)
                 return render_apply_form(youtube_form, tiktok_form, apply_youtube, apply_tiktok, data_consent)
 
-        # Ensure user does not already have an active application for selected platform
+        # One current channel per member, across both supported platforms.
         for platform, form in forms_to_process:
             existing_active = EditorApplication.objects.filter(
                 user=request.user,
-                channel_type=platform,
                 status__in=['pending', 'accepted']
             ).exclude(removal_requested=True)
             if existing_active.exists():
                 messages.error(
                     request,
-                    f"You already have a {platform.title()} application in progress. Please wait for it to be reviewed or request removal before applying again."
+                    SINGLE_CHANNEL_MESSAGE
                 )
                 return render_apply_form(youtube_form, tiktok_form, apply_youtube, apply_tiktok, data_consent)
 
@@ -785,7 +786,11 @@ def apply_view(request):
                     data_consent=True,
                     status='pending'
                 )
-                application.save()
+                with transaction.atomic():
+                    CustomUser.objects.select_for_update().get(pk=request.user.pk)
+                    if active_application(request.user):
+                        raise ValueError(SINGLE_CHANNEL_MESSAGE)
+                    application.save()
                 created_applications.append(application)
                 logger.info(
                     "Created %s application %s for user %s",
@@ -982,9 +987,9 @@ def get_available_titles(request):
     from .models import EditorTitle, EditorApplication
     from .utils import is_title_unlocked_for_user, check_user_achievements
     
-    # Check achievements first to ensure newly qualified titles are unlocked
+    # Refresh achievements before returning title availability.
     check_user_achievements(request.user)
-    
+
     # Get user's primary application
     primary_app = EditorApplication.objects.filter(
         user=request.user,
@@ -1019,7 +1024,7 @@ def get_available_titles(request):
         # Check if title is unlocked
         is_unlocked = is_title_unlocked_for_user(request.user, title)
         
-        # Get achievement progress if applicable (show for both locked and unlocked titles)
+        # Keep progress visible for both locked and unlocked achievement titles.
         achievement_progress = None
         if getattr(title, 'achievement_type', None) and getattr(title, 'unlock_method', 'coins') in ['achievement', 'both']:
             from .utils import get_user_achievement_progress
@@ -1359,9 +1364,11 @@ def confirm_application(request):
         action = request.POST.get('action')
 
         if action == 'confirm':
-            for application in applications:
-                application.channel_verified = True
-                application.save()
+            # A multi-channel confirmation and its administrator alerts commit together.
+            with transaction.atomic():
+                for application in applications:
+                    application.channel_verified = True
+                    application.save()
 
             request.session.pop('pending_application_ids', None)
             request.session.pop('pending_application_id', None)
@@ -1516,17 +1523,22 @@ def admin_applications(request):
 
 @login_required
 @require_http_methods(["POST"])
+@transaction.atomic
 def admin_update_status(request, pk):
     """Admin endpoint to update application status"""
     if request.user.role != 'admin':
         return JsonResponse({'error': 'Unauthorized'}, status=403)
     
     application = get_object_or_404(EditorApplication, pk=pk)
-    old_status = application.status
+    CustomUser.objects.select_for_update().get(pk=application.user_id)
+    application.refresh_from_db()
     new_status = request.POST.get('status')
     
     if new_status not in dict(EditorApplication.STATUS_CHOICES):
         return JsonResponse({'error': 'Invalid status'}, status=400)
+    if (activates_application(application, application.user, new_status, application.removal_requested)
+            and active_application(application.user, exclude_id=application.pk)):
+        return JsonResponse({'error': SINGLE_CHANNEL_MESSAGE}, status=409)
     
     application.status = new_status
     if new_status in ['accepted', 'rejected']:
@@ -1540,27 +1552,8 @@ def admin_update_status(request, pk):
     if new_status == 'accepted':
         EditorApplication.update_rank_positions()
     
-    # Send notification to user about status change
-    if old_status != new_status and new_status in ['accepted', 'rejected']:
-        from notifications.manager import notification_manager
-        
-        if new_status == 'accepted':
-            notification_manager.create_notification(
-                user=application.user,
-                title="Application Approved! 🎉",
-                message=f"Great news! Your {application.channel_type.title()} channel application has been approved. You can now participate in the EditingHub rankings and submit edits for Edit of the Week!",
-                notification_type='application_approved',
-                related_object=application
-            )
-        elif new_status == 'rejected':
-            notification_manager.create_notification(
-                user=application.user,
-                title="Application Status Update",
-                message=f"Your {application.channel_type.title()} channel application has been reviewed. Unfortunately, it was not approved at this time. Please review the requirements and feel free to apply again in the future.",
-                notification_type='application_disapproved',
-                related_object=application
-            )
-    
+    # Lifecycle signals notify members for every review entry point.
+
     messages.success(request, f"Application status updated to {application.get_status_display()}")
     
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':

@@ -89,17 +89,9 @@ class CustomUser(AbstractUser):
         Get the display name based on profile_display_mode.
         Returns account username or channel name.
         """
-        if self.profile_display_mode == 'channel':
-            from edithub.models import EditorApplication
-            # Get primary application (highest follower count)
-            app = EditorApplication.objects.filter(
-                user=self,
-                status='accepted',
-                removal_requested=False
-            ).order_by('-follower_count').first()
-            
-            if app and app.channel_name:
-                return app.channel_name
+        app = self.get_profile_application()
+        if app and app.channel_name:
+            return app.channel_name
         
         # Default to account username
         return self.username
@@ -120,20 +112,24 @@ class CustomUser(AbstractUser):
                 # If for some reason the file URL cannot be resolved, continue to fallbacks
                 pass
 
-        if self.profile_display_mode == 'channel':
-            from edithub.models import EditorApplication
-            # Get primary application (highest follower count)
-            app = EditorApplication.objects.filter(
-                user=self,
-                status='accepted',
-                removal_requested=False
-            ).order_by('-follower_count').first()
-            
-            if app and app.channel_thumbnail:
-                return app.channel_thumbnail
+        app = self.get_profile_application()
+        if app and app.channel_thumbnail:
+            return app.channel_thumbnail
         
         # No image available
         return None
+
+    def get_profile_application(self):
+        """Resolve only the member's explicitly selected, approved channel.
+
+        An unavailable choice falls back to account identity, never a channel
+        selected by follower count or an unverified application.
+        """
+        if self.profile_display_mode != 'channel' or self.profile_channel_source not in {'youtube', 'tiktok'}:
+            return None
+        from edithub.models import EditorApplication
+        return EditorApplication.objects.filter(user=self, status='accepted', channel_verified=True,
+            removal_requested=False, channel_type=self.profile_channel_source).order_by('-applied_date', '-pk').first()
     
     def get_available_channels(self):
         """
@@ -144,8 +140,9 @@ class CustomUser(AbstractUser):
         apps = EditorApplication.objects.filter(
             user=self,
             status='accepted',
+            channel_verified=True,
             removal_requested=False
-        ).order_by('-follower_count')
+        ).order_by('channel_type', '-applied_date', '-pk')
         
         channels = []
         for app in apps:
@@ -197,6 +194,17 @@ class OneTimePassword(models.Model):
 
     def __str__(self):
         return f"{self.user.username} passcode"
+
+
+class GoogleIdentity(models.Model):
+    """A verified provider subject; emails are never used as linking authority."""
+
+    user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name='google_identity')
+    subject = models.CharField(max_length=255, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Google identity for user {self.user_id}"
 
 
         

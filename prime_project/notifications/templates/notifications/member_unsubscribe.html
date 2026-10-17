@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><title>Email preferences</title></head>
+<body style="background:#101014;color:#f5f5f5"><main style="max-width:38rem;margin:4rem auto;padding:1.5rem;font:1.1rem/1.6 system-ui,sans-serif">
+{% if invalid %}
+<h1>This link is unavailable</h1><p>Use a link from a recent email or sign in to manage your email preferences.</p>
+{% elif done %}
+<h1>You are unsubscribed</h1><p>{% if activity %}Optional member activity and campaign emails are switched off.{% else %}Newsletters, blog updates and shop announcements are switched off.{% endif %} You can subscribe again in your account settings.</p><p>Account security emails and order receipts are separate.</p>
+{% else %}
+<h1>Stop {% if activity %}optional member emails{% else %}member email campaigns{% endif %}?</h1><p>{% if activity %}This switches off application updates, league results, achievements, edit updates and email campaigns.{% else %}This switches off newsletters, blog updates and shop announcements.{% endif %} Account security emails and order receipts are separate.</p>
+<form method="post">{% csrf_token %}<button style="background:#dc2626;color:white;border:0;border-radius:8px;padding:12px 20px;font:inherit" type="submit">Unsubscribe from member emails</button></form>
+{% endif %}
+</main></body></html>

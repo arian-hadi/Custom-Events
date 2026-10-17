@@ -1,0 +1,17 @@
+{% extends "admin/change_form.html" %}
+{% block after_related_objects %}{{ block.super }}
+{% if original and has_change_permission %}
+<section class="module aligned editorial-actions"><h2>Channel tools</h2>
+<p>Save any changes first. Each check looks only at the newest video in your channel’s Videos tab, excluding Shorts. If its ID or title is already stored, it is skipped. Nothing is published automatically.</p>
+<button type="submit" form="check-channel">Check latest video now</button>
+<p><a href="{% url 'admin:platform_api_youtubeblogvideo_changelist' %}?channel__id__exact={{ original.pk }}">Open this channel’s blog workspace →</a></p>
+</section>
+{% endif %}{% endblock %}
+{% block content %}{{ block.super }}{% if original and has_change_permission %}
+<form id="check-channel" method="post" action="{% url 'admin:youtube_channel_check' original.pk %}">{% csrf_token %}</form>
+<section class="module aligned editorial-actions"><h2>Add an older video</h2>
+<p>Older uploads are never imported by scheduled checks. Paste a specific video URL here to prepare it manually.</p>
+<form method="post" action="{% url 'admin:youtube_channel_add_video' original.pk %}">{% csrf_token %}
+<p><label for="older-video-url">Video URL from this channel</label></p><p><input id="older-video-url" type="url" name="video_url" required placeholder="https://www.youtube.com/watch?v=…" style="width:min(100%, 600px)"></p>
+<button type="submit">Add video to workspace</button></form></section>
+{% endif %}{% endblock %}

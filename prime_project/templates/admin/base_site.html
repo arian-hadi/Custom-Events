@@ -1,0 +1,34 @@
+{% extends "admin/base.html" %}
+{% load i18n static %}
+
+{% block title %}{% if subtitle %}{{ subtitle }} · {% endif %}{{ title }} · 2.0Transformers Admin{% endblock %}
+
+{% block dark-mode-vars %}{% endblock %}
+
+{% block responsive %}
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="{% static 'admin/css/responsive.css' %}">
+  {% if LANGUAGE_BIDI %}<link rel="stylesheet" href="{% static 'admin/css/responsive_rtl.css' %}">{% endif %}
+  <link rel="stylesheet" href="{% static 'platform_admin/admin.css' %}">
+  <script src="{% static 'platform_admin/admin.js' %}" defer></script>
+{% endblock %}
+
+{% block branding %}
+<a class="control-brand" href="{% url 'admin:index' %}" aria-label="2.0Transformers administration home">
+  <span class="control-brand-mark" aria-hidden="true">2.0</span>
+  <span class="control-brand-name">TRANSFORMERS<span>ADMIN WORKSPACE</span></span>
+</a>
+{% endblock %}
+
+{% block usertools %}
+{% if has_permission %}
+<div id="user-tools" class="control-user-tools">
+  <span class="control-user-name">{% firstof user.get_short_name user.get_username %}</span>
+  {% if site_url %}<a class="control-site-link" href="{{ site_url }}">View website <span aria-hidden="true">↗</span></a>{% endif %}
+  {% if user.has_usable_password %}<a href="{% url 'admin:password_change' %}">Password</a>{% endif %}
+  <form id="logout-form" method="post" action="{% url 'admin:logout' %}">{% csrf_token %}<button type="submit">Log out</button></form>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block footer %}<div id="footer" class="control-footer">2.0Transformers <span>·</span> Community management</div>{% endblock %}

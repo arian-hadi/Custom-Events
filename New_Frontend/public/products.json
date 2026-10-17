@@ -1,0 +1,58 @@
+[
+  {
+    "route": "/product/forza-horizon-3",
+    "name": "Forza Horizon 3",
+    "sku": "62cd40c5b84c261ef607a2e4",
+    "price": "$ 150.00 USD",
+    "image": "/assets/cfc0b40be0-62cd40a2dfafc02e4dbd1a9b_game-08.jpg"
+  },
+  {
+    "route": "/product/call-of-duty",
+    "name": "CALL of DUTY",
+    "sku": "62cd3d9a08b6dc5a907a187c",
+    "price": "$ 250.00 USD",
+    "image": "/assets/dbab27cbc1-62cd3dbceb5db09d74aae79c_game-06--1-.jpg"
+  },
+  {
+    "route": "/product/stickers",
+    "name": "Stickers",
+    "sku": "62c7ef690a90aec8891773c2",
+    "price": "$ 15.00 USD",
+    "image": "/assets/2507e831fc-62c7ef5a0a90ae4bbf1773aa_game-06.jpg"
+  },
+  {
+    "route": "/product/accessories",
+    "name": "Accessories ",
+    "sku": "62c7ee57d16f9558f1545b15",
+    "price": "$ 50.00 USD",
+    "image": "/assets/6d7d8ec3c7-62c7ee1e1c8ddc621f54e927_game-05.jpg"
+  },
+  {
+    "route": "/product/warzone",
+    "name": "Warzone",
+    "sku": "62c7ecd949b0ebf1af1fbf48",
+    "price": "$ 150.00 USD",
+    "image": "/assets/df8c7db8bd-62c7ecd012348c2db80ad199_game-04.jpg"
+  },
+  {
+    "route": "/product/vr-goggles",
+    "name": "Vr Goggles",
+    "sku": "62c7eb43ac4d7b117c2b685a",
+    "price": "$ 3,300.00 USD",
+    "image": "/assets/d6b513418d-62c7eb336d2b54e8a403d936_game-03.jpg"
+  },
+  {
+    "route": "/product/sony-ps4",
+    "name": "Sony PS4",
+    "sku": "62c6f91bf1efb3812c01a661",
+    "price": "$ 1,300.00 USD",
+    "image": "/assets/6bad4820d5-62c6f89ccb210f7f4c81b38f_game-02.jpg"
+  },
+  {
+    "route": "/product/fifa-21",
+    "name": "FIFA 21",
+    "sku": "62c6ef8055455d7ce4a564ca",
+    "price": "$ 100.00 USD",
+    "image": "/assets/4364e60022-62c6ef73744f030ca4bbff6b_game-01.jpg"
+  }
+]

@@ -16,6 +16,9 @@ import os, requests, time
 from django.core.cache import cache
 from django.http import HttpResponse
 from django.conf import settings
+from django.db import transaction
+from django.db.models.deletion import ProtectedError
+from django.utils.html import format_html
 
 logger = logging.getLogger(__name__)
 
@@ -468,7 +471,16 @@ class ProfileView(View):
             # Delete account functionality
             user = request.user
             from django.contrib.auth import logout
-            user.delete()
+            try:
+                with transaction.atomic():
+                    user.delete()
+            except ProtectedError:
+                messages.error(request, format_html(
+                    'Your account has order or community records that need review before deletion. '
+                    'Your account is still active. Please <a href="{}">contact support</a> to request account removal.',
+                    reverse('contact'),
+                ))
+                return redirect('profile')
             logout(request)
             messages.success(request, "Your account has been deleted successfully.")
             return redirect('home')

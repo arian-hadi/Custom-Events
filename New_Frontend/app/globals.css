@@ -1,0 +1,14 @@
+@layer theme, base, components, utilities;
+@import 'tailwindcss/theme.css' layer(theme) prefix(tw);
+@import './fonts.css' layer(components);
+@import './reference.css' layer(components);
+@import './replica.css' layer(components);
+@import 'tailwindcss/utilities.css' layer(utilities) prefix(tw);
+
+@theme {
+  --color-playo-black: #000000;
+  --color-playo-surface: #1a1a1a;
+  --color-playo-pink: #ff00d6;
+  --color-playo-gold: #ffb800;
+  --font-playo: 'Gt walsheim pro', sans-serif;
+}

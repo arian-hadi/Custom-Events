@@ -1,0 +1,9 @@
+{% extends "admin/change_form.html" %}
+{% block form_top %}
+<div class="module" style="padding: 16px; margin-bottom: 20px">
+  <h2>Opening the regular monthly league?</h2>
+  <p>Use <a href="{% url 'admin:edithub_leaguesettings_changelist' %}">League settings</a>. Weeks and starter scoring rules are created automatically. You do not need to fill in this technical form.</p>
+  <p>This page is for advanced scoring versions and reviewed pilot calibration. Automatic starter scoring does not claim pilot validation.</p>
+</div>
+{{ block.super }}
+{% endblock %}

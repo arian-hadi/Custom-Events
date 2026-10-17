@@ -1,0 +1,2 @@
+# Linux deployment helpers must remain executable by Bash after Windows edits.
+deploy/staging/*.sh text eol=lf

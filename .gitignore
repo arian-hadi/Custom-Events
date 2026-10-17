@@ -83,3 +83,19 @@ db_data/
 *.swp
 .DS_Store
 Thumbs.db
+
+# Isolated Version 2 local runtime (never commit credentials or test data)
+.env.v2
+.env.v2.local
+.env.v2.staging
+.staging-v2/
+.staging-v2-upload/
+.local-v2/
+prime_project/.test-media/
+prime_project/.v2-test-media/
+prime_project/*.sqlite3
+
+# The supplied Next.js app's source assets and dependency lockfile are required.
+!New_Frontend/public/
+!New_Frontend/public/**
+!New_Frontend/package-lock.json

@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{{ title }}</title></head>
+<body style="margin:0;padding:0;background-color:#09090c;color:#eeeeF2;font-family:Arial,Helvetica,sans-serif">
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color:#09090c"><tr><td align="center" style="padding:32px 16px">
+<table role="presentation" width="600" cellspacing="0" cellpadding="0" style="width:100%;max-width:600px;background-color:#141419;border:1px solid #303039;border-radius:16px;overflow:hidden">
+<tr><td style="padding:24px 28px;border-top:4px solid {{ accent }};border-bottom:1px solid #303039;color:#ffffff;font-size:17px;font-weight:bold;letter-spacing:1px">{{ brand }}</td></tr>
+<tr><td style="padding:28px;color:#eeeef2;font-size:16px;line-height:1.7">
+<h1 style="margin:0 0 20px;color:#ffffff;font-size:25px;line-height:1.25">{{ title }}</h1>
+{% if code %}<div style="margin:0 0 24px;padding:18px;background-color:#22222b;border:1px solid {{ accent }};border-radius:10px;color:#ffffff;text-align:center;font-family:monospace;font-size:32px;font-weight:bold;letter-spacing:8px">{{ code }}</div>{% endif %}
+{{ content }}
+{% if action_url %}<table role="presentation" cellspacing="0" cellpadding="0" style="margin-top:24px"><tr><td style="background-color:{{ accent }};border-radius:8px"><a href="{{ action_url }}" style="display:inline-block;padding:13px 22px;color:#ffffff;text-decoration:none;font-weight:bold">{{ action_label }}</a></td></tr></table>{% endif %}
+</td></tr>
+<tr><td style="padding:20px 28px;border-top:1px solid #303039;font-size:12px;line-height:1.6;color:#aaaab8">{{ brand }} · Your community account<br>This message also includes a plain-text version.</td></tr>
+</table></td></tr></table></body></html>

@@ -3,6 +3,7 @@ from django.contrib import messages
 from django.core.paginator import Paginator
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
+from django.db import transaction
 from .models import Event, EventApplication, EventField, EventFieldResponse
 from .forms import EventForm, EventApplicationForm, EventSearchForm,EventFieldForm
 from datetime import datetime
@@ -202,27 +203,29 @@ def apply_event(request, event_id):
     if request.method == 'POST':
         form = EventApplicationForm(request.POST, event=event)
         if form.is_valid():
-            application = form.save(commit=False)
-            application.event = event
-            application.applicant = request.user
-            application.save()
-            for field in event.custom_fields.all():
-                field_name = f'field_{field.id}'
-                if field_name in form.cleaned_data:
-                    value = form.cleaned_data[field_name]
+            # Administrator alerts are delivered on commit, after all answers exist.
+            with transaction.atomic():
+                application = form.save(commit=False)
+                application.event = event
+                application.applicant = request.user
+                application.save()
+                for field in event.custom_fields.all():
+                    field_name = f'field_{field.id}'
+                    if field_name in form.cleaned_data:
+                        value = form.cleaned_data[field_name]
 
-                    response = EventFieldResponse(application=application, field=field)
+                        response = EventFieldResponse(application=application, field=field)
 
-                    if field.field_type == 'text':
-                        response.value_text = value
-                    elif field.field_type == 'number':
-                        response.value_number = value
-                    elif field.field_type == 'date':
-                        response.value_date = value
-                    elif field.field_type == 'boolean':
-                        response.value_boolean = value if value else False
+                        if field.field_type == 'text':
+                            response.value_text = value
+                        elif field.field_type == 'number':
+                            response.value_number = value
+                        elif field.field_type == 'date':
+                            response.value_date = value
+                        elif field.field_type == 'boolean':
+                            response.value_boolean = value if value else False
 
-                    response.save()
+                        response.save()
             messages.success(request, "Application submitted successfully!")
             return redirect('dashboard:user_dashboard')
         

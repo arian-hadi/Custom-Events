@@ -1,14 +1,29 @@
 from django.contrib import admin
+from django.contrib.auth import get_user_model
+from django.db import transaction
 from django.utils.html import mark_safe
+from .application_policy import active_application, activates_application, SINGLE_CHANNEL_MESSAGE
+from .forms import EditorApplicationAdminForm
 
 from .models import EditorApplication, EditSubmission, EditUpvote, EditReport, Tournament, TournamentMatchVote, WeekWinner, EditorTitle, UserTitleUnlock
 
 
 @admin.register(EditorApplication)
 class EditorApplicationAdmin(admin.ModelAdmin):
+    form = EditorApplicationAdminForm
+
+    def changeform_view(self, request, object_id=None, form_url='', extra_context=None):
+        # Match the API's member lock so an admin add and a member application
+        # cannot both pass their eligibility checks at the same time.
+        with transaction.atomic():
+            user_id = request.POST.get('user', '') if request.method == 'POST' else ''
+            if user_id.isdecimal():
+                get_user_model().objects.select_for_update().filter(pk=user_id).first()
+            return super().changeform_view(request, object_id, form_url, extra_context)
+
     list_display = [
         'user', 'channel_name', 'channel_type', 'editing_tool', 'editing_area',
-        'follower_count', 'status', 'rank_position', 'applied_date'
+        'follower_count', 'status', 'channel_verified', 'league_eligible', 'rank_position', 'applied_date'
     ]
     list_filter = ['status', 'channel_type', 'editing_area', 'editing_tool', 'applied_date', 'removal_requested']
     search_fields = ['user__username', 'user__email', 'channel_name', 'channel_link', 'editing_tool']
@@ -27,7 +42,8 @@ class EditorApplicationAdmin(admin.ModelAdmin):
             'fields': ('editing_area', 'editing_area_other', 'editing_tool', 'selected_title')
         }),
         ('Verification & Consent', {
-            'fields': ('channel_verified', 'data_consent')
+            'fields': ('channel_verified', 'data_consent'),
+            'description': 'Channel verified records the member’s ownership confirmation. Approval alone does not record that declaration. An approved member can finish confirmation on their existing V2 application page; they do not need to apply again.'
         }),
         ('Status & Review', {
             'fields': ('status', 'reviewed_by', 'reviewed_date', 'rank_position')
@@ -42,6 +58,10 @@ class EditorApplicationAdmin(admin.ModelAdmin):
     )
 
     actions = ['accept_applications', 'reject_applications']
+
+    @admin.display(boolean=True, description='Channel ready for league')
+    def league_eligible(self, obj):
+        return obj.status == 'accepted' and obj.channel_verified and not obj.removal_requested
 
     def channel_screenshot_preview(self, obj):
         if obj and obj.channel_screenshot:
@@ -62,22 +82,31 @@ class EditorApplicationAdmin(admin.ModelAdmin):
         from django.utils import timezone
         updated = 0
 
-        for app in queryset:
-            # Only transition non-accepted applications
-            if app.status != 'accepted':
-                app.status = 'accepted'
-                updated += 1
-
-            app.reviewed_date = timezone.now()
-            app.reviewed_by = request.user
-            # This will trigger EditorApplication.save(), which handles rank updates
-            # and profile picture downloading for the user when status becomes accepted.
-            app.save()
+        skipped = 0
+        for selected in queryset:
+            with transaction.atomic():
+                get_user_model().objects.select_for_update().get(pk=selected.user_id)
+                app = EditorApplication.objects.get(pk=selected.pk)
+                if (activates_application(app, app.user, 'accepted', app.removal_requested)
+                        and active_application(app.user, exclude_id=app.pk)):
+                    skipped += 1
+                    continue
+                if app.status != 'accepted':
+                    app.status = 'accepted'
+                    updated += 1
+                app.reviewed_date = timezone.now()
+                app.reviewed_by = request.user
+                app.save()
 
         if updated:
             self.message_user(request, f'{updated} application(s) accepted.')
         else:
             self.message_user(request, 'No applications were changed to accepted.')
+        if skipped:
+            self.message_user(request, f'{skipped} application(s) were not reactivated because the member already has an active channel. {SINGLE_CHANNEL_MESSAGE}', level='warning')
+        unconfirmed = queryset.filter(status='accepted', channel_verified=False, removal_requested=False).count()
+        if unconfirmed:
+            self.message_user(request, f'{unconfirmed} approved application(s) still need the member to confirm channel ownership on their existing application page.', level='warning')
     accept_applications.short_description = "Accept selected applications"
     
     def reject_applications(self, request, queryset):
@@ -264,3 +293,7 @@ class UserTitleUnlockAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
     )
+
+
+# Register the additive V2 league operations and immutable audit pages.
+from . import league_admin  # noqa: E402,F401

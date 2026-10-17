@@ -1,0 +1,33 @@
+:root {
+  --background: #000;
+  --foreground: #fff;
+  --accent: #ffb800;
+  --muted: #bbb;
+  --border: #333;
+  color-scheme: dark;
+}
+.pages-dummy {display:block;border:0;background:none;color:inherit;font:inherit;text-align:left;cursor:default}
+.pages-dummy .nav-drop-content {display:flex}
+.pages-dummy:focus-visible {outline:2px solid var(--accent);outline-offset:5px}
+.w-webflow-badge {display:none!important}
+button,a,input,textarea {touch-action:manipulation}
+html {scroll-behavior:smooth}
+.replica-cart-items {padding:20px 24px;max-height:55vh;overflow:auto}
+.replica-cart-row {display:grid;grid-template-columns:70px 1fr 54px;gap:16px;align-items:center;padding:16px 0;border-bottom:1px solid #ddd}
+.replica-cart-row img {width:70px;height:80px;object-fit:contain}
+.replica-cart-row p {margin:0 0 7px;color:inherit;font-size:16px;line-height:1.4}
+.replica-cart-row a {color:inherit}
+.replica-cart-row input {width:54px;color:#111;background:#fff;border:1px solid #aaa;padding:8px}
+.replica-cart-row button {padding:0;background:none;color:inherit;font:inherit;font-size:14px;text-decoration:underline;cursor:pointer}
+.replica-cart-summary {padding:0 24px 24px}
+.replica-cart-summary p {color:inherit}
+.replica-cart-total {display:flex;justify-content:space-between;margin-bottom:20px;font-size:18px}
+.replica-cart-summary button {width:100%;padding:15px;background:#ffb800;color:#111;cursor:pointer;font-weight:700}
+.replica-empty-cart {padding:30px 0;text-align:center;font-size:18px}
+.replica-form-message {padding:15px;background:#191919;border:1px solid #ffb800;color:#fff;margin-top:15px}
+[data-cart-overlay].is-open {display:flex!important}
+.replica-cart-status {font-size:14px;line-height:1.5;margin:15px 0 0}
+@media(prefers-reduced-motion:reduce) {
+ html {scroll-behavior:auto}
+ *,*::before,*::after {animation-duration:.01ms!important;transition-duration:.01ms!important}
+}

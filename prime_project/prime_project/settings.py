@@ -5,7 +5,10 @@ import environ
 import os
 BASE_DIR = Path(__file__).resolve().parent.parent
 env = environ.Env()
-environ.Env.read_env(os.path.join(BASE_DIR, '.env')) 
+# Compose supplies its own isolated environment. A development source mount may
+# contain the legacy .env, which must never configure the V2 containers.
+if env.bool('DJANGO_READ_ENV_FILE', default=True):
+    environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
 SECRET_KEY = env("SECRET_KEY")
 DEBUG = env.bool("DEBUG")  # Reads from .env, defaults to True if missing
@@ -32,6 +35,7 @@ CACHES = {
 
 INSTALLED_APPS = [
     'accounts',
+    'platform_api',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -52,7 +56,7 @@ INSTALLED_APPS = [
     'tailwind',
     'theme',
     'ratelimit',
-    'django_summernote',  # Uncomment after rebuilding container with django-summernote installed
+    'prime_project.summernote_app.SummernoteConfig',
 ]
 
 
@@ -90,6 +94,8 @@ TAILWIND_APP_NAME = 'theme'
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'accounts.middleware.TrustedGatewayAddressMiddleware',
+    'accounts.middleware.V2EditorApplicationRedirectMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -100,7 +106,8 @@ MIDDLEWARE = [
     
 ]
 
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_ALL_ORIGINS = env.bool('CORS_ALLOW_ALL_ORIGINS', default=True)
+CSRF_FAILURE_VIEW = 'platform_api.views.csrf_failure'
 ROOT_URLCONF = 'prime_project.urls'
 
 TEMPLATES = [
@@ -341,15 +348,16 @@ csrf_origins_str = os.getenv("CSRF_TRUSTED_ORIGINS", "http://localhost")
 CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in csrf_origins_str.split(",") if origin.strip()]
 
 #Email verification
-EMAIL_BACKEND = env("EMAIL_BACKEND") 
-EMAIL_HOST = env("EMAIL_HOST") 
-EMAIL_HOST_USER = env("EMAIL_HOST_USER")  # Your Gmail address
-EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD") # Your Gmail app password
-DEFAULT_FROM_EMAIL = env("EMAIL_HOST_USER") 
-SUPPORT_INBOX = env("SUPPORT_EMAIL") # Support email address
+EMAIL_BACKEND = env('EMAIL_BACKEND', default='django.core.mail.backends.console.EmailBackend')
+EMAIL_HOST = env('EMAIL_HOST', default='localhost')
+EMAIL_HOST_USER = env('EMAIL_HOST_USER', default='')
+EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', default='')
+DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default=EMAIL_HOST_USER or 'noreply@localhost')
+SUPPORT_INBOX = env('SUPPORT_EMAIL', default='support@localhost')
 EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=True)
 EMAIL_USE_SSL = env.bool("EMAIL_USE_SSL", default=False)
 EMAIL_PORT = env.int("EMAIL_PORT", default=587)
+EMAIL_TIMEOUT = env.int('EMAIL_TIMEOUT', default=10)
 
 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
@@ -359,6 +367,46 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 SESSION_COOKIE_AGE = 900  # 900 seconds = 15 minutes
 SESSION_SAVE_EVERY_REQUEST = True
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = 'Lax'
+SESSION_COOKIE_NAME = env('SESSION_COOKIE_NAME', default='sessionid')
+CSRF_COOKIE_NAME = env('CSRF_COOKIE_NAME', default='csrftoken')
+SESSION_COOKIE_SECURE = env.bool('SESSION_COOKIE_SECURE', default=not DEBUG)
+CSRF_COOKIE_SECURE = env.bool('CSRF_COOKIE_SECURE', default=not DEBUG)
+
+# V2 uses one public origin (Next.js + Django behind the gateway). Google
+# credentials stay server-side; supplying all three values enables sign-in.
+V2_FRONTEND_URL = env('V2_FRONTEND_URL', default='http://localhost:8082').rstrip('/')
+ADMIN_NOTIFICATION_RECIPIENTS = env('ADMIN_NOTIFICATION_RECIPIENTS', default='')
+ADMIN_NOTIFICATION_BASE_URL = env('ADMIN_NOTIFICATION_BASE_URL', default=V2_FRONTEND_URL)
+ADMIN_EMAIL_SEND_IMMEDIATELY = env.bool('ADMIN_EMAIL_SEND_IMMEDIATELY', default=True)
+GOOGLE_OAUTH_CLIENT_ID = env('GOOGLE_OAUTH_CLIENT_ID', default='')
+GOOGLE_OAUTH_CLIENT_SECRET = env('GOOGLE_OAUTH_CLIENT_SECRET', default='')
+GOOGLE_OAUTH_REDIRECT_URI = env('GOOGLE_OAUTH_REDIRECT_URI', default='')
+ENABLE_EDITHUB_SCHEDULER = env.bool('ENABLE_EDITHUB_SCHEDULER', default=True)
+LEAGUE_ENABLED = env.bool('LEAGUE_ENABLED', default=False)
+LEAGUE_PROVIDER_CREDENTIALS_FILE = env('LEAGUE_PROVIDER_CREDENTIALS_FILE', default='')
+LEAGUE_YOUTUBE_API_KEY = env('LEAGUE_YOUTUBE_API_KEY', default='')
+
+# Optional V2 integrations. Keys are server-side and activation is explicit.
+MEMBER_EMAIL_ENABLED = env.bool('MEMBER_EMAIL_ENABLED', default=False)
+MEMBER_ACTIVITY_EMAIL_ENABLED = env.bool('MEMBER_ACTIVITY_EMAIL_ENABLED', default=False)
+MEMBER_EMAIL_BASE_URL = env('MEMBER_EMAIL_BASE_URL', default='')
+MEMBER_EMAIL_POSTAL_ADDRESS = env('MEMBER_EMAIL_POSTAL_ADDRESS', default='')
+STRIPE_CHECKOUT_ENABLED = env.bool('STRIPE_CHECKOUT_ENABLED', default=False)
+STRIPE_SECRET_KEY = env('STRIPE_SECRET_KEY', default='')
+STRIPE_WEBHOOK_SECRET = env('STRIPE_WEBHOOK_SECRET', default='')
+STRIPE_ALLOW_LIVE_PAYMENTS = env.bool('STRIPE_ALLOW_LIVE_PAYMENTS', default=False)
+STRIPE_CHECKOUT_BASE_URL = env('STRIPE_CHECKOUT_BASE_URL', default='')
+AMAZON_AUTOMATION_ENABLED = env.bool('AMAZON_AUTOMATION_ENABLED', default=False)
+AMAZON_CREATORS_CLIENT_ID = env('AMAZON_CREATORS_CLIENT_ID', default='')
+AMAZON_CREATORS_CLIENT_SECRET = env('AMAZON_CREATORS_CLIENT_SECRET', default='')
+AMAZON_CREATORS_CREDENTIAL_VERSION = env('AMAZON_CREATORS_CREDENTIAL_VERSION', default='3.1')
+AMAZON_PARTNER_TAG = env('AMAZON_PARTNER_TAG', default='')
+AMAZON_MARKETPLACE = env('AMAZON_MARKETPLACE', default='www.amazon.com')
+AMAZON_REFRESH_MINUTES = env.int('AMAZON_REFRESH_MINUTES', default=45)
+AMAZON_HTTP_TIMEOUT = env.int('AMAZON_HTTP_TIMEOUT', default=15)
+V2_TRUST_GATEWAY_ADDRESS = env.bool('V2_TRUST_GATEWAY_ADDRESS', default=False)
 
 # Google reCAPTCHA Settings
 # Get your keys from: https://www.google.com/recaptcha/admin
@@ -370,3 +418,5 @@ RECAPTCHA_VERIFY_URL = "https://www.google.com/recaptcha/api/siteverify"
 # Get your API key from: https://console.cloud.google.com/apis/credentials
 # Note: TikTok channel data is fetched via web scraping (no API key required)
 YOUTUBE_API_KEY = env("YOUTUBE_API_KEY", default="")
+YOUTUBE_BLOG_CREDENTIALS_FILE = env("YOUTUBE_BLOG_CREDENTIALS_FILE", default="")
+SUMMERNOTE_CONFIG = {"summernote": {"width": "100%"}}

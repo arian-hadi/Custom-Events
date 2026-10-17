@@ -10,6 +10,11 @@ class EdithubConfig(AppConfig):
     
     def ready(self):
         """Start the scheduler when Django is ready"""
+        from django.conf import settings
+
+        # The V2 preview keeps legacy data but does not run legacy scoring jobs.
+        if not getattr(settings, 'ENABLE_EDITHUB_SCHEDULER', True):
+            return
         import os
         import sys
         

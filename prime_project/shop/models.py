@@ -3,6 +3,7 @@ from django.core.validators import MinValueValidator
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 from django.conf import settings
+from urllib.parse import urlsplit
 from django.db import models as dj_models  # alias to avoid confusion
 from core.validators import (
     validate_image_file_size,
@@ -108,6 +109,8 @@ class Product(models.Model):
     def clean(self):
         """Enforce image size limits even outside forms/admin."""
         super().clean()
+        if self.pk and AmazonSource.objects.filter(product_id=self.pk).exists():
+            raise ValidationError("Automated Amazon product records are managed through Amazon sources and cannot be edited directly.")
         image_fields = ['thumbnail', 'main_image', 'image_2', 'image_3', 'image_4']
         for field_name in image_fields:
             image = getattr(self, field_name)
@@ -175,6 +178,53 @@ class Product(models.Model):
         return self.category == 'merges_1_0' and self.ecommerce_platform != 'none'
 
 
+class FeaturedShopRequest(models.Model):
+    """Admin-owned requests displayed independently of catalog filters."""
+
+    title = models.CharField(max_length=120)
+    description = models.TextField(help_text="Short plain-text description shown on the card.")
+    details = models.TextField(blank=True, help_text="Optional scope, requirements, and delivery information.")
+    image = models.ImageField(upload_to='shop/requests/', blank=True, validators=[validate_image_file_size])
+    icon = models.CharField(max_length=16, choices=[('edit', 'Edit'), ('media', 'Media')], default='edit')
+    badge = models.CharField(max_length=50, default='Featured request', blank=True)
+    price_label = models.CharField(max_length=80, default='Pricing coming soon', blank=True)
+    turnaround = models.CharField(max_length=100, blank=True)
+    button_label = models.CharField(max_length=80, default='View on Buy Me a Coffee')
+    placeholder_label = models.CharField(max_length=80, default='Coming soon')
+    purchase_url = models.URLField(max_length=500, blank=True, help_text="HTTPS link to this request on buymeacoffee.com.")
+    is_placeholder = models.BooleanField(default=True, help_text="Keeps purchasing disabled, even if a link has been entered. Turn off when ready to sell.")
+    is_active = models.BooleanField(default=True, help_text="Show this card above the shop catalog.")
+    sort_order = models.PositiveIntegerField(default=0, help_text="Lower numbers appear first.")
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['sort_order', 'pk']
+        verbose_name = 'Featured shop request'
+        verbose_name_plural = 'Featured shop requests'
+
+    def __str__(self):
+        return self.title
+
+    def clean(self):
+        super().clean()
+        if self.purchase_url:
+            try:
+                url = urlsplit(self.purchase_url)
+                valid = (url.scheme == 'https' and url.hostname in {'buymeacoffee.com', 'www.buymeacoffee.com'}
+                         and not url.username and not url.password and not url.port
+                         and not any(char.isspace() or char == '\\' for char in self.purchase_url))
+            except ValueError:
+                valid = False
+            if not valid:
+                raise ValidationError({'purchase_url': 'Use an HTTPS Buy Me a Coffee link without credentials or a custom port.'})
+        if not self.is_placeholder and not self.purchase_url:
+            raise ValidationError({'purchase_url': 'Add the purchase link before turning off placeholder mode.'})
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+
 class SiteLogo(models.Model):
     """
     Model for storing the main site logo/image.
@@ -234,3 +284,9 @@ class SiteLogo(models.Model):
             return cls.objects.get(is_active=True)
         except cls.DoesNotExist:
             return None
+
+
+from .payment_models import ProductPayment, PaymentOrder, StripeWebhookReceipt  # noqa: E402,F401
+
+
+from .amazon_models import AmazonSource, AmazonSyncRun  # noqa: E402,F401
