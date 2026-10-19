@@ -1,8 +1,32 @@
 # V2 staging migration — start here
 
-Prepared locally on 18 October 2026. Nothing in this guide has been run on the
-Hetzner server. The existing staging IP, SSH access, actual database location and
-backup state still need to be confirmed. Source inspection cannot establish them.
+Updated on 19 October 2026 after private V2 staging deployment and acceptance
+checks. The V1
+staging and production databases were confirmed to use separate containers,
+networks and volumes. V1 staging was backed up and restored into a new, isolated
+PostgreSQL 16 database and media volume. All 31 tables, 275 database rows and 14
+media files matched the source manifests. Server and user-approved local backup
+copies were checksum-verified.
+
+Both Linux application images built successfully. All 22 pending V2 migrations
+applied to the isolated copy, and 296 static files were collected. Database,
+backend, frontend, gateway and Mailpit services are running. Preservation checks
+passed both after migration and after acceptance testing. No original record or
+uploaded file was changed by these steps.
+
+The website is available through an SSH tunnel at `http://localhost:8083/`, with
+admin at `/admin/` and test email at `http://localhost:8027/`. These addresses
+connect to Hetzner while the tunnel is open. The V1 public staging URL still
+serves V1; no public routing or production configuration was changed. No workers
+were started. Provider keys and live payments remain disabled; emails are
+captured in Mailpit. HTTPS work is deferred at the user's request.
+
+Private records are in `.local-v2/staging-backups/20261018-initial-copy/OPERATION.md`
+and `.local-v2/staging-deployment-20261019.md`. The reconnect helper is
+`.local-v2/open-staging.ps1`. Do not rerun the empty-database restore instructions
+against the now-populated V2 volume. Next steps are member/admin acceptance with
+the user's existing staging account, deliberate V2 content configuration, and
+individual integration setup before worker activation or public routing changes.
 
 ## Which copy is which?
 
@@ -14,8 +38,12 @@ backup state still need to be confirmed. Source inspection cannot establish them
 | Existing staging | Existing `staging` deployment, `/root/Custom-Events-Staging` | Keep its original PostgreSQL 14 database and media |
 | Live website | `master`, `/root/Custom-Events` | No changes |
 
-The candidate is saved as a local Git checkpoint; it has not been pushed or
-uploaded. New local changes do not automatically enter it. The first candidate includes the
+The candidate is saved as local Git checkpoint
+`438611efab3c586ed9989ea35f9849aa3cef2e63`; its verified source archive has been
+uploaded to an immutable server release directory and is now served by private
+V2 staging. Subsequent reviewed commits pushed to `staging` use the
+[V2 deployment workflow](STAGING_RELEASE_FLOW.md) to update this isolated site.
+New local changes only enter it when committed and pushed. The first candidate includes the
 current V2 source and reconciles staging's title/YouTube fixes; staging-only
 legacy templates remain in the candidate. Do not merge the whole old staging
 implementation over V2 or copy a live database into this repository.
@@ -228,7 +256,19 @@ The Django migration check reports no pending model changes. Summernote's ID
 configuration explicitly matches its shipped migration rather than generating
 a migration in site-packages.
 
-Still required: a real PostgreSQL 14 → 16 restore rehearsal, source/media integrity
-comparison, Linux image build/runtime checks, server resource/port verification,
-provider-specific test configuration and browser acceptance on the staging copy.
-No real data has been migrated and no remote workflow has been dispatched.
+Server acceptance completed on 19 October 2026: PostgreSQL 14 → 16 logical
+restore, all 22 V2 migrations, original-row/media preservation, both Linux image
+builds, healthy service startup, zero pending migrations and clean Django system
+checks. Thirty-five backend checks passed, including CSRF enforcement, member and
+admin password login, imported-member rendering and admin lists. Synthetic test
+accounts were rolled back. Fourteen public pages/API routes, 23 browser assets
+and all 14 preserved media files passed HTTP checks through the SSH tunnel. A
+multipart HTML test email was captured by Mailpit. Homepage, shop and Editing
+Hub were visually checked in the browser. The old staging and production
+containers' start timestamps did not change during V2 deployment/acceptance.
+
+Still required: user acceptance of the imported content, provider-specific test
+credentials and end-to-end external integration checks, deliberate job activation,
+and any future public URL/cutover. This is a V1 staging-data copy, not an import
+of the local V2 development database; local-only hero images, blog posts and V2
+configuration do not appear automatically. No remote workflow was dispatched.

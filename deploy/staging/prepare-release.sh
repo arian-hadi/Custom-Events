@@ -48,6 +48,7 @@ required = {
     "compose.v2.staging.yml",
     ".env.v2.staging.example",
     "deploy/staging/prepare-release.sh",
+    "deploy/staging/deploy_release.py",
     "deploy/staging/nginx.conf.template",
     "prime_project/Dockerfile.v2",
     "prime_project/prime_project/settings_v2_staging.py",
@@ -177,5 +178,6 @@ fi
 export STAGING_IMAGE_TAG="$release_sha"
 compose=(docker compose --env-file "$env_file" -f "$release_dir/compose.v2.staging.yml" -p platform-v2-staging)
 "${compose[@]}" config --quiet
-"${compose[@]}" build backend frontend
+"${compose[@]}" build backend
+"${compose[@]}" build frontend
 printf 'V2 staging images prepared for %s. Services, databases, and traffic were not changed.\n' "$release_sha"

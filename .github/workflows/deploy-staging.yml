@@ -1,4 +1,4 @@
-name: Validate and prepare V2 staging
+name: Deploy V2 staging
 
 on:
   push:
@@ -8,6 +8,10 @@ on:
 
 permissions:
   contents: read
+
+concurrency:
+  group: staging-v2-deploy
+  cancel-in-progress: false
 
 jobs:
   validate:
@@ -22,20 +26,17 @@ jobs:
           set -euo pipefail
           bash -n deploy/staging/prepare-release.sh
           python3 -m unittest discover -s scripts -p test_staging_release.py -v
+          python3 -m unittest discover -s scripts -p test_staging_deploy.py -v
           docker compose --env-file .env.v2.staging.example -f compose.v2.staging.yml -p platform-v2-staging config --quiet
           archive="$RUNNER_TEMP/staging-v2-$GITHUB_SHA.tar"
           git archive --format=tar --output="$archive" "$GITHUB_SHA"
           bash deploy/staging/prepare-release.sh --validate-archive "$GITHUB_SHA" "$archive"
 
-  prepare-v2:
-    # A push validates only. Dispatch from staging after reviewing its commit.
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/staging'
+  deploy-v2:
+    if: github.ref == 'refs/heads/staging'
     needs: validate
     runs-on: ubuntu-latest
     environment: staging-v2
-    concurrency:
-      group: staging-v2-prepare
-      cancel-in-progress: false
     steps:
       - name: Checkout the selected commit
         uses: actions/checkout@v4
@@ -56,21 +57,24 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
+          passphrase: ${{ secrets.SSH_PASSPHRASE }}
           port: ${{ secrets.SSH_PORT || 22 }}
           source: ".staging-v2-upload/${{ github.sha }}/source.tar,.staging-v2-upload/${{ github.sha }}/prepare-release.sh"
           target: "/root/Custom-Events-Staging-V2/incoming/"
           strip_components: 1
 
-      - name: Validate and build the isolated V2 candidate
+      - name: Build and activate the isolated V2 release
         uses: appleboy/ssh-action@v0.1.7
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
+          passphrase: ${{ secrets.SSH_PASSPHRASE }}
           port: ${{ secrets.SSH_PORT || 22 }}
-          command_timeout: 30m
+          command_timeout: 45m
           script: |
             set -eu
             bash "/root/Custom-Events-Staging-V2/incoming/${{ github.sha }}/prepare-release.sh" \
               "${{ github.sha }}" \
               "/root/Custom-Events-Staging-V2/incoming/${{ github.sha }}/source.tar"
+            python3 "/root/Custom-Events-Staging-V2/releases/${{ github.sha }}/deploy/staging/deploy_release.py" "${{ github.sha }}"

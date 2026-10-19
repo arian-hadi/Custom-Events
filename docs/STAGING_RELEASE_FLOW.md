@@ -1,119 +1,79 @@
-# V2 staging release preparation
+# V2 staging delivery
 
-Start with [the migration runbook](V2_STAGING_MIGRATION.md) for server discovery,
-data copying and acceptance checks. This document covers source/image preparation.
+Push reviewed, committed code to `staging`. The **Deploy V2 staging** GitHub
+Actions workflow validates the release, uploads its exact Git archive, builds
+backend and frontend images sequentially, and updates the existing V2 staging
+application. Uncommitted local changes are not included. Production still uses
+its separate `master` workflow. The old V1 staging deployment is not updated.
 
-V2 is prepared alongside the running V1 staging application. This flow packages
-committed source and builds images; database copying, migration, container
-startup, and routing changes are separate operator work requiring approval.
-Production remains on its existing `master` workflow.
+## Current access and GitHub configuration
 
-## What runs automatically
+The V2 site is private: open the SSH tunnel described in
+[the migration runbook](V2_STAGING_MIGRATION.md), then visit
+`http://localhost:8083/`. Test emails are captured at `http://localhost:8027/`.
+The public V1 address on port 8080 continues to serve V1. This workflow does not
+change public routing, HTTPS, credentials, or integration settings.
 
-Pushing to `staging` runs validation only: Bash syntax, the standalone staging
-Compose configuration with example values, and a complete `git archive` source
-check. It does not connect to the VPS. The former staging workflow that stopped
-V1 containers has been replaced.
+The workflow uses repository or `staging-v2` environment secrets `SSH_HOST`,
+`SSH_USER`, `SSH_KEY`, optional `SSH_PORT` (default 22), and optional
+`SSH_PASSPHRASE` for an encrypted SSH key. Existing environment protection rules
+are honored; an environment declaration alone does not require approval.
+Manual workflow dispatch is supported on `staging` for retrying a release.
+Runs are serialized, and a server lock prevents overlapping preparation or
+activation. Never upload real env files, database dumps, or private keys to Git.
 
-The **Validate and prepare V2 staging** workflow can also be dispatched manually.
-Select the `staging` branch. Its preparation job runs only for that branch, after
-validation and the `staging-v2` GitHub environment gate. Configure required
-reviewers and restrict deployment branches to `staging` in that environment;
-declaring an environment in YAML does not create an approval policy by itself.
-The environment must provide `SSH_HOST`, `SSH_USER`, `SSH_KEY`, and optionally
-`SSH_PORT` (default `22`). Do not dispatch until the exact commit has been reviewed
-and permission to upload and build on the staging server has been given.
+## Deployment safeguards
 
-## Commit the complete candidate first
+1. Validate shell syntax, release/deployment tests, example Compose settings,
+   and the committed archive. Reject unsafe paths, links, runtime data, and
+   env files other than examples.
+2. Upload to `/root/Custom-Events-Staging-V2/incoming/<full-commit-sha>/` and
+   extract immutable source under `releases/<full-commit-sha>/`. Retries must
+   match the existing release exactly. Build both images with the same SHA tag.
+3. Require the existing `platform-v2-staging` PostgreSQL container and its
+   independent `platform-v2-staging_staging_postgres` volume. Refuse automatic
+   activation when V2 workers are running or the previous release is unknown.
+4. Run Django checks and `migrate --check` against the already-migrated staging
+   copy. **Pending migrations stop deployment before services are replaced.**
+5. Collect static files and replace backend/frontend. Wait for their health
+   checks, recreate the V2 gateway to refresh upstream addresses, then verify
+   the homepage and site API through that gateway.
+6. If activation fails, restore the previous application images and static
+   files and check them again. CI stays failed, including if rollback fails.
+7. Only after successful checks, save the SHA in the server env file,
+   `current-release`, and `last-deployment.json`.
 
-The release is a `git archive` of the workflow's exact full commit SHA. It includes
-the tracked frontend, Django backend, deployment configuration, scripts, and docs.
-Untracked work and uncommitted changes are absent. In particular, all V2 source,
-frontend public assets, the frontend lockfile, migrations, settings, and these
-staging files must be reviewed and committed before preparing a candidate.
+There is no automatic database restore, migration execution, volume deletion,
+image pruning, or worker startup. Rollback restores code, not database contents.
+Images and immutable source for the previous release must remain available.
+Builds consume server resources; inspect disk usage periodically.
 
-Check `git status --short` and review the staged diff before committing. Keep real
-environment files, database dumps, uploaded media, provider credentials, virtual
-environments, and build caches outside Git. `.gitignore` does not remove files
-that were already tracked. Archive validation rejects environment files other
-than `*.example`, common runtime directories, database files, logs, and links.
-It supplements the staged diff review; it cannot identify every possible secret
-filename or secret embedded in ordinary source.
+## Future migrations and initial provisioning
 
-Continue local V2 development using the existing local Compose files and env
-files. The standalone `compose.v2.staging.yml` must never be combined with
-`compose.v2.yml`, `compose.v2.dev.yml`, or a V1 Compose file. The workflow changes
-neither local runtime configuration nor the V1 staging deployment.
+When pending migrations stop CI, review them and back up the **V2 staging**
+database/media first. Rehearse migrations on a separate copy. During a reviewed
+maintenance window, apply them using the prepared release's image and server
+env file to the isolated V2 database, then rerun the workflow. For a schema
+change incompatible with old code, plan data restore/rollback rather than
+relying on automatic code rollback. Never target production or the V1 volume.
 
-## Separate server layout
+For initial provisioning, data copying, and migration acceptance, use the
+[migration runbook](V2_STAGING_MIGRATION.md). This update workflow requires an
+existing initial deployment; it does not bootstrap an empty server.
 
-The server requires Bash, Python 3, `realpath`, `flock`, Docker, and Docker Compose
-v2. Provision the following paths before the first approved preparation:
+The server requires Bash, Python 3, realpath, flock, Docker, and Docker Compose
+v2. Its `.env.v2.staging` remains server-only with restricted permissions.
+Preparation does not overwrite immutable source. Failed partial extractions
+remain available for inspection; cleanup is a separate operator action.
 
-```text
-/root/Custom-Events-Staging-V2/
-  .env.v2.staging                  server-only configuration; never uploaded by CI
-  incoming/<full-commit-sha>/
-    source.tar                    complete tracked git archive
-    prepare-release.sh            helper from the same commit
-  releases/<full-commit-sha>/      immutable extracted source
-```
-
-Create the server env file from `.env.v2.staging.example`, replace its placeholder
-secrets with separate staging credentials, and restrict access to the operator
-account, for example with mode `600`. Missing server configuration fails before
-release extraction or image builds. Do not copy production or local credentials
-into the staging file. The required settings are `STAGING_SECRET_KEY`,
-`STAGING_DB_PASSWORD`, and `STAGING_PUBLIC_URL`; review the example for optional
-database, port, and HTTP settings. Runtime staging settings reject placeholder
-secrets. Compose configuration validation and image builds alone do not prove
-that runtime settings or database migrations will succeed.
-
-V2 uses the Compose project `platform-v2-staging`, separate from V1's `staging`
-project. Its resources must remain separate from `/root/Custom-Events-Staging`
-and `/root/Custom-Events`. The helper rejects inconsistent roots and symlinks;
-the archive must be at the exact incoming path for the requested full commit SHA.
-Never point V2 at a V1 database volume or media volume.
-
-## What a manual preparation does
-
-1. Validate the committed source and the example Compose configuration.
-2. Upload the archive and helper into the separate V2 incoming directory.
-3. Verify the archive's Git commit metadata, safe paths, complete source, and
-   matching helper, then extract a new release directory atomically.
-4. Run `docker compose ... config --quiet` using the server env file.
-5. Build only the `backend` and `frontend` images, tagged with the full commit SHA.
-
-The helper overrides `STAGING_IMAGE_TAG` with that commit SHA for both commands.
-Any later approved operation using the release must use the same image tag;
-otherwise the example's default `candidate` tag will not select the built images.
-It does not start or stop containers, restore or migrate a database, collect
-static files, start workers, change the reverse proxy, or change traffic.
-Builds consume server CPU, disk, and network, so schedule them appropriately.
-
-A failed build leaves the source release intact. Rerunning the same commit is
-allowed only if all extracted files and permissions still match the archive;
-existing source is never overwritten. A source validation or extraction failure
-may leave a `.partial-<commit>-...` directory for inspection. Cleanup is an
-explicit operator action on a verified path; this flow performs no recursive
-deletion. The workflow and a host lock serialize preparation runs.
-
-## Review before any activation
-
-After preparation, review the exact release and image tags, independent staging
-configuration, V1 database/media backup and restore plan, migration effects,
-integration switches, and rollback plan. Copy data to separate V2 resources and
-test migrations there before considering a traffic change. Keep outbound jobs
-disabled until their behavior against the copied data is reviewed. Starting V2,
-changing V1, and routing staging traffic require a separate explicit decision;
-none of those actions is implemented by this workflow.
-
-Local validation without a server connection:
+## Local checks
 
 ```bash
+python -m unittest discover -s scripts -p test_staging_release.py -v
+python -m unittest discover -s scripts -p test_staging_deploy.py -v
 bash -n deploy/staging/prepare-release.sh
 docker compose --env-file .env.v2.staging.example -f compose.v2.staging.yml -p platform-v2-staging config --quiet
-# After the complete candidate is committed:
+# After committing:
 commit=$(git rev-parse HEAD)
 git archive --format=tar --output=/tmp/staging-v2-source.tar "$commit"
 bash deploy/staging/prepare-release.sh --validate-archive "$commit" /tmp/staging-v2-source.tar
