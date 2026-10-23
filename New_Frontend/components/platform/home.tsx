@@ -9,17 +9,16 @@ import { PostCard, ProductCard } from './catalog';
 import { WinnerCard } from './league';
 import type { LeagueWinners } from '@/lib/league-view';
 
-const leftArtwork = [
-  ['image-02', 'fd715b61f5-62b2da8704e4319fa5efad8a_Rectangle-6.png'],
-  ['image-01', 'c312560d59-62b2da54527a94f7ce336471_Rectangle-5.png'],
-  ['image-03', 'cdd1d6fb70-62b2da979b6d6f3ad8d0bc13_Rectangle-2.png'],
-  ['image-04', '8342f4052a-62b2daa5d42435480027e70b_Rectangle-3.png'],
-];
-const rightArtwork = [
-  ['image-05', 'a07c76b590-62b2e2264da477acb9196c77_Rectangle-7.png'],
-  ['image-06', '1d5df4ed09-62b2e2332894ca8923d977d9_Rectangle-1.png'],
-  ['image-07', '902bc23d83-62b2e24341d0f9ce0578ad36_Rectangle-8.png'],
-  ['image-08', 'e8cb5f8458-62b2e267a74de628c97bbc93_Rectangle-4.png'],
+// Curated thumbnails from 2.0Transformers; sources are recorded in docs/DISCOVER_ARTWORK.md.
+const discoverArtwork = [
+  '/assets/discover/u6sRc5OIUmg.jpg',
+  '/assets/discover/BoVaLCcjI-Y.jpg',
+  '/assets/discover/QGvEMCCweqA.jpg',
+  '/assets/discover/J0duojF4NkA.jpg',
+  '/assets/discover/Z63GiV-0dgc.jpg',
+  '/assets/discover/0PG4SslXPYY.jpg',
+  '/assets/discover/c-dq255zevc.jpg',
+  '/assets/discover/cbr_Udp46lA.jpg',
 ];
 export function HomePage() {
   const { site, siteLoading, siteError } = useSite();
@@ -39,7 +38,7 @@ export function HomePage() {
     {siteError && <div className="v2-container"><ErrorNotice error={new Error('Website settings are temporarily unavailable. Some content may not be up to date.')} /></div>}
     <div className="v2-container v2-intro-bottom"><nav className="v2-home-tabs" aria-label="Explore the homepage"><a href="#Access">Discover</a><a href="#Community">Community</a><a href="#Features">Features</a><a href="#Latest">Latest</a></nav></div>
     <HomeReveal><section className="v2-collection-section">
-      <CollectionOrbit artwork={[...leftArtwork, ...rightArtwork].map(([, image]) => `/assets/${image}`)}>
+      <CollectionOrbit artwork={discoverArtwork}>
         <span className="v2-eyebrow">Curated for the community</span>
         <h2>{access.title}</h2><p>{access.body}</p>
         <a href={safeUrl(access.button_url, '/store')} className="v2-arrow-link">{access.button_text || 'Explore'} <span aria-hidden="true">→</span></a>
