@@ -1,42 +1,34 @@
 'use client';
 
+import { useState } from 'react';
 import { ArrowUpRight, Clapperboard, Clock3, Pin, Scissors } from 'lucide-react';
-import { safeUrl, useResource } from '@/lib/api';
-import { ErrorNotice } from './ui';
+import { safeUrl } from '@/lib/api';
+import type { FeaturedRequest } from '@/lib/shop-requests';
 
-type FeaturedRequest = {
-  id: number; title: string; description: string; details: string; image: string | null;
-  icon: 'edit' | 'media'; badge: string; price_label: string; turnaround: string;
-  button_label: string; placeholder_label: string; is_placeholder: boolean; purchase_url: string;
-};
-
-export function FeaturedShopRequests() {
-  const { data, error, loading, reload } = useResource<{ results: FeaturedRequest[] }>('shop/featured-requests/');
-  if (error) return <ErrorNotice error={error} retry={reload} />;
-  if (loading) return <div className="v2-featured-requests-loading" role="status">Loading featured requests…</div>;
-  if (!data?.results.length) return null;
-
-  return <section className="v2-featured-requests" aria-label="Featured requests">
-    <div className="v2-featured-requests-grid">
-      {data.results.map(item => {
-        const Icon = item.icon === 'media' ? Clapperboard : Scissors;
-        const image = safeUrl(item.image, '');
-        const purchaseUrl = item.is_placeholder ? '' : safeUrl(item.purchase_url, '');
-        return <article key={item.id} className="v2-request-card">
-          {image && <img className="v2-request-image" src={image} alt="" loading="lazy" />}
-          <div className="v2-request-content">
-            <div className="v2-request-topline"><span className="v2-request-icon"><Icon size={24} aria-hidden="true" /></span>{item.badge && <span className="v2-request-badge"><Pin size={12} aria-hidden="true" />{item.badge}</span>}</div>
-            <h2>{item.title}</h2>
-            <p className="v2-request-description">{item.description}</p>
-            <div className="v2-request-meta">{item.price_label && <span>{item.price_label}</span>}{item.turnaround && <span><Clock3 size={14} aria-hidden="true" />{item.turnaround}</span>}</div>
-            {item.details && <details className="v2-request-details"><summary>What’s included</summary><p>{item.details}</p></details>}
-            <div className="v2-request-action">{purchaseUrl
-              ? <><a className="v2-button" href={purchaseUrl} target="_blank" rel="noopener noreferrer">{item.button_label}<ArrowUpRight size={17} aria-hidden="true" /></a><span className="v2-request-payment-note">Checkout on Buy Me a Coffee</span></>
-              : <button className="v2-button secondary" type="button" disabled>{item.placeholder_label}</button>}
-            </div>
-          </div>
-        </article>;
-      })}
+/** A pinned catalog item; uses the same media and content layout as products. */
+export function FeaturedRequestCard({ item }: { item: FeaturedRequest }) {
+  const [failed, setFailed] = useState('');
+  const Icon = item.icon === 'media' ? Clapperboard : Scissors;
+  const image = safeUrl(item.image, '');
+  const purchaseUrl = item.is_placeholder ? '' : safeUrl(item.purchase_url, '');
+  return <article className="v2-shop-product v2-shop-request">
+    <div className="v2-shop-product-media">
+      <div className="v2-shop-product-image v2-shop-request-image">{image && image !== failed
+        ? <img src={image} alt="" loading="lazy" onError={() => setFailed(image)} />
+        : <Icon size={60} strokeWidth={1.2} aria-hidden="true" />}</div>
+      <span className="v2-shop-product-label v2-shop-request-pin"><Pin size={12} aria-hidden="true" />Pinned{item.badge && item.badge.toLowerCase() !== 'pinned' ? ` · ${item.badge}` : ''}</span>
     </div>
-  </section>;
+    <div className="v2-shop-product-info">
+      <span className="v2-shop-category">Creative requests</span>
+      <h3>{item.title}</h3>
+      {item.price_label && <span className="v2-price">{item.price_label}</span>}
+      <p className="v2-shop-request-description">{item.description}</p>
+      {item.turnaround && <span className="v2-shop-request-turnaround"><Clock3 size={14} aria-hidden="true" />{item.turnaround}</span>}
+      {item.details && <details className="v2-request-details"><summary>What’s included</summary><p>{item.details}</p></details>}
+      <div className="v2-shop-request-action">{purchaseUrl
+        ? <><a className="v2-button compact" href={purchaseUrl} target="_blank" rel="noopener noreferrer">{item.button_label}<ArrowUpRight size={15} aria-hidden="true" /></a><span className="v2-shop-product-source">Checkout on Buy Me a Coffee</span></>
+        : <button className="v2-button secondary compact" type="button" disabled>{item.placeholder_label}</button>}
+      </div>
+    </div>
+  </article>;
 }

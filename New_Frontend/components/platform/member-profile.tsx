@@ -90,10 +90,10 @@ function ProfileForm({ initial }: { initial: ProfileSummary }) {
           <p className="v2-small v2-muted">JPEG, PNG or WebP, up to {data.max_image_mb} MB and 4096 × 4096 pixels. Your uploaded picture takes priority over your channel image.</p>
           {data.profile.uploaded_picture && <label className="v2-toggle-row"><span>Remove my uploaded picture</span><input type="checkbox" checked={removePicture} onChange={event => setRemovePicture(event.target.checked)} /></label>}
           {removePicture && <p className="v2-small v2-muted">After saving, your selected channel image or account initial will be shown.</p>}
-          <Field label="Editor title"><select name="selected_title_id" value={titleId} onChange={event => setTitleId(event.target.value)}><option value="">Default community title</option>{data.titles.map(title => <option key={title.id} value={title.id}>{title.name} · {title.rarity}</option>)}</select></Field>
+          <div id="editor-title" className="v2-title-picker"><Field label="Editor title"><select name="selected_title_id" value={titleId} onChange={event => setTitleId(event.target.value)}><option value="">Default community title</option>{data.titles.map(title => <option key={title.id} value={title.id}>{title.name} · {title.rarity}</option>)}</select></Field>
           {selectedTitle && <p className="v2-title-preview"><EditorTitle name={selectedTitle.name} rarity={selectedTitle.rarity} /></p>}
-          <p className="v2-small v2-muted">{selectedTitle?.description || (data.titles.length ? 'Choose a title already available to your account. This does not change league points or ranking.' : 'Available editor titles will appear here when you are eligible.')}</p>
-          <button className="v2-button" type="submit">{busy ? 'Saving…' : 'Save profile'}</button>
+          <p className="v2-small v2-muted">{selectedTitle?.description || (data.titles.length ? 'Choose an unlocked title to show as a badge below your name in the editors table. This does not change league points or ranking.' : 'Your unlocked editor titles will appear here.')}</p>
+          </div><button className="v2-button" type="submit">{busy ? 'Saving…' : 'Save profile'}</button>
         </fieldset></form>
       </section>
       <DeleteAccount deletion={data.deletion} />

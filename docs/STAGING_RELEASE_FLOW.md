@@ -8,11 +8,12 @@ its separate `master` workflow. The old V1 staging deployment is not updated.
 
 ## Current access and GitHub configuration
 
-The V2 site is private: open the SSH tunnel described in
-[the migration runbook](V2_STAGING_MIGRATION.md), then visit
-`http://localhost:8083/`. Test emails are captured at `http://localhost:8027/`.
-The public V1 address on port 8080 continues to serve V1. This workflow does not
-change public routing, HTTPS, credentials, or integration settings.
+V2 staging is public at `http://128.140.40.7:8080/` following the approved
+19 October switch. No website SSH tunnel is required. The previous V1 staging
+gateway is stopped and retained for rollback. Production remains unchanged.
+The server env holds the public origin and port; CI preserves these settings.
+Test emails stay private in Mailpit on server loopback port 8027, accessible
+through an SSH tunnel. See [the migration runbook](V2_STAGING_MIGRATION.md).
 
 The workflow uses repository or `staging-v2` environment secrets `SSH_HOST`,
 `SSH_USER`, `SSH_KEY`, optional `SSH_PORT` (default 22), and optional

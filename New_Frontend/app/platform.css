@@ -174,7 +174,9 @@ body { margin: 0; background: #000; }
 .v2-empty p { color: var(--muted); font-size: 16px; margin: 0 auto; max-width: 460px; }
 .v2-auth-page { display: grid; grid-template-columns: 1fr 1fr; gap: 90px; align-items: center; padding-top: 50px; }
 .v2-auth-art { position: relative; min-height: 530px; display: flex; flex-direction: column; justify-content: center; }
-.v2-auth-art img { width: 100%; position: relative; z-index: 1; }
+.v2-auth-brand-image { position: relative; z-index: 1; width: min(100%, 440px); aspect-ratio: 1; margin: 0 auto 24px; display: grid; place-items: center; overflow: hidden; border: 1px solid var(--line); border-radius: 50%; background: radial-gradient(circle, color-mix(in srgb, var(--accent) 12%, #141416), #0c0c0f); }
+.v2-auth-brand-image img { width: 100%; height: 100%; object-fit: contain; padding: 24px; }
+.v2-auth-brand-placeholder { color: var(--accent); font: 700 72px/1 'Space Grotesk', sans-serif; }
 .v2-auth-art p { font: 700 36px/1.2 'Space Grotesk', sans-serif; letter-spacing: -1px; text-align: center; }
 .v2-orbit { position: absolute; inset: 0; background: radial-gradient(ellipse, color-mix(in srgb, var(--accent) 20%, transparent), transparent 65%); }
 .v2-auth-panel { max-width: 510px; width: 100%; }

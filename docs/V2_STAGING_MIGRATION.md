@@ -14,12 +14,15 @@ backend, frontend, gateway and Mailpit services are running. Preservation checks
 passed both after migration and after acceptance testing. No original record or
 uploaded file was changed by these steps.
 
-The website is available through an SSH tunnel at `http://localhost:8083/`, with
-admin at `/admin/` and test email at `http://localhost:8027/`. These addresses
-connect to Hetzner while the tunnel is open. The V1 public staging URL still
-serves V1; no public routing or production configuration was changed. No workers
-were started. Provider keys and live payments remain disabled; emails are
-captured in Mailpit. HTTPS work is deferred at the user's request.
+The user-approved public staging switch completed on 19 October 2026. V2 now
+serves `http://128.140.40.7:8080/`, with admin at `/admin/`. No SSH tunnel is
+required for the website. The V1 staging gateway is stopped and retained for
+rollback; its database and media remain intact. Production was not changed.
+The V2 gateway binds `0.0.0.0:8080`; the server env sets `STAGING_PUBLIC_URL` to
+that public HTTP origin. Future staging CI runs retain those server settings.
+Mailpit remains private at server loopback port 8027; use an SSH tunnel for it.
+No workers were started. Provider keys and live payments remain disabled;
+emails are captured in Mailpit. HTTPS is deferred at the user's request.
 
 Private records are in `.local-v2/staging-backups/20261018-initial-copy/OPERATION.md`
 and `.local-v2/staging-deployment-20261019.md`. The reconnect helper is
@@ -40,8 +43,8 @@ individual integration setup before worker activation or public routing changes.
 
 The candidate is saved as local Git checkpoint
 `438611efab3c586ed9989ea35f9849aa3cef2e63`; its verified source archive has been
-uploaded to an immutable server release directory and is now served by private
-V2 staging. Subsequent reviewed commits pushed to `staging` use the
+uploaded to an immutable server release directory and was initially served by private
+V2 staging before the public switch. Subsequent reviewed commits pushed to `staging` use the
 [V2 deployment workflow](STAGING_RELEASE_FLOW.md) to update this isolated site.
 New local changes only enter it when committed and pushed. The first candidate includes the
 current V2 source and reconciles staging's title/YouTube fixes; staging-only

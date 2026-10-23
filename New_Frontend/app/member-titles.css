@@ -10,8 +10,8 @@
 }
 .v2-title-preview { border: 1px solid var(--line); background: var(--surface, #101013); border-radius: 8px; padding: 12px 16px; }
 .v2-title-preview .v2-editor-title { font-size: 16px; }
-.v2-league-editor-identity .v2-editor-title { display: block; margin-top: 3px; font-size: 12px; }
-.v2-league-winner > .v2-editor-title { margin-bottom: 10px; font-size: 15px; }
+.v2-league-editor-identity .v2-editor-title { display: block; margin-top: 0; font-size: 12px; }
+.v2-league-winner > .v2-editor-badge { margin-bottom: 10px; font-size: 15px; }
 @keyframes v2-title-shine { 0%, 15% { background-position: 100% 50%; } 70%, 100% { background-position: 0% 50%; } }
 @keyframes v2-title-gradient { from { background-position: 0% 50%; } to { background-position: 100% 50%; } }
 @media (prefers-reduced-motion: reduce) {
@@ -20,3 +20,11 @@
 @media (forced-colors: active) {
   .v2-editor-title { color: CanvasText; background: none; animation: none !important; }
 }
+
+.v2-editor-badge { display: inline-flex; align-items: center; width: fit-content; max-width: 100%; padding: 3px 10px; border: 1px solid #42424e; border-radius: 999px; background: #1b1b23; vertical-align: middle; }
+.v2-editor-badge--rare { border-color: #426a8c; background: #152330; }
+.v2-editor-badge--epic { border-color: #724799; background: linear-gradient(110deg, #271736, #201a30); }
+.v2-editor-badge--legendary { border-color: #8c7139; background: linear-gradient(110deg, #302715, #211d16); }
+.v2-league-editor-identity .v2-editor-badge { margin: 5px 0 3px; }
+.v2-title-picker { scroll-margin-top: 120px; }
+@media (forced-colors: active) { .v2-editor-badge { border-color: CanvasText; background: Canvas; } }

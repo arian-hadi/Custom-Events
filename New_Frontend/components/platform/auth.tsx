@@ -3,6 +3,7 @@
 import { useState, type FormEvent, type ReactNode } from 'react';
 import { ApiError, mutate, safeUrl, useResource, type Session } from '@/lib/api';
 import { useSite } from './site-shell';
+import { AuthArt } from './auth-art';
 import { AccountNav } from './account-nav';
 import { Captcha, ErrorNotice, Field, Loading, Notice, PageHeading } from './ui';
 
@@ -21,7 +22,7 @@ export function RequireAccount({ children, next }: { children: ReactNode; next?:
 }
 
 export function AuthPage({ mode, query = {} }: { mode: AuthMode; query?: Query }) {
-  const { session, sessionError, refreshSession } = useSite();
+  const { session, sessionError, refreshSession, site, siteLoading } = useSite();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [message, setMessage] = useState('');
@@ -57,7 +58,7 @@ export function AuthPage({ mode, query = {} }: { mode: AuthMode; query?: Query }
     catch (error) { setError(error as Error); }
     finally { setResending(false); setCaptchaReset(value => value + 1); }
   }
-  return <div className="v2-container v2-page v2-auth-page"><div className="v2-auth-art" aria-hidden="true"><div className="v2-orbit" /><img src="/assets/cefb325ec7-62b1874770f501676dc46dbd_Group-28--3---1-.png" alt="" /><p>Create. Connect.<br />Make it yours.</p></div><div className="v2-auth-panel"><PageHeading eyebrow="Your community account" title={titles[mode]}><p>{subtitles[mode]}</p></PageHeading><ErrorNotice error={sessionError} /><ErrorNotice error={error} />{queryValue(query, 'error') && googleErrors[queryValue(query, 'error')] && <Notice error>{googleErrors[queryValue(query, 'error')]}</Notice>}{message && <Notice>{message}{completed && mode === 'verify-email' && <p><a href="/account">Continue to account →</a></p>}{mode === 'reset-password' && <p><a href="/login">Sign in →</a></p>}</Notice>}{needsVerification && <p><a href={`/verify-email?email=${encodeURIComponent(email)}`}>Verify your email to continue →</a></p>}
+  return <div className="v2-container v2-page v2-auth-page"><AuthArt site={site} loading={siteLoading} /><div className="v2-auth-panel"><PageHeading eyebrow="Your community account" title={titles[mode]}><p>{subtitles[mode]}</p></PageHeading><ErrorNotice error={sessionError} /><ErrorNotice error={error} />{queryValue(query, 'error') && googleErrors[queryValue(query, 'error')] && <Notice error>{googleErrors[queryValue(query, 'error')]}</Notice>}{message && <Notice>{message}{completed && mode === 'verify-email' && <p><a href="/account">Continue to account →</a></p>}{mode === 'reset-password' && <p><a href="/login">Sign in →</a></p>}</Notice>}{needsVerification && <p><a href={`/verify-email?email=${encodeURIComponent(email)}`}>Verify your email to continue →</a></p>}
     {!completed && <form onSubmit={submit} className="v2-form"><fieldset disabled={busy || resending}>
       {mode === 'register' && <Field label="Username"><input name="username" autoComplete="username" required maxLength={150} /></Field>}
       {mode === 'verify-email' && queryValue(query, 'email') ? <><input type="hidden" name="email" value={email} /><p>Enter the code for <strong>{email}</strong>. Check your inbox and spam folder.</p></> : ['login', 'register', 'verify-email', 'forgot-password'].includes(mode) && <Field label="Email address"><input type="email" name="email" autoComplete="email" required value={email} onChange={event => setEmail(event.target.value)} /></Field>}
